@@ -1,11 +1,16 @@
-import { useRouter } from 'expo-router';
+import { type Href, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 
-/** Leaves the auth screens and returns to whatever tab the user came from. */
-export function useExitAuthFlow() {
+/**
+ * Leaves the auth screens. With no destination it returns to whatever tab the
+ * user came from; with one (e.g. '/' after sign-up) it lands there instead.
+ */
+export function useExitAuthFlow(destination?: Href) {
   const router = useRouter();
   return useCallback(() => {
-    if (router.canDismiss()) router.dismissAll();
-    else router.replace('/');
-  }, [router]);
+    const canDismiss = router.canDismiss();
+    if (canDismiss) router.dismissAll();
+    if (destination) router.navigate(destination);
+    else if (!canDismiss) router.replace('/');
+  }, [router, destination]);
 }

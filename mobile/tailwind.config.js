@@ -20,6 +20,7 @@ module.exports = {
         'on-accent': token('on-accent'),
         success: token('success'),
         danger: token('danger'),
+        navy: token('navy'),
       },
     },
   },

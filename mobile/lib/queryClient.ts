@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
 import { QueryClient } from '@tanstack/react-query';
-import type { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import type { PersistedClient, PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import type { ComponentProps } from 'react';
 
 const MAX_AGE = 30 * 60 * 1000;
@@ -18,16 +18,41 @@ export const queryClient = new QueryClient({
 });
 
 // Allowlist: a query is persisted only if its first key segment is listed here.
-const PERSISTED_KEYS: readonly string[] = ['app-settings', 'profile'];
+const PERSISTED_KEYS: readonly string[] = ['app-settings', 'profile', 'feed', 'announcement'];
+
+function isInfiniteData(data: unknown): data is { pages: unknown[]; pageParams: unknown[] } {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'pages' in data &&
+    Array.isArray(data.pages) &&
+    'pageParams' in data &&
+    Array.isArray(data.pageParams)
+  );
+}
+
+/** Stores only the first page of infinite queries: enough to paint the feed instantly on open. */
+function serialize(client: PersistedClient): string {
+  const queries = client.clientState.queries.map((query) => {
+    const data = query.state.data;
+    if (!isInfiniteData(data) || data.pages.length <= 1) return query;
+    return {
+      ...query,
+      state: { ...query.state, data: { pages: data.pages.slice(0, 1), pageParams: data.pageParams.slice(0, 1) } },
+    };
+  });
+  return JSON.stringify({ ...client, clientState: { ...client.clientState, queries } });
+}
 
 export const persistOptions: ComponentProps<typeof PersistQueryClientProvider>['persistOptions'] = {
   persister: createAsyncStoragePersister({
     storage: AsyncStorage,
     key: 'unm-query-cache',
     throttleTime: 1000,
+    serialize,
   }),
   maxAge: MAX_AGE,
-  buster: '1', // bump when a persisted query's shape changes
+  buster: '2', // bump when a persisted query's shape changes
   dehydrateOptions: {
     shouldDehydrateQuery: (query) =>
       query.state.status === 'success' &&

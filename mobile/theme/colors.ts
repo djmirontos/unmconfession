@@ -14,6 +14,8 @@ export type ThemeColors = {
   onAccent: string;
   success: string;
   danger: string;
+  /** Focus outline for the next box of the verification code input. */
+  navy: string;
 };
 
 // LyriaHub "Dark Studio": near-black surfaces, one amber accent, hairline borders.
@@ -29,6 +31,7 @@ const dark: ThemeColors = {
   onAccent: '#1A1100',
   success: '#5BD68A',
   danger: '#FF5A4D',
+  navy: '#8FB0FF',
 };
 
 // The inverse: warm off-white surfaces, near-black text. Accent, success and
@@ -45,6 +48,7 @@ const light: ThemeColors = {
   onAccent: '#1A1100',
   success: '#1E8E4F',
   danger: '#D33A2E',
+  navy: '#1F3A8A',
 };
 
 export const palettes: Record<ColorScheme, ThemeColors> = { light, dark };
@@ -67,6 +71,7 @@ function toCssVars(c: ThemeColors) {
     '--color-on-accent': hexToRgbChannels(c.onAccent),
     '--color-success': hexToRgbChannels(c.success),
     '--color-danger': hexToRgbChannels(c.danger),
+    '--color-navy': hexToRgbChannels(c.navy),
   });
 }
 

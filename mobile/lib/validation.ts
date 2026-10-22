@@ -25,7 +25,7 @@ export const passwordSchema = z
 export const otpSchema = z
   .string()
   .trim()
-  .regex(/^[0-9]{6,10}$/, 'Enter the code from your email.');
+  .regex(/^[0-9]{6}$/, 'Enter the 6-digit code from your email.');
 
 export const signUpSchema = z.object({
   email: emailSchema,

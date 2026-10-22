@@ -1,6 +1,7 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { type ReactNode, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { ComingSoon } from '@/components/layout/ComingSoon';
 import { TabScreen } from '@/components/layout/TabScreen';
@@ -10,7 +11,9 @@ import { ThemeSwitch } from '@/components/profile/ThemeSwitch';
 import { Button } from '@/components/ui/Button';
 import { FormMessage } from '@/components/ui/FormMessage';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useAvatarPrompt } from '@/hooks/useAvatarPrompt';
 import { type Profile, useMembership } from '@/hooks/useProfile';
+import { useTheme } from '@/hooks/useTheme';
 import { useUpdateAvatar } from '@/hooks/useUpdateAvatar';
 import { signOut } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
@@ -39,10 +42,35 @@ function GuestProfile() {
   );
 }
 
+function AvatarPrompt({ onPick, onDismiss }: { onPick: () => void; onDismiss: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <View className="flex-row items-center gap-3 rounded-2xl border border-accent bg-accent-dim p-4">
+      <Ionicons name="happy-outline" size={28} color={colors.accent} />
+      <Pressable className="flex-1 gap-0.5" onPress={onPick} accessibilityRole="button" accessibilityLabel="Pick your avatar">
+        <Text className="text-base font-bold text-text">Pick your avatar</Text>
+        <Text className="text-sm text-text-dim">Choose how you appear next to your nickname.</Text>
+      </Pressable>
+      <Pressable onPress={onDismiss} hitSlop={10} accessibilityRole="button" accessibilityLabel="Dismiss avatar tip">
+        <Ionicons name="close" size={20} color={colors.textDim} />
+      </Pressable>
+    </View>
+  );
+}
+
 function MemberProfile({ profile }: { profile: Profile }) {
   const updateAvatar = useUpdateAvatar();
+  const { showPrompt, markSeen } = useAvatarPrompt(profile.id);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const openPicker = () => {
+    setPickerOpen(true);
+    markSeen();
+  };
+
   return (
     <>
+      {showPrompt ? <AvatarPrompt onPick={openPicker} onDismiss={markSeen} /> : null}
       <View className="flex-row items-center gap-4">
         <Avatar avatarKey={profile.avatar_key} size={64} />
         <View className="flex-1 gap-1">
@@ -53,7 +81,11 @@ function MemberProfile({ profile }: { profile: Profile }) {
         </View>
       </View>
       <Section title="Avatar">
-        <AvatarPicker value={profile.avatar_key} onChange={(key) => updateAvatar.mutate(key)} />
+        {pickerOpen ? (
+          <AvatarPicker value={profile.avatar_key} onChange={(key) => updateAvatar.mutate(key)} />
+        ) : (
+          <Button label="Change avatar" variant="secondary" icon="happy-outline" onPress={openPicker} />
+        )}
         <FormMessage tone="error" message={updateAvatar.isError ? getErrorMessage(updateAvatar.error) : null} />
       </Section>
     </>

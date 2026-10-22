@@ -1,7 +1,3 @@
-// HAND-WRITTEN STAND-IN mirroring supabase/migrations/*.sql in the shape of
-// `supabase gen types typescript`. Replace it with the real output once the
-// migrations are applied to the linked project: `npm run gen:types`.
-
 export type Json =
   | string
   | number
@@ -11,6 +7,8 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "14.18"
   }
@@ -150,6 +148,13 @@ export type Database = {
             foreignKeyName: "comments_listing_id_fkey"
             columns: ["listing_id"]
             isOneToOne: false
+            referencedRelation: "feed_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
             referencedRelation: "listings"
             referencedColumns: ["id"]
           },
@@ -162,6 +167,46 @@ export type Database = {
           },
           {
             foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_events: {
+        Row: {
+          created_at: string
+          id: number
+          post_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          post_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_events_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_events_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
@@ -476,6 +521,13 @@ export type Database = {
             foreignKeyName: "poll_options_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "poll_options_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
@@ -637,6 +689,13 @@ export type Database = {
             foreignKeyName: "reactions_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
@@ -745,6 +804,13 @@ export type Database = {
             foreignKeyName: "trending_scores_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: true
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "trending_scores_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: true
             referencedRelation: "posts"
             referencedColumns: ["id"]
           },
@@ -841,7 +907,15 @@ export type Database = {
           published_at: string | null
           title: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "listings_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       feed_posts: {
         Row: {
@@ -862,7 +936,15 @@ export type Database = {
           reaction_count: number | null
           target_name: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       thread_comments: {
         Row: {
@@ -875,14 +957,47 @@ export type Database = {
           post_id: string | null
           published_at: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "feed_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
-      _check_images: {
-        Args: { p_images: Json; p_uid: string }
-        Returns: Json
-      }
+      _check_images: { Args: { p_images: Json; p_uid: string }; Returns: Json }
       _moderation_decision: {
         Args: {
           p_text: string
@@ -926,7 +1041,19 @@ export type Database = {
           p_target_id: string
           p_target_type: Database["public"]["Enums"]["content_type"]
         }
-        Returns: Database["public"]["Tables"]["comments"]["Row"]
+        Returns: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          listing_id: string | null
+          moderated_at: string | null
+          moderated_by: string | null
+          post_id: string | null
+          published_at: string | null
+          reject_reason: string | null
+          status: Database["public"]["Enums"]["content_status"]
+        }
         SetofOptions: {
           from: "*"
           to: "comments"
@@ -945,7 +1072,26 @@ export type Database = {
           p_price?: number
           p_title: string
         }
-        Returns: Database["public"]["Tables"]["listings"]["Row"]
+        Returns: {
+          author_id: string
+          comment_count: number
+          condition: string | null
+          created_at: string
+          description: string | null
+          event_date: string | null
+          id: string
+          images: Json
+          is_closed: boolean
+          kind: Database["public"]["Enums"]["listing_kind"]
+          location: string | null
+          moderated_at: string | null
+          moderated_by: string | null
+          price: number | null
+          published_at: string | null
+          reject_reason: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          title: string
+        }
         SetofOptions: {
           from: "*"
           to: "listings"
@@ -962,7 +1108,24 @@ export type Database = {
           p_poll_options?: string[]
           p_target_name?: string
         }
-        Returns: Database["public"]["Tables"]["posts"]["Row"]
+        Returns: {
+          author_id: string
+          body: string
+          comment_count: number
+          created_at: string
+          ends_at: string | null
+          id: string
+          images: Json
+          kind: Database["public"]["Enums"]["post_kind"]
+          moderated_at: string | null
+          moderated_by: string | null
+          number: number | null
+          published_at: string | null
+          reaction_count: number
+          reject_reason: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          target_name: string | null
+        }
         SetofOptions: {
           from: "*"
           to: "posts"
@@ -972,7 +1135,24 @@ export type Database = {
       }
       get_active_polls: {
         Args: { p_limit?: number }
-        Returns: Database["public"]["Views"]["feed_posts"]["Row"][]
+        Returns: {
+          author_id: string | null
+          avatar_key: string | null
+          body: string | null
+          comment_count: number | null
+          ends_at: string | null
+          id: string | null
+          images: Json | null
+          kind: Database["public"]["Enums"]["post_kind"] | null
+          my_reaction: Database["public"]["Enums"]["reaction_type"] | null
+          my_vote: string | null
+          nickname: string | null
+          number: number | null
+          poll_options: Json | null
+          published_at: string | null
+          reaction_count: number | null
+          target_name: string | null
+        }[]
         SetofOptions: {
           from: "*"
           to: "feed_posts"
@@ -988,7 +1168,16 @@ export type Database = {
           p_target_id: string
           p_target_type: Database["public"]["Enums"]["content_type"]
         }
-        Returns: Database["public"]["Views"]["thread_comments"]["Row"][]
+        Returns: {
+          author_id: string | null
+          avatar_key: string | null
+          body: string | null
+          id: string | null
+          listing_id: string | null
+          nickname: string | null
+          post_id: string | null
+          published_at: string | null
+        }[]
         SetofOptions: {
           from: "*"
           to: "thread_comments"
@@ -998,7 +1187,24 @@ export type Database = {
       }
       get_feed: {
         Args: { p_before_id?: string; p_before_ts?: string; p_limit?: number }
-        Returns: Database["public"]["Views"]["feed_posts"]["Row"][]
+        Returns: {
+          author_id: string | null
+          avatar_key: string | null
+          body: string | null
+          comment_count: number | null
+          ends_at: string | null
+          id: string | null
+          images: Json | null
+          kind: Database["public"]["Enums"]["post_kind"] | null
+          my_reaction: Database["public"]["Enums"]["reaction_type"] | null
+          my_vote: string | null
+          nickname: string | null
+          number: number | null
+          poll_options: Json | null
+          published_at: string | null
+          reaction_count: number | null
+          target_name: string | null
+        }[]
         SetofOptions: {
           from: "*"
           to: "feed_posts"
@@ -1013,7 +1219,23 @@ export type Database = {
           p_kind: Database["public"]["Enums"]["listing_kind"]
           p_limit?: number
         }
-        Returns: Database["public"]["Views"]["feed_listings"]["Row"][]
+        Returns: {
+          author_id: string | null
+          avatar_key: string | null
+          comment_count: number | null
+          condition: string | null
+          description: string | null
+          event_date: string | null
+          id: string | null
+          images: Json | null
+          is_closed: boolean | null
+          kind: Database["public"]["Enums"]["listing_kind"] | null
+          location: string | null
+          nickname: string | null
+          price: number | null
+          published_at: string | null
+          title: string | null
+        }[]
         SetofOptions: {
           from: "*"
           to: "feed_listings"
@@ -1023,7 +1245,24 @@ export type Database = {
       }
       get_trending: {
         Args: { p_limit?: number }
-        Returns: Database["public"]["Views"]["feed_posts"]["Row"][]
+        Returns: {
+          author_id: string | null
+          avatar_key: string | null
+          body: string | null
+          comment_count: number | null
+          ends_at: string | null
+          id: string | null
+          images: Json | null
+          kind: Database["public"]["Enums"]["post_kind"] | null
+          my_reaction: Database["public"]["Enums"]["reaction_type"] | null
+          my_vote: string | null
+          nickname: string | null
+          number: number | null
+          poll_options: Json | null
+          published_at: string | null
+          reaction_count: number | null
+          target_name: string | null
+        }[]
         SetofOptions: {
           from: "*"
           to: "feed_posts"
@@ -1132,12 +1371,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1161,11 +1400,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1186,11 +1425,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -1211,17 +1450,34 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never) = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {

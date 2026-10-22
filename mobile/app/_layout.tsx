@@ -5,6 +5,7 @@ import { Stack } from 'expo-router';
 
 import { SignInSheet } from '@/components/auth/SignInSheet';
 import { ThemeRoot } from '@/components/layout/ThemeRoot';
+import { Toast } from '@/components/ui/Toast';
 import { useAuthBootstrap } from '@/hooks/useAuthBootstrap';
 import { useMembership } from '@/hooks/useProfile';
 import { persistOptions, queryClient } from '@/lib/queryClient';
@@ -19,6 +20,7 @@ export default function RootLayout() {
       <ThemeRoot>
         <RootNavigator />
         <SignInSheet />
+        <Toast />
       </ThemeRoot>
     </PersistQueryClientProvider>
   );
@@ -36,6 +38,7 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Protected guard={!needsNickname}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="post/[id]" />
         <Stack.Screen name="(auth)/sign-in" />
         <Stack.Screen name="(auth)/sign-up" />
         <Stack.Screen name="(auth)/verify" />

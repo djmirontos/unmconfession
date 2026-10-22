@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "UNM Freedom Confessions",
+    "slug": "unm-freedom-confessions",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "unmconfessions",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#0A0A0B",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.unmfreedom.confessions"
+    },
+    "android": {
+      "package": "com.unmfreedom.confessions",
+      "softwareKeyboardLayoutMode": "pan",
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      "expo-router",
+      "expo-web-browser",
+      "expo-image",
+      "expo-font"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}

@@ -143,6 +143,7 @@ Speed and data security are the top priorities during development.
 
 - New published posts reach open screens without a refresh. If the user is not at the top, a pill ("3 new posts") appears and scrolls to top when tapped. Posts are never inserted under the user's thumb.
 - Held and pending posts are never broadcast.
+- New posts are signaled through a small feed_events table (one row when a post becomes visible), not by listening to changes on the posts table, so reactions and comments do not generate traffic for every open phone.
 - Notifications use a private per-user channel.
 - Reaction and comment counts refresh for visible posts about every 30 seconds, and live inside an opened post. They are not broadcast one by one.
 

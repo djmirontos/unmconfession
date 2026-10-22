@@ -32,6 +32,8 @@ The PRD at `UNM Freedom Confessions V1 PRD.md` (repo root). Read it before start
 - Security first: validate inputs (Zod on the client, the DB re-validates), no secrets in the app, RLS and RPCs are the only write path.
 - `PersistQueryClientProvider` wraps the whole app, outside any auth gate. Auth bootstrap never blocks rendering.
 - DB error codes map to user-facing text only in `mobile/lib/errors.ts`.
+- Realtime only through `hooks/usePostgresChanges` (UUID topic per subscription, foreground only, resubscribes on sign-in/out). A payload is a signal to refetch, never rendered directly (it has no nickname).
+- Dev seed data lives in `supabase/seed/` (not migrations); every seed row starts with `[seed] `.
 
 ## Progress log
 

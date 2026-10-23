@@ -12,6 +12,23 @@ const MESSAGES: Record<string, string> = {
   suspended: 'This account is suspended for now. Try again later.',
   rate_limited: 'You are doing that too often. Please wait a bit and try again.',
   not_authenticated: 'Please sign in first.',
+  no_profile: 'Your account is not set up yet. Sign out and sign in again.',
+  invalid_body: 'Check the text: it is empty or too long.',
+  invalid_title: 'Add a title of up to 100 characters.',
+  invalid_target: 'Only shoutouts have a "To" name.',
+  target_required: 'Add who this shoutout is for.',
+  too_many_images: 'You can add up to 3 photos.',
+  invalid_images: 'One of the photos could not be used. Remove it and try again.',
+  invalid_poll_options: 'A poll needs 2 to 6 different choices.',
+  invalid_poll_end: 'Pick how long the poll runs.',
+  condition_required: 'Pick the item condition.',
+  invalid_price: 'Enter a price from ₱0 to ₱9,999,999.',
+  invalid_lost_found: 'Please add where it happened and choose a date from the last 60 days, up to today.',
+  image_too_large: 'That photo is too large even after resizing. Try another one.',
+  // Photo upload stages (thrown by lib/photos/upload.ts).
+  photo_read_failed: 'We could not read that photo. Remove it and add it again.',
+  upload_failed: 'The photo upload failed. Please try again.',
+  network_error: 'No connection. Check your internet and try again.',
 
   // Supabase Auth
   invalid_credentials: 'Wrong email or password.',

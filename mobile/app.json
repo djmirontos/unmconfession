@@ -20,7 +20,16 @@
       "expo-router",
       "expo-web-browser",
       "expo-image",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to use photos you choose for your posts and listings.",
+          "cameraPermission": "Allow $(PRODUCT_NAME) to use the camera to take photos for your posts and listings.",
+          "microphonePermission": false
+        }
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true

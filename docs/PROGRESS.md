@@ -189,3 +189,38 @@
 - Module 4: reactions, comments, voting, report / block / mute, notifications.
 - Module 5: Trending, Buy & Sell tab, Lost & Found tab.
 - Stray uploads when a post fails for good (members cannot delete files).
+
+## Module 3.1: edit and delete own posts; batches F and G (2026-10-23)
+
+**Database:** `supabase/migrations/20261023120000_edit_delete_own.sql`, applied by the owner in the SQL editor.
+- RPCs `edit_own_post`, `edit_own_listing`, `delete_own_post`, `delete_own_listing`.
+- `edited_at` and `deleted_at` on posts and listings; authors no longer see their own deleted rows (posts_read / listings_read).
+- `feed_posts` and `feed_listings` expose `edited_at`.
+- `purge_expired` also removes author-deleted rows after `rejected_retention_days`.
+
+**Rules (server-enforced; the app mirrors them for UX)**
+- Edit within 24 hours of posting, only published or pending items; not polls, not photos, not the kind or the Lost/Found choice.
+- The keyword filter re-checks every edit: a match sends the item back to pending; under pre-moderation an edit always goes to pending.
+- The previous text is kept in `moderation_actions` (action 'edit', reason_code 'author_edit', original_body = JSON text) for moderators for `audit_retention_days`.
+- At most 10 edits per hour per user.
+- Rejected and removed items cannot be edited, only deleted.
+- Delete hides the item immediately and the row is purged after 30 days (`rejected_retention_days`). Post numbers are never reused.
+
+**App**
+- "· Edited" next to the time on feed cards and the post detail.
+- "⋯" menu (Edit when allowed, Delete) on My Posts cards and on the post detail of the author's own post; one shared bottom sheet (`ActionSheet`, no new dependency).
+- `/edit?source=&id=`: same fields, limits, schemas and "Still needed" hint as Create; photos read-only; notes for the 24-hour window (with time left) and the review filter; Save enabled only when changed and valid; toast "Saved" or "Sent for review"; the cached feed is patched and only the affected queries are invalidated. No drafts.
+- Delete with confirmation ("Delete this post?" / "Delete this listing?", "It disappears right away and can't be undone."), toast "Deleted".
+- `/post-status` for rejected, removed and pending items; pending shows "Waiting for review" / "A moderator will check it before it is published." (never the keyword or hold reason); Delete button on all of them.
+- Error texts for `not_editable`, `edit_window_closed`, `not_found`.
+
+**Batch F:** My Posts shows the same full cards as the Feed: `PostCard` reused (read-only: no action bar, no voting; counts on published items), new reusable `ListingCard` (SELL / LOST / FOUND, price and condition or the Lost/Found line, "Read more", photos), with the status badge, "⋯" and the review note. The query joins the author's profile and poll options. Published listings are not tappable yet (no listing detail screen).
+
+**Batch G:** My Posts list aligned with the Feed: three post cell types plus one listing type, stable `onEndReached`, content style, header, empty and footer props. No visible change. Not measured on a device.
+
+**Still open**
+- Module 5: Trending, Buy & Sell tab and Lost & Found tab, with a listing detail screen.
+- Module 4: reactions, comments, voting, report / block / mute, notifications.
+- Branding: resize `mobile/public/unmlogo.png` (1.7 MB, untracked), app icon, splash, web panel logo.
+- Module 7: moderator web panel.
+- Stray uploads when a post fails for good (members cannot delete files).

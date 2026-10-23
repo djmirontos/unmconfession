@@ -18,6 +18,7 @@ import { useNewPosts } from '@/hooks/useNewPosts';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
 import { useTheme } from '@/hooks/useTheme';
 import { getErrorMessage } from '@/lib/errors';
+import { logError } from '@/lib/log';
 import type { FeedPost } from '@/lib/posts';
 
 // Within this distance of the top, new posts merge in silently instead of showing the pill.
@@ -50,7 +51,10 @@ export function FeedList() {
   const runTopRefresh = useCallback(() => {
     inFlight.current ??= refreshTop()
       .then(() => setTopRefreshFailed(false))
-      .catch(() => setTopRefreshFailed(true))
+      .catch((error: unknown) => {
+        logError('feed.refreshTop', error);
+        setTopRefreshFailed(true);
+      })
       .finally(() => {
         inFlight.current = null;
       });

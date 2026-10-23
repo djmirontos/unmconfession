@@ -1,12 +1,22 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister';
-import { QueryClient } from '@tanstack/react-query';
+import { MutationCache, QueryCache, QueryClient } from '@tanstack/react-query';
 import type { PersistedClient, PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import type { ComponentProps } from 'react';
+
+import { logError } from '@/lib/log';
 
 const MAX_AGE = 30 * 60 * 1000;
 
 export const queryClient = new QueryClient({
+  // Dev console: every failed query or mutation, scoped by its key. Users see lib/errors.ts text.
+  queryCache: new QueryCache({
+    onError: (error, query) => logError(`query ${JSON.stringify(query.queryKey)}`, error),
+  }),
+  mutationCache: new MutationCache({
+    onError: (error, _variables, _context, mutation) =>
+      logError(`mutation ${JSON.stringify(mutation.options.mutationKey ?? '(no key)')}`, error),
+  }),
   defaultOptions: {
     queries: {
       // Must be >= maxAge or restored cache entries are garbage-collected immediately.

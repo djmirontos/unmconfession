@@ -2,6 +2,7 @@ import { randomUUID } from 'expo-crypto';
 import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 
+import { logError } from '@/lib/log';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { Tables } from '@/types/database';
@@ -103,7 +104,7 @@ export function usePostgresChanges<T extends Table>({
         if (everSubscribed.current) handlers.current.onResubscribed?.();
         everSubscribed.current = true;
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        if (__DEV__) console.warn(`[realtime] ${table}: ${status}`, error);
+        logError(`realtime.${table}`, error ?? new Error(status), { status, attempt: failures.current + 1 });
         // The client also rejoins on its own; this is the fallback if it does not.
         clearTimeout(retryTimer);
         const delay = RETRY_DELAYS_MS[Math.min(failures.current, RETRY_DELAYS_MS.length - 1)];

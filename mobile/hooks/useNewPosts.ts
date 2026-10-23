@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { usePostgresChanges } from '@/hooks/usePostgresChanges';
 import { fetchFeedPage } from '@/lib/feed';
+import { logError } from '@/lib/log';
 import type { FeedPost } from '@/lib/posts';
 import { parseTimestamp } from '@/lib/time';
 
@@ -61,7 +62,7 @@ export function useNewPosts(posts: readonly FeedPost[], isAtTop: () => boolean, 
     table: 'feed_events',
     events: ['INSERT'],
     onChange: (row) => addNew([row.post_id]),
-    onResubscribed: () => void checkLatest().catch(() => undefined),
+    onResubscribed: () => void checkLatest().catch((error: unknown) => logError('feed.catchUp', error)),
   });
 
   const clear = useCallback(() => setPending(EMPTY), []);

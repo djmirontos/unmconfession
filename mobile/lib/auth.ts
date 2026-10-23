@@ -2,6 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
+import { logError } from '@/lib/log';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -13,6 +14,12 @@ WebBrowser.maybeCompleteAuthSession();
  */
 export const OAUTH_REDIRECT_URL = Linking.createURL('oauth-callback');
 
+/** Logs the real Auth error (dev only, redacted) and returns it for rethrowing. */
+function authFail(scope: string, error: unknown): unknown {
+  logError(`auth.${scope}`, error);
+  return error;
+}
+
 // Actions set the store directly (not only via onAuthStateChange) so route
 // guards flip before the caller navigates.
 function applySession(session: Session | null) {
@@ -21,7 +28,7 @@ function applySession(session: Session | null) {
 
 export async function signInWithPassword(email: string, password: string) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) throw error;
+  if (error) throw authFail('signIn', error);
   applySession(data.session);
 }
 
@@ -34,7 +41,7 @@ export async function signUpWithEmail(params: { email: string; password: string;
       data: { nickname: params.nickname, terms_accepted_at: new Date().toISOString() },
     },
   });
-  if (error) throw error;
+  if (error) throw authFail('signUp', error);
   // With email confirmation on, an already-registered email returns a fake user with no identities.
   if (data.user && data.user.identities?.length === 0) throw new Error('user_already_exists');
   if (data.session) applySession(data.session);
@@ -45,7 +52,7 @@ export type OtpPurpose = 'signup' | 'recovery';
 
 export async function verifyEmailOtp(email: string, token: string, type: OtpPurpose) {
   const { data, error } = await supabase.auth.verifyOtp({ email, token, type });
-  if (error) throw error;
+  if (error) throw authFail('verifyOtp', error);
   applySession(data.session);
 }
 
@@ -54,17 +61,17 @@ export async function resendOtp(email: string, type: OtpPurpose) {
     type === 'signup'
       ? await supabase.auth.resend({ type: 'signup', email })
       : await supabase.auth.resetPasswordForEmail(email);
-  if (error) throw error;
+  if (error) throw authFail('resendOtp', error);
 }
 
 export async function sendPasswordResetOtp(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email);
-  if (error) throw error;
+  if (error) throw authFail('sendPasswordReset', error);
 }
 
 export async function updatePassword(password: string) {
   const { error } = await supabase.auth.updateUser({ password });
-  if (error) throw error;
+  if (error) throw authFail('updatePassword', error);
 }
 
 /** Returns false if the user closed the browser; throws on real failures. */
@@ -73,7 +80,7 @@ export async function signInWithGoogle(): Promise<boolean> {
     provider: 'google',
     options: { redirectTo: OAUTH_REDIRECT_URL, skipBrowserRedirect: true },
   });
-  if (error) throw error;
+  if (error) throw authFail('googleOAuth', error);
 
   const result = await WebBrowser.openAuthSessionAsync(data.url, OAUTH_REDIRECT_URL);
   if (result.type !== 'success') return false;
@@ -85,7 +92,7 @@ export async function signInWithGoogle(): Promise<boolean> {
   if (typeof code !== 'string') throw new Error('Google sign-in did not return a code.');
 
   const exchange = await supabase.auth.exchangeCodeForSession(code);
-  if (exchange.error) throw exchange.error;
+  if (exchange.error) throw authFail('googleExchange', exchange.error);
   applySession(exchange.data.session);
   return true;
 }
@@ -93,6 +100,6 @@ export async function signInWithGoogle(): Promise<boolean> {
 export async function signOut() {
   // 'local' signs out this device only.
   const { error } = await supabase.auth.signOut({ scope: 'local' });
-  if (error) throw error;
+  if (error) throw authFail('signOut', error);
   applySession(null);
 }

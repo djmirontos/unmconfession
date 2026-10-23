@@ -1,6 +1,7 @@
 import { useQueryClient } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 
+import { logError } from '@/lib/log';
 import { mergePostCounts } from '@/lib/postCounts';
 import { supabase } from '@/lib/supabase';
 
@@ -23,7 +24,8 @@ export function usePostCountsRefresh(getVisibleIds: () => readonly string[], ena
         .from('feed_posts')
         .select('id, reaction_count, comment_count')
         .in('id', [...ids]);
-      if (!error) mergePostCounts(queryClient, data);
+      if (error) logError('feed.counts', error, { ids: ids.length });
+      else mergePostCounts(queryClient, data);
     }, INTERVAL_MS);
     return () => clearInterval(timer);
   }, [enabled, queryClient]);

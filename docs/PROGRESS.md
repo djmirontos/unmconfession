@@ -224,3 +224,26 @@
 - Branding: resize `mobile/public/unmlogo.png` (1.7 MB, untracked), app icon, splash, web panel logo.
 - Module 7: moderator web panel.
 - Stray uploads when a post fails for good (members cannot delete files).
+
+## Module 4.1: Reactions (2026-10-23)
+
+**Done**
+- Six reactions with Microsoft Fluent Emoji 3D (MIT), resized to 96x96 PNG (about 4 KB each) from `microsoft/fluentui-emoji` commit `1ffb34c752ecf5d402f04cfb4b392c77f57c54bc` (angry = "Pouting face", U+1F621). LICENSE copied to `mobile/assets/reactions/LICENSE-fluentui-emoji.txt`; "Open source notices" screen under Profile -> About.
+- Typed map in `lib/reactions.ts` (from the generated reaction enum).
+
+**Behavior**
+- Tap = like / unlike. Press and hold = picker: react-native-gesture-handler Pan after a 350 ms long press; list scrolling is locked while the picker is open. Release over an emoji picks it (same as current removes it); release without hovering keeps the picker open for a tap; release after dragging away closes with no change.
+- Motion with Reanimated on the UI thread (card fade/scale in, staggered emoji springs, hover lift and scale, pick pop, button pop); reduce motion = highlight and fades only.
+- Optimistic updates of the feed pages and the post detail, with a per-post latest-only queue (`lib/latestOnlyQueue.ts`) and rollback plus a toast on failure. No feed invalidation; the 30-second counts refresh reconciles.
+- Guests get the sign-in sheet; counts only (no list of who reacted); My Posts counts stay read-only.
+
+**Decisions / lessons**
+- PanResponder and View touch handlers could not keep the gesture once FlashList's native scroll took the touch; gesture-handler with `activateAfterLongPress` does. `GestureHandlerRootView` now wraps the app.
+- No haptics (expo-haptics is not installed).
+
+**Next**
+- 4.2 comments (list, composer, live updates, edit and delete own comment).
+- 4.3 poll voting (vote change allowed until the poll ends).
+- 4.4 report and block (block only).
+- 4.5 notifications.
+- Server work needed: edit/delete own comment, vote change, block filtering in feed / comments / trending.

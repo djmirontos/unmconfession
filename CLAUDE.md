@@ -34,6 +34,7 @@ The PRD at `UNM Freedom Confessions V1 PRD.md` (repo root). Read it before start
 - DB error codes map to user-facing text only in `mobile/lib/errors.ts`.
 - Realtime only through `hooks/usePostgresChanges` (UUID topic per subscription, foreground only, resubscribes on sign-in/out). A payload is a signal to refetch, never rendered directly (it has no nickname).
 - Photos only through `lib/photos`: `processPhoto` (1440 px, JPEG 0.8) then `uploadPhoto` (reads bytes with expo-file-system `new File(uri).bytes()`, never `fetch(file://)`; strips EXIF/XMP/IPTC; uploads to `post-images/<uid>/<uuid>.jpg`). Order on submit: validate, upload, then the RPC.
+- Gestures that must hold the touch inside a scrolling list (press-and-hold, drag) use react-native-gesture-handler (`GestureHandlerRootView` wraps the app), not PanResponder or View responder props. Per-frame state lives in Reanimated shared values, not React state.
 - Dev logging only through `lib/log.ts` (`logError` / `logInfo`, dev only, redacted by `lib/redact.ts`). No direct `console.*` calls; never log secrets, tokens, OTPs or full emails.
 - Dev seed data lives in `supabase/seed/` (not migrations); every seed row starts with `[seed] `.
 

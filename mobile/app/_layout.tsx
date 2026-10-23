@@ -2,9 +2,11 @@ import '@/global.css';
 
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SignInSheet } from '@/components/auth/SignInSheet';
 import { ThemeRoot } from '@/components/layout/ThemeRoot';
+import { ReactionPickerOverlay } from '@/components/reactions/ReactionPickerOverlay';
 import { Toast } from '@/components/ui/Toast';
 import { ImageViewer } from '@/components/viewer/ImageViewer';
 import { useAuthBootstrap } from '@/hooks/useAuthBootstrap';
@@ -16,15 +18,19 @@ export default function RootLayout() {
 
   // The query client wraps the whole app, outside any auth gate, so cached
   // data survives sign-in/out and guests get the persisted cache too.
+  // GestureHandlerRootView is outermost so every screen can use gesture-handler (reaction picker).
   return (
-    <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-      <ThemeRoot>
-        <RootNavigator />
-        <SignInSheet />
-        <Toast />
-        <ImageViewer />
-      </ThemeRoot>
-    </PersistQueryClientProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+        <ThemeRoot>
+          <RootNavigator />
+          <SignInSheet />
+          <Toast />
+          <ReactionPickerOverlay />
+          <ImageViewer />
+        </ThemeRoot>
+      </PersistQueryClientProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -51,6 +57,7 @@ function RootNavigator() {
         <Stack.Screen name="reset-password" options={{ gestureEnabled: false }} />
       </Stack.Protected>
       <Stack.Screen name="legal/[doc]" options={{ presentation: 'modal' }} />
+      <Stack.Screen name="licenses" />
       <Stack.Screen name="oauth-callback" />
     </Stack>
   );

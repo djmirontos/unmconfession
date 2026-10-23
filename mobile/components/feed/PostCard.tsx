@@ -23,9 +23,11 @@ type Props = {
   headerAccessory?: ReactNode;
   /** Below the card content (My Posts: review or rejection note). */
   footer?: ReactNode;
+  /** Detail screen: true while only the cached feed copy is shown. */
+  reactionsDisabled?: boolean;
 };
 
-function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false, headerAccessory, footer }: Props) {
+function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false, headerAccessory, footer, reactionsDisabled = false }: Props) {
   const content = (
     <View className="gap-3">
       <PostHeader
@@ -68,7 +70,9 @@ function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false
         <PostActions
           reactionCount={post.reaction_count}
           commentCount={post.comment_count}
-          reacted={post.my_reaction !== null}
+          postId={post.id}
+          myReaction={post.my_reaction}
+          reactionsDisabled={reactionsDisabled}
           onAction={onAction}
         />
       ) : showCounts ? (

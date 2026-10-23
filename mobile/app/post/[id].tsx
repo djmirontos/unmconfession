@@ -21,6 +21,7 @@ import { usePost } from '@/hooks/usePost';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
 import { getErrorMessage } from '@/lib/errors';
 import { useAuthStore } from '@/stores/authStore';
+import { usePickerOpen } from '@/stores/reactionPickerStore';
 
 const keyExtractor = (c: ThreadComment) => c.id;
 const renderComment = ({ item }: ListRenderItemInfo<ThreadComment>) => <CommentItem comment={item} />;
@@ -32,6 +33,7 @@ export default function PostDetailScreen() {
   const post = usePost(id);
   const { query: commentsQuery, comments } = useComments(id);
   const onAction = useComingSoonAction();
+  const pickerOpen = usePickerOpen();
   const appActive = useAppActive();
   const isFocused = useIsFocused();
   // Counts poll while open; new comments also refresh them right away (useComments).
@@ -78,11 +80,12 @@ export default function PostDetailScreen() {
         keyExtractor={keyExtractor}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
+        scrollEnabled={!pickerOpen}
         contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }}
         ListHeaderComponent={
           <View className="gap-4 pb-2">
             {post.isRefetchError ? <RefreshErrorBanner onRetry={() => void post.refetch()} /> : null}
-            <PostCard post={data} onAction={onAction} full />
+            <PostCard post={data} onAction={onAction} full reactionsDisabled={post.isPlaceholderData} />
             <Text accessibilityRole="header" className="text-xs font-bold uppercase tracking-widest text-text-dim">
               Comments
             </Text>

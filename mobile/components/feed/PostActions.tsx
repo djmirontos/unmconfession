@@ -2,8 +2,10 @@ import { Ionicons } from '@expo/vector-icons';
 import type { ComponentProps } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { ReactionButton } from '@/components/reactions/ReactionButton';
 import type { PostAction } from '@/hooks/useComingSoonAction';
 import { useTheme } from '@/hooks/useTheme';
+import type { ReactionType } from '@/lib/reactions';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -32,22 +34,19 @@ function ActionButton({ icon, label, count, active, onPress }: ButtonProps) {
 }
 
 type Props = {
+  postId: string;
+  myReaction: ReactionType | null;
   reactionCount: number;
   commentCount: number;
-  reacted: boolean;
+  /** Reacting is disabled until the post is fully loaded. */
+  reactionsDisabled?: boolean;
   onAction: (action: PostAction) => void;
 };
 
-export function PostActions({ reactionCount, commentCount, reacted, onAction }: Props) {
+export function PostActions({ postId, myReaction, reactionCount, commentCount, reactionsDisabled, onAction }: Props) {
   return (
     <View className="-mx-3 flex-row items-center">
-      <ActionButton
-        icon={reacted ? 'heart' : 'heart-outline'}
-        label="Reactions"
-        count={reactionCount}
-        active={reacted}
-        onPress={() => onAction('react')}
-      />
+      <ReactionButton postId={postId} myReaction={myReaction} count={reactionCount} disabled={reactionsDisabled} />
       <ActionButton
         icon="chatbubble-outline"
         label="Comments"

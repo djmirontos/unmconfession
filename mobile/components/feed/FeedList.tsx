@@ -20,6 +20,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { getErrorMessage } from '@/lib/errors';
 import { logError } from '@/lib/log';
 import type { FeedPost } from '@/lib/posts';
+import { usePickerOpen } from '@/stores/reactionPickerStore';
 
 // Within this distance of the top, new posts merge in silently instead of showing the pill.
 const AT_TOP_PX = 80;
@@ -39,6 +40,8 @@ export function FeedList() {
   const { query, posts, refreshTop } = useFeed();
   const announcement = useAnnouncement();
   const onAction = useComingSoonAction();
+  // The reaction picker owns the touch while open; the list must not scroll under it.
+  const pickerOpen = usePickerOpen();
   const listRef = useRef<FlashListRef<FeedPost>>(null);
   const atTopRef = useRef(true);
   const [atTop, setAtTop] = useState(true);
@@ -174,6 +177,7 @@ export function FeedList() {
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={VIEWABILITY}
         maintainVisibleContentPosition={KEEP_POSITION}
+        scrollEnabled={!pickerOpen}
         contentContainerStyle={{ padding: 16 }}
         refreshControl={
           <RefreshControl

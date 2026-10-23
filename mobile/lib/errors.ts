@@ -79,3 +79,14 @@ export function getErrorMessage(error: unknown): string {
   if (isNetworkError(error)) return NETWORK;
   return FALLBACK;
 }
+
+// Reaction failures use their own wording: a missing post reads as unavailable,
+// and rate or permission problems reuse the generic connection text.
+const REACTION_GENERIC = new Set(['rate_limited', 'banned', 'suspended', 'not_authenticated', 'nickname_required', 'no_profile']);
+
+export function getReactionErrorMessage(error: unknown): string {
+  const code = getErrorCode(error);
+  if (code === 'not_found') return "This post isn't available anymore.";
+  if (code && REACTION_GENERIC.has(code)) return NETWORK;
+  return getErrorMessage(error);
+}

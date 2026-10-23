@@ -132,6 +132,15 @@ export default function ProfileScreen() {
         <ThemeSwitch />
       </Section>
 
+      <Section title="About">
+        <Button
+          label="Open source notices"
+          variant="secondary"
+          icon="document-text-outline"
+          onPress={() => router.push('/licenses')}
+        />
+      </Section>
+
       {status !== 'guest' ? (
         <>
           {status === 'member' ? (

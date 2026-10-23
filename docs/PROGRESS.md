@@ -167,3 +167,25 @@
 - Notifications and reactions (Module 4).
 - Lost & Found tab (Module 5).
 - Stray uploads when a post fails for good (members cannot delete files).
+
+## Module 3 batches C and D: Lost vs Found, "Still needed" hint (2026-10-23)
+
+**Batch C: Lost vs Found**
+- `listings.lost_found_type` ('lost' | 'found'), required for Lost & Found and null for Sell. Migration `20261023110000_lost_found_type.sql`, applied by the owner in the SQL editor: create_listing now has a 9th parameter `p_lost_found_type`; existing Lost & Found rows were backfilled as 'lost'; `feed_listings` exposes the column. Types regenerated (only the new column and parameter changed).
+- Lost & Found form: required toggle "I lost something" / "I found something" at the top, nothing preselected. Labels follow the choice ("Where did you lose it?" / "When did you find it?", neutral "Where" / "When" before a choice). "Choose whether you lost or found something." under the toggle once another field is edited, and for the server error `lost_found_type_required`. The choice is part of the draft; drafts saved before the toggle restore with nothing chosen. Sell never sends the parameter.
+- My Posts: "LOST" / "FOUND" label and "Lost on Oct 9 · Library 2F" / "Found on …" line. /post-status: "Lost at" / "Found at" and "Lost on" / "Found on".
+
+**Batch D: "Still needed" hint**
+- "Still needed: <names>" below the Post button on all five Create forms (`MissingFieldsHint`, rendered by `SubmitFooter`). `lib/missingFields.ts` lists a field only when the existing schema validation flags it and it is empty, so the rules are not duplicated; filled-but-invalid fields keep their inline error.
+- Names: Confession "Your confession"; Shoutout "Who it's for", "Your message"; Poll "Your question", "At least 2 options", "End time"; Sell "Title", "Price", "Condition"; Lost & Found "Lost or Found", "What", "Where", "When".
+- Removed hints: "Pick the date to continue." (Lost & Found) and "Pick the condition to continue." (Sell). Photo hints ("Preparing photos…", "Remove the photo that failed to continue.") stay.
+
+**Decisions**
+- The Post button stays disabled until the form is valid.
+- The hint can be hidden while the keyboard covers it; accepted.
+
+**Still open**
+- Module 3.1, edit and delete own posts: 24-hour edit window, keyword re-check on edit, "Edited" label, moderators see the original text for 30 days, delete with confirmation.
+- Module 4: reactions, comments, voting, report / block / mute, notifications.
+- Module 5: Trending, Buy & Sell tab, Lost & Found tab.
+- Stray uploads when a post fails for good (members cannot delete files).

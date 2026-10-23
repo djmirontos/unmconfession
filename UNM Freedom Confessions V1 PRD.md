@@ -63,11 +63,11 @@ Five bottom tabs. The feed is one list for everything, with no categories.
 
 **Create**
 
-- Confession: text and up to 2 images.
-- Shoutout: text, with a target name or section typed by the user, up to 2 images.
+- Confession: text and up to 3 images.
+- Shoutout: text, with a target name or section typed by the user, up to 3 images.
 - Poll: a question, 2 to 6 choices, and an end date.
-- Buy & Sell listing: item, price, condition, up to 2 images, status (available or sold).
-- Lost & Found listing: item, place, date, up to 2 images.
+- Buy & Sell listing: item, price, condition, up to 3 images, status (available or sold).
+- Lost & Found listing: item, place, date, up to 3 images.
 
 **Reactions.** Six reactions: Like, Love, Haha, Wow, Sad, Angry, drawn from a free open-source emoji set (Fluent Emoji, license to be verified before bundling). One reaction per user per post, changeable or removable.
 
@@ -149,7 +149,7 @@ Speed and data security are the top priorities during development.
 
 **Images**
 
-- Maximum 2 images per post or listing.
+- Maximum 3 images per post or listing (polls have none).
 - Resized on the phone before upload: 1440 px on the long side, quality 0.8, JPEG or WebP.
 - EXIF removed; width, height and a blur placeholder stored for stable layout.
 - Storage rules limit file size and type on the server, not only in the app.

@@ -96,3 +96,74 @@
 **Notes**
 - A post restored by a moderator keeps its old `published_at`, so it reappears in its old place, not at the top. If the user is scrolled down, its event still raises the pill by one.
 - `app.json` `backgroundColor` is `#0A0A0B`, so in light theme the first frames before JS runs are dark. expo-system-ui saves the color it sets, but its Android module code does not read it back at launch (not checked beyond that module).
+
+## Module 3: Create, photo pipeline, My Posts (2026-10-22)
+
+**Built**
+- Migration `20261022110000_allow_three_images.sql` (applied by the owner): 3 images per post and listing; polls none. PRD and CLAUDE.md updated from 2 to 3.
+- Create tab: chips Confession / Shoutout / Poll / Sell / Lost & Found. All five forms stay mounted (hidden when inactive), so switching keeps text and photos. Zod schemas mirror the server limits (`lib/createSchemas.ts`); counters, inline errors after a field is edited, submit disabled while invalid, preparing photos or submitting; double taps ignored. Drafts (text only) per user and form in AsyncStorage, debounced, cleared on success. Sell and Lost & Found show the no-payments notice and a prohibited-items note linking to the Terms. Lost & Found dates are chips for the last 14 days (no native date picker).
+- After submit: published post -> "Your confession is live (#123)" / "Your poll is live" and the post opens; pending -> "Sent for review. You'll be notified when it's approved." and My Posts opens; published listing -> toast and My Posts. Never says why something was held. My Posts and the Feed cache are refreshed.
+- Photo pipeline (`lib/photos`): expo-image-picker (camera or gallery, picker quality 1, `exif: false`), permission denial explained with a Settings button; expo-image-manipulator decodes (orientation applied by the loader), shrinks to 1440 px on the long side (never enlarges), encodes JPEG 0.8; one photo at a time. Upload reads the file as an ArrayBuffer (Supabase's documented RN approach), strips APP1 (EXIF/XMP, incl. GPS), APP13 (IPTC) and comment segments from the bytes, rejects non-JPEG and files over 3 MB, and uploads to `post-images/<uid>/<uuid>.jpg` (expo-crypto) as image/jpeg, one at a time. Width and height come from the manipulated result. Thumbnails show Preparing / Uploading / done / Failed with remove; sizes are logged in dev only.
+- Blurhash: pure JS (manipulator makes a 32 px copy, jpeg-js decodes it, `blurhash` encodes 4x3). Shipped, behind `computeBlurhash()`, returns null on any failure. TODO in the file to swap for a native encoder in the dev build if on-device timing disappoints.
+- Retry: uploaded paths are kept per photo, so a failed RPC retry reuses them; the error says "Your photos were uploaded but the post failed, please try again." plus the reason.
+- Cards (feed and detail): 1 photo at its ratio, 2 side by side, 3 as one large plus two small; blurhash or a neutral fill. Tap opens a full-screen viewer (swipe, pinch, drag while zoomed, double tap) built with react-native-gesture-handler + Reanimated, both in Expo Go.
+- My Posts (Profile > My Posts, `/my-posts`): own posts and listings in every status merged newest first with keyset paging on (created_at, id) per source; the merge emits only rows that cannot be preceded by unfetched rows. Status badges, "Waiting for a moderator", reject/remove reason in plain words, published posts open. Skeleton, empty, error with retry, pull to refresh.
+- errors.ts: no_profile, invalid_body, invalid_title, invalid_target, target_required, too_many_images, invalid_images, invalid_poll_options, invalid_poll_end, condition_required, invalid_price, invalid_lost_found, image_too_large.
+- Deps via `npx expo install`: expo-image-picker, expo-image-manipulator, react-native-gesture-handler (all in Expo Go SDK 57). Pure JS: blurhash, jpeg-js. app.json: expo-image-picker plugin with photo and camera permission text, microphone off.
+
+**Verified**
+- `tsc --noEmit` 0 errors, `expo lint` 0 problems, `expo-doctor` 21/21, Android bundle exports.
+- Node test of the metadata stripper: a JPEG with injected EXIF (GPS text), IPTC and comment segments comes out byte-identical to the clean original, decodes to the same pixels, and non-JPEG input is rejected.
+- Node fuzz test (3000 random timelines, many equal timestamps) of the My Posts merge: every row once, in order, no gaps.
+- jpeg-js + blurhash produce a valid 28-character hash (8 ms in Node for 64x48).
+
+**Not verified**
+- Anything on a device: picker, camera, permissions, resize quality and orientation, upload, blurhash timing on Hermes, viewer gestures, drafts, toasts and navigation, My Posts against real RLS.
+- That a real phone photo with GPS has none after upload (see the manual check in the report).
+
+**Known gaps**
+- Stray uploads: if a post fails for good after its photos uploaded, or the user removes an uploaded photo, the file stays in Storage. Members cannot delete files (only staff), so cleanup needs a staff/cron job later.
+- Upload progress is per photo (Preparing / Uploading / done), not a byte percentage: supabase-js `upload` has no progress callback.
+- Lost & Found date: create_listing compares with `current_date` in the database time zone (UTC), so between midnight and 8 AM Philippine time "today" would be rejected. The app caps the date chips at the UTC date as a workaround; a migration using `(now() at time zone 'Asia/Manila')::date` would fix it properly.
+
+## Module 3 fix: photo upload and dev error console (2026-10-23)
+
+**Problem:** posting with a gallery photo showed "A photo could not be uploaded. Check your connection…". Metro showed the blurhash line but never the next `[photos] upload … KB` line, and Storage logged no request, so it failed on the phone between preparing the photo and sending it: reading the file or stripping its metadata. Neither error had a mapped code, so both became the generic message.
+
+**Most likely cause:** the file was read with `fetch(file://…).arrayBuffer()`. In SDK 57 the global `fetch` is Expo's native fetch (expo/fetch), which reads local files through an interceptor and returns a "file not found" style response instead of throwing; the code never checked `res.ok`, so a failed read either threw or produced non-JPEG bytes that the metadata stripper then rejected (`not_jpeg`). Not confirmed on a device.
+
+**Changed**
+- Files are read with expo-file-system's native `new File(uri).bytes()` (SDK 57 API; the old `readAsStringAsync` style functions now throw unless imported from `expo-file-system/legacy`; this code never used them). expo-file-system added via `npx expo install` (in Expo Go).
+- The upload body is an exact-size ArrayBuffer, as in supabase-js's documented React Native example. The path is built from the signed-in session's user id; a missing session or mismatching id is logged.
+- Distinct friendly messages: `photo_read_failed` ("We could not read that photo…"), `upload_failed`, `network_error` (no connection), plus the existing `image_too_large`. The real error is kept as `cause` and logged.
+- `lib/log.ts`: `logError` / `logInfo`, dev only, print name, message, status, statusCode, code, details, hint, error, originalError, cause and 4 stack lines. `lib/redact.ts` masks emails (a***@domain), hides JWTs, Bearer headers, Supabase keys and any secret-looking key (password, token, otp, apikey, authorization, session…). Test: `npm run test:redact` (5 cases, Node's built-in runner).
+- Logged: every photo stage (decode, encode with size, blurhash, read, strip, upload start/done/fail), create_post / create_listing, feed refresh, realtime catch-up, counts refresh, realtime channel errors, all Auth calls, and every failed query or mutation via global QueryCache / MutationCache `onError` (scoped by key).
+
+**Verified:** `tsc` 0 errors, `expo lint` 0 problems, `expo-doctor` 21/21, `npm run test:redact` 5/5, Android bundle exports.
+
+**Not verified:** the fix on a device.
+
+## Module 3 complete: Create, photos, My Posts, fix batches A and B (2026-10-23)
+
+**Done (tested on device by the owner)**
+- Create: confession, shoutout, poll, sell, lost & found; drafts saved per user and form; camera and gallery with permission handling; on-device resize (1440 px long side, JPEG 0.8); EXIF/GPS stripped from the bytes before upload; max 3 photos; upload reads files with the expo-file-system `File` API (`fetch(file://)` does not work with SDK 57's global expo/fetch); retry after a network failure reuses uploaded photos.
+- My Posts with statuses (published, pending review, rejected, removed), posts and listings merged with keyset paging, Lost & Found event line ("On Oct 9 · Library 2F").
+- `/post-status?source=&id=`: read-only screen for rejected and removed items with the full reason ("Why it was not published" / "Why it was removed"). Reads the My Posts cache, then the own row through RLS; no new server function.
+- Dev error console (`lib/log.ts`, redacted, dev only) across photos, uploads, RPCs, feed, realtime, auth and all queries and mutations.
+
+**Migrations added (applied by the owner in the SQL editor)**
+- `20261022110000_allow_three_images.sql`: 3 images per post and listing.
+- `20261023100000_lost_found_manila_date.sql`: create_listing judges the Lost & Found date in Asia/Manila, at most 60 days old. Replaces the client-side UTC workaround noted in the Module 3 entry.
+
+**Decisions**
+- Lost & Found date: Manila time, today back to 60 days; quick chips (Today, Yesterday, two earlier days) plus a native date picker (@react-native-community/datetimepicker 9.1.0).
+- Single photo: full card width, frame clamped from 4:5 to 16:9, cover crop; the viewer shows the whole photo.
+- Rejected reason: one truncated line on the My Posts card ("Rejected: <reason>"), in full on /post-status.
+- The Lost & Found form shows the phone/ID safety notice at the top instead of the no-payments notice.
+
+**Still open**
+- Lost vs Found: needs a migration (column on listings) and a Lost/Found toggle on the form (batch C). Until then My Posts shows "LOST & FOUND".
+- Edit and delete own posts (Module 3.1).
+- Notifications and reactions (Module 4).
+- Lost & Found tab (Module 5).
+- Stray uploads when a post fails for good (members cannot delete files).

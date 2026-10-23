@@ -16,7 +16,7 @@ The PRD at `UNM Freedom Confessions V1 PRD.md` (repo root). Read it before start
 - Posts, comments and listings show the author's nickname. Email is private and visible only to admins, with every lookup audit-logged.
 - Nickname is permanent. Only an admin can rename a user, via `admin_set_nickname`. The PRD's "Edit information" in Settings means avatar, email and password only. Do NOT build nickname editing.
 - No real name collected. Email OTP verification at sign-up.
-- Feed is newest first. Trending is the only engagement-ranked view. Max 2 images per post, resized on the phone (1440px long side, quality 0.8) with EXIF removed.
+- Feed is newest first. Trending is the only engagement-ranked view. Max 3 images per post or listing (none on polls), resized on the phone (1440px long side, quality 0.8) with EXIF removed.
 - Post-moderation by default. A keyword match always holds the post for moderator approval. An admin can switch moderation mode to pre-moderation.
 - Roles: user, moderator, admin. Moderators and admins manage things in a mobile-friendly Next.js web panel, built after the app screens.
 - Tabs: Feed, Trending, Create, Buy & Sell (with a Lost & Found toggle), Profile. Announcements show as a pinned card on top of the Feed only when active.
@@ -33,6 +33,8 @@ The PRD at `UNM Freedom Confessions V1 PRD.md` (repo root). Read it before start
 - `PersistQueryClientProvider` wraps the whole app, outside any auth gate. Auth bootstrap never blocks rendering.
 - DB error codes map to user-facing text only in `mobile/lib/errors.ts`.
 - Realtime only through `hooks/usePostgresChanges` (UUID topic per subscription, foreground only, resubscribes on sign-in/out). A payload is a signal to refetch, never rendered directly (it has no nickname).
+- Photos only through `lib/photos`: `processPhoto` (1440 px, JPEG 0.8) then `uploadPhoto` (reads bytes with expo-file-system `new File(uri).bytes()`, never `fetch(file://)`; strips EXIF/XMP/IPTC; uploads to `post-images/<uid>/<uuid>.jpg`). Order on submit: validate, upload, then the RPC.
+- Dev logging only through `lib/log.ts` (`logError` / `logInfo`, dev only, redacted by `lib/redact.ts`). No direct `console.*` calls; never log secrets, tokens, OTPs or full emails.
 - Dev seed data lives in `supabase/seed/` (not migrations); every seed row starts with `[seed] `.
 
 ## Progress log

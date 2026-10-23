@@ -1,13 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
 import { FlashList, type ListRenderItemInfo } from '@shopify/flash-list';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CommentItem, CommentSkeleton } from '@/components/comments/CommentItem';
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { PostCard } from '@/components/feed/PostCard';
+import { BackHeader } from '@/components/layout/BackHeader';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { Button } from '@/components/ui/Button';
@@ -16,31 +16,10 @@ import { useComingSoonAction } from '@/hooks/useComingSoonAction';
 import { type ThreadComment, useComments } from '@/hooks/useComments';
 import { usePost } from '@/hooks/usePost';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
-import { useTheme } from '@/hooks/useTheme';
 import { getErrorMessage } from '@/lib/errors';
 
 const keyExtractor = (c: ThreadComment) => c.id;
 const renderComment = ({ item }: ListRenderItemInfo<ThreadComment>) => <CommentItem comment={item} />;
-
-function DetailHeader({ onBack }: { onBack: () => void }) {
-  const { colors } = useTheme();
-  return (
-    <View className="h-14 flex-row items-center gap-2 border-b border-hairline px-2">
-      <Pressable
-        onPress={onBack}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-        className="h-10 w-10 items-center justify-center rounded-full active:bg-surface2"
-      >
-        <Ionicons name="chevron-back" size={24} color={colors.text} />
-      </Pressable>
-      <Text accessibilityRole="header" className="text-lg font-bold text-text">
-        Post
-      </Text>
-    </View>
-  );
-}
 
 export default function PostDetailScreen() {
   const router = useRouter();
@@ -53,11 +32,6 @@ export default function PostDetailScreen() {
   const isFocused = useIsFocused();
   // Counts poll while open; new comments also refresh them right away (useComments).
   usePostCountsRefresh(() => (id ? [id] : []), appActive && isFocused);
-
-  const goBack = useCallback(() => {
-    if (router.canGoBack()) router.back();
-    else router.replace('/');
-  }, [router]);
 
   const onEndReached = useCallback(() => {
     if (commentsQuery.hasNextPage && !commentsQuery.isFetchingNextPage) void commentsQuery.fetchNextPage();
@@ -127,7 +101,7 @@ export default function PostDetailScreen() {
 
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: insets.top }}>
-      <DetailHeader onBack={goBack} />
+      <BackHeader title="Post" />
       {body}
     </View>
   );

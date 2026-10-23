@@ -105,6 +105,7 @@ function ProfileSkeleton() {
 }
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { status, profile } = useMembership();
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +134,10 @@ export default function ProfileScreen() {
 
       {status !== 'guest' ? (
         <>
-          <ComingSoon label="My Posts, Notifications and Blocked users arrive in later modules." />
+          {status === 'member' ? (
+            <Button label="My Posts" variant="secondary" icon="document-text-outline" onPress={() => router.push('/my-posts')} />
+          ) : null}
+          <ComingSoon label="Notifications and Blocked users arrive in later modules." />
           <FormMessage tone="error" message={error} />
           <Button label="Log out" variant="danger" icon="log-out-outline" loading={signingOut} onPress={handleSignOut} />
         </>

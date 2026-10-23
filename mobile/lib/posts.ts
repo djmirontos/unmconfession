@@ -52,6 +52,12 @@ export function parsePost(row: unknown): FeedPost | null {
   return parsed.success ? parsed.data : null;
 }
 
+/** posts.images / listings.images JSON; invalid entries make it an empty list. */
+export function parseImages(json: unknown): PostImage[] {
+  const parsed = z.array(imageSchema).safeParse(json);
+  return parsed.success ? parsed.data : [];
+}
+
 export function postImageUrl(path: string): string {
   return supabase.storage.from('post-images').getPublicUrl(path).data.publicUrl;
 }

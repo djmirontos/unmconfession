@@ -23,6 +23,7 @@ const MESSAGES: Record<string, string> = {
   invalid_poll_end: 'Pick how long the poll runs.',
   condition_required: 'Pick the item condition.',
   invalid_price: 'Enter a price from ₱0 to ₱9,999,999.',
+  lost_found_type_required: 'Choose whether you lost or found something.',
   invalid_lost_found: 'Please add where it happened and choose a date from the last 60 days, up to today.',
   image_too_large: 'That photo is too large even after resizing. Try another one.',
   // Photo upload stages (thrown by lib/photos/upload.ts).

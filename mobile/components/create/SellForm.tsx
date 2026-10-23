@@ -12,7 +12,14 @@ import { useTouched } from '@/hooks/useTouched';
 import { createListing } from '@/lib/create';
 import { CONDITIONS, LIMITS, sellSchema } from '@/lib/createSchemas';
 import { CONDITION_LABELS } from '@/lib/listings';
+import { missingFields, type RequiredField } from '@/lib/missingFields';
 import { validate } from '@/lib/validation';
+
+const REQUIRED: readonly RequiredField<'title' | 'price' | 'condition'>[] = [
+  { key: 'title', label: 'Title' },
+  { key: 'price', label: 'Price' },
+  { key: 'condition', label: 'Condition' },
+];
 
 const CONDITION_OPTIONS = CONDITIONS.map((c) => ({ value: c, label: CONDITION_LABELS[c] }));
 
@@ -25,6 +32,7 @@ export function SellForm({ userId }: { userId: string }) {
   const result = validate(sellSchema, { title, description, price, condition });
   const errors = result.errors ?? {};
   const locked = submitting;
+  const missing = missingFields(REQUIRED, { title, price, condition }, errors);
 
   const onSubmit = () => {
     if (!result.data) return;
@@ -107,15 +115,8 @@ export function SellForm({ userId }: { userId: string }) {
         submitting={submitting}
         disabled={!result.data || photos.busy || photos.hasFailed}
         error={error}
-        hint={
-          photos.hasFailed
-            ? 'Remove the photo that failed to continue.'
-            : photos.busy
-              ? 'Preparing photos…'
-              : !condition
-                ? 'Pick the condition to continue.'
-                : null
-        }
+        missing={missing}
+        hint={photos.hasFailed ? 'Remove the photo that failed to continue.' : photos.busy ? 'Preparing photos…' : null}
       />
     </View>
   );

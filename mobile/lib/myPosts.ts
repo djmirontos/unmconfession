@@ -1,3 +1,4 @@
+import { LOST_FOUND_TYPES, type LostFoundType } from '@/lib/createSchemas';
 import { parseImages, type PostImage } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
 import { parseTimestamp } from '@/lib/time';
@@ -26,6 +27,8 @@ export type MyItem = {
   location: string | null;
   /** YYYY-MM-DD (Lost & Found). */
   eventDate: string | null;
+  /** Lost & Found only; null for anything else. */
+  lostFoundType: LostFoundType | null;
 };
 
 type Cursor = { ts: string; id: string };
@@ -41,7 +44,7 @@ export const MY_POSTS_START: MyPostsCursor = {
 
 const POST_COLUMNS = 'id, kind, body, number, status, reject_reason, created_at, target_name, images';
 const LISTING_COLUMNS =
-  'id, kind, title, status, reject_reason, created_at, images, description, price, condition, location, event_date';
+  'id, kind, title, status, reject_reason, created_at, images, description, price, condition, location, event_date, lost_found_type';
 
 type PostRow = Pick<
   Tables<'posts'>,
@@ -50,7 +53,7 @@ type PostRow = Pick<
 type ListingRow = Pick<
   Tables<'listings'>,
   | 'id' | 'kind' | 'title' | 'status' | 'reject_reason' | 'created_at' | 'images'
-  | 'description' | 'price' | 'condition' | 'location' | 'event_date'
+  | 'description' | 'price' | 'condition' | 'location' | 'event_date' | 'lost_found_type'
 >;
 
 const toPostItem = (r: PostRow): MyItem => ({
@@ -69,6 +72,7 @@ const toPostItem = (r: PostRow): MyItem => ({
   condition: null,
   location: null,
   eventDate: null,
+  lostFoundType: null,
 });
 
 const toListingItem = (r: ListingRow): MyItem => ({
@@ -87,6 +91,7 @@ const toListingItem = (r: ListingRow): MyItem => ({
   condition: r.condition,
   location: r.location,
   eventDate: r.event_date,
+  lostFoundType: LOST_FOUND_TYPES.find((t) => t === r.lost_found_type) ?? null,
 });
 
 /** Keyset "older than cursor" on (created_at, id), newest first. */

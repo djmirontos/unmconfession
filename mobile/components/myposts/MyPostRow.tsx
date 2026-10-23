@@ -12,9 +12,14 @@ const KIND_LABEL: Record<MyItem['kind'], string> = {
   shoutout: 'Shoutout',
   poll: 'Poll',
   sell: 'Sell',
-  // TODO: "Lost" / "Found" once listings store which one it is (needs a migration).
   lost_found: 'Lost & Found',
 };
+
+/** "Lost" / "Found" for Lost & Found items (shown uppercase), otherwise the kind. */
+function kindLabel(item: MyItem): string {
+  if (item.kind === 'lost_found' && item.lostFoundType) return item.lostFoundType === 'lost' ? 'Lost' : 'Found';
+  return KIND_LABEL[item.kind];
+}
 
 function detail(item: MyItem): string | null {
   if (item.status === 'pending') return 'Waiting for a moderator.';
@@ -29,10 +34,11 @@ function rejectedLine(item: MyItem): string | null {
   return reason ? `Rejected: ${reason}` : 'Rejected';
 }
 
-/** "On Oct 9 · Library 2F" for Lost & Found. */
+/** "Lost on Oct 9 · Library 2F" / "Found on …" for Lost & Found. */
 function eventLine(item: MyItem): string | null {
   if (item.kind !== 'lost_found' || !item.eventDate) return null;
-  const date = `On ${formatEventDate(item.eventDate)}`;
+  const verb = item.lostFoundType === 'lost' ? 'Lost on' : item.lostFoundType === 'found' ? 'Found on' : 'On';
+  const date = `${verb} ${formatEventDate(item.eventDate)}`;
   return item.location ? `${date} · ${item.location}` : date;
 }
 
@@ -52,7 +58,7 @@ function MyPostRowImpl({ item, onOpen }: Props) {
   const rejected = rejectedLine(item);
   const event = eventLine(item);
   const openable = rowTarget(item) !== null;
-  const kind = `${KIND_LABEL[item.kind]}${item.number !== null ? ` #${item.number}` : ''}`;
+  const kind = `${kindLabel(item)}${item.number !== null ? ` #${item.number}` : ''}`;
   const extras = [event, note, rejected].filter(Boolean).join('. ');
 
   return (

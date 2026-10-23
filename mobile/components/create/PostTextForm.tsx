@@ -9,9 +9,18 @@ import { usePhotoAttachments } from '@/hooks/usePhotoAttachments';
 import { useTouched } from '@/hooks/useTouched';
 import { createPost, type PostInput } from '@/lib/create';
 import { confessionSchema, LIMITS, shoutoutSchema } from '@/lib/createSchemas';
+import { missingFields, type RequiredField } from '@/lib/missingFields';
 import { validate } from '@/lib/validation';
 
 type Props = { userId: string; kind: 'confession' | 'shoutout' };
+
+const REQUIRED: Record<Props['kind'], readonly RequiredField<'target' | 'body'>[]> = {
+  confession: [{ key: 'body', label: 'Your confession' }],
+  shoutout: [
+    { key: 'target', label: "Who it's for" },
+    { key: 'body', label: 'Your message' },
+  ],
+};
 
 /** Confession, or shoutout (which adds who it is for). Both take up to 3 photos. */
 export function PostTextForm({ userId, kind }: Props) {
@@ -30,6 +39,7 @@ export function PostTextForm({ userId, kind }: Props) {
       : null;
   const errors: { target?: string; body?: string } = shout?.errors ?? confession?.errors ?? {};
   const locked = submitting;
+  const missing = missingFields(REQUIRED[kind], { target, body }, errors);
 
   const onSubmit = () => {
     if (!input) return;
@@ -89,6 +99,7 @@ export function PostTextForm({ userId, kind }: Props) {
         submitting={submitting}
         disabled={!input || photos.busy || photos.hasFailed}
         error={error}
+        missing={missing}
         hint={photos.hasFailed ? 'Remove the photo that failed to continue.' : photos.busy ? 'Preparing photos…' : null}
       />
     </View>

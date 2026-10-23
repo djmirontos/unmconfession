@@ -59,9 +59,14 @@ function ListingDetails({ item }: { item: MyItem }) {
       <View className="gap-1.5">
         {item.kind === 'sell' && item.price !== null ? <Detail label="Price" value={formatPrice(item.price)} /> : null}
         {item.kind === 'sell' && condition ? <Detail label="Condition" value={CONDITION_LABELS[condition]} /> : null}
-        {item.kind === 'lost_found' && item.location ? <Detail label="Where" value={item.location} /> : null}
+        {item.kind === 'lost_found' && item.location ? (
+          <Detail label={item.lostFoundType === 'found' ? 'Found at' : item.lostFoundType === 'lost' ? 'Lost at' : 'Where'} value={item.location} />
+        ) : null}
         {item.kind === 'lost_found' && item.eventDate ? (
-          <Detail label="When" value={formatEventDate(item.eventDate)} />
+          <Detail
+            label={item.lostFoundType === 'found' ? 'Found on' : item.lostFoundType === 'lost' ? 'Lost on' : 'When'}
+            value={formatEventDate(item.eventDate)}
+          />
         ) : null}
       </View>
     </View>

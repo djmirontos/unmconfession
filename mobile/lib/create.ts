@@ -1,4 +1,4 @@
-import type { Condition } from '@/lib/createSchemas';
+import type { Condition, LostFoundType } from '@/lib/createSchemas';
 import { logError, logInfo } from '@/lib/log';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database';
@@ -19,7 +19,14 @@ export type PostInput =
 
 export type ListingInput =
   | { kind: 'sell'; title: string; description: string; price: number; condition: Condition }
-  | { kind: 'lost_found'; title: string; description: string; location: string; eventDate: string };
+  | {
+      kind: 'lost_found';
+      lostFoundType: LostFoundType;
+      title: string;
+      description: string;
+      location: string;
+      eventDate: string;
+    };
 
 /** create_post. The returned row says whether it went live or is held; never why. */
 export async function createPost(input: PostInput, images: StoredImage[]): Promise<CreatedPost> {
@@ -54,7 +61,7 @@ export async function createListing(input: ListingInput, images: StoredImage[]):
     p_images: images,
     ...(input.kind === 'sell'
       ? { p_price: input.price, p_condition: input.condition }
-      : { p_location: input.location, p_event_date: input.eventDate }),
+      : { p_location: input.location, p_event_date: input.eventDate, p_lost_found_type: input.lostFoundType }),
   });
   if (error) {
     logError('rpc.create_listing', error, { kind: input.kind, images: images.length });

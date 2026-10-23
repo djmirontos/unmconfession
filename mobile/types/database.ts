@@ -310,6 +310,7 @@ export type Database = {
           is_closed: boolean
           kind: Database["public"]["Enums"]["listing_kind"]
           location: string | null
+          lost_found_type: string | null
           moderated_at: string | null
           moderated_by: string | null
           price: number | null
@@ -330,6 +331,7 @@ export type Database = {
           is_closed?: boolean
           kind: Database["public"]["Enums"]["listing_kind"]
           location?: string | null
+          lost_found_type?: string | null
           moderated_at?: string | null
           moderated_by?: string | null
           price?: number | null
@@ -350,6 +352,7 @@ export type Database = {
           is_closed?: boolean
           kind?: Database["public"]["Enums"]["listing_kind"]
           location?: string | null
+          lost_found_type?: string | null
           moderated_at?: string | null
           moderated_by?: string | null
           price?: number | null
@@ -902,6 +905,7 @@ export type Database = {
           is_closed: boolean | null
           kind: Database["public"]["Enums"]["listing_kind"] | null
           location: string | null
+          lost_found_type: string | null
           nickname: string | null
           price: number | null
           published_at: string | null
@@ -1069,6 +1073,7 @@ export type Database = {
           p_images?: Json
           p_kind: Database["public"]["Enums"]["listing_kind"]
           p_location?: string
+          p_lost_found_type?: string
           p_price?: number
           p_title: string
         }
@@ -1084,6 +1089,7 @@ export type Database = {
           is_closed: boolean
           kind: Database["public"]["Enums"]["listing_kind"]
           location: string | null
+          lost_found_type: string | null
           moderated_at: string | null
           moderated_by: string | null
           price: number | null
@@ -1231,6 +1237,7 @@ export type Database = {
           is_closed: boolean | null
           kind: Database["public"]["Enums"]["listing_kind"] | null
           location: string | null
+          lost_found_type: string | null
           nickname: string | null
           price: number | null
           published_at: string | null

@@ -78,7 +78,12 @@ export const sellSchema = z.object({
   condition: z.enum(CONDITIONS, { error: 'Pick the condition.' }),
 });
 
+export const LOST_FOUND_TYPES = ['lost', 'found'] as const;
+export type LostFoundType = (typeof LOST_FOUND_TYPES)[number];
+export const LOST_FOUND_TYPE_REQUIRED = 'Choose whether you lost or found something.';
+
 export const lostFoundSchema = z.object({
+  lostFoundType: z.enum(LOST_FOUND_TYPES, { error: LOST_FOUND_TYPE_REQUIRED }),
   title: trimmed(LIMITS.title, 'Add what was lost or found.'),
   description: z.string().trim().max(LIMITS.description, `At most ${LIMITS.description} characters.`),
   location: trimmed(LIMITS.location, 'Add where.'),

@@ -10,7 +10,20 @@ import { useTheme } from '@/hooks/useTheme';
 import { useTouched } from '@/hooks/useTouched';
 import { createPost } from '@/lib/create';
 import { DEFAULT_POLL_HOURS, LIMITS, POLL_DURATIONS, pollSchema } from '@/lib/createSchemas';
+import { missingFields, type RequiredField } from '@/lib/missingFields';
 import { validate } from '@/lib/validation';
+
+const REQUIRED: readonly RequiredField<'question' | 'options' | 'hours'>[] = [
+  { key: 'question', label: 'Your question' },
+  {
+    key: 'options',
+    label: 'At least 2 options',
+    // Missing while fewer than 2 choices are filled in; duplicates are an inline error instead.
+    isEmpty: (v) => !Array.isArray(v) || v.filter((o) => typeof o === 'string' && o.trim() !== '').length < LIMITS.pollOptionsMin,
+  },
+  // Always preselected (1 day); listed only if the duration is ever unset.
+  { key: 'hours', label: 'End time', isEmpty: (v) => typeof v !== 'number' },
+];
 
 const DURATION_OPTIONS = POLL_DURATIONS.map((d) => ({ value: d.hours, label: d.label }));
 
@@ -24,6 +37,7 @@ export function PollForm({ userId }: { userId: string }) {
   const result = validate(pollSchema, { question, options, hours });
   const errors = result.errors ?? {};
   const locked = submitting;
+  const missing = missingFields(REQUIRED, { question, options, hours }, errors);
 
   const setOption = (index: number, text: string) => {
     draft.set(
@@ -121,6 +135,7 @@ export function PollForm({ userId }: { userId: string }) {
         submitting={submitting}
         disabled={!result.data}
         error={error}
+        missing={missing}
       />
     </View>
   );

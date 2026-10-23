@@ -4,24 +4,51 @@ import { LostFoundNotice } from '@/components/create/LostFoundNotice';
 import { PhotoAttachments } from '@/components/create/PhotoAttachments';
 import { RecentDateChips } from '@/components/create/RecentDateChips';
 import { SubmitFooter } from '@/components/create/SubmitFooter';
+import { ChipGroup } from '@/components/ui/ChipGroup';
 import { TextField } from '@/components/ui/TextField';
 import { useCreateSubmit } from '@/hooks/useCreateSubmit';
 import { useDraft } from '@/hooks/useDraft';
 import { usePhotoAttachments } from '@/hooks/usePhotoAttachments';
 import { useTouched } from '@/hooks/useTouched';
 import { createListing } from '@/lib/create';
-import { LIMITS, lostFoundSchema } from '@/lib/createSchemas';
+import { LIMITS, LOST_FOUND_TYPE_REQUIRED, LOST_FOUND_TYPES, lostFoundSchema } from '@/lib/createSchemas';
+import { missingFields, type RequiredField } from '@/lib/missingFields';
 import { validate } from '@/lib/validation';
 
+const TYPE_OPTIONS = [
+  { value: 'lost', label: 'I lost something' },
+  { value: 'found', label: 'I found something' },
+] as const;
+
+const REQUIRED: readonly RequiredField<'lostFoundType' | 'title' | 'location' | 'eventDate'>[] = [
+  { key: 'lostFoundType', label: 'Lost or Found' },
+  { key: 'title', label: 'What' },
+  { key: 'location', label: 'Where' },
+  { key: 'eventDate', label: 'When' },
+];
+
+const LABELS = {
+  lost: { where: 'Where did you lose it?', when: 'When did you lose it?' },
+  found: { where: 'Where did you find it?', when: 'When did you find it?' },
+  none: { where: 'Where', when: 'When' },
+} as const;
+
 export function LostFoundForm({ userId }: { userId: string }) {
-  const draft = useDraft(userId, 'lost_found', { title: '', description: '', location: '', eventDate: '' });
+  // lostFoundType '' = not chosen. Drafts saved before the toggle existed have no such key and restore as ''.
+  const draft = useDraft(userId, 'lost_found', { lostFoundType: '', title: '', description: '', location: '', eventDate: '' });
   const photos = usePhotoAttachments();
   const touched = useTouched<'title' | 'description' | 'location' | 'eventDate'>();
   const { submit, submitting, error } = useCreateSubmit();
-  const { title, description, location, eventDate } = draft.values;
-  const result = validate(lostFoundSchema, { title, description, location, eventDate });
+  const { lostFoundType, title, description, location, eventDate } = draft.values;
+  const chosen = LOST_FOUND_TYPES.find((t) => t === lostFoundType) ?? null;
+  const labels = LABELS[chosen ?? 'none'];
+  const result = validate(lostFoundSchema, { lostFoundType, title, description, location, eventDate });
   const errors = result.errors ?? {};
   const locked = submitting;
+  const missing = missingFields(REQUIRED, { lostFoundType, title, location, eventDate }, errors);
+  // Asked for as soon as the user starts filling in the form.
+  const showTypeError =
+    !chosen && (['title', 'location', 'eventDate', 'description'] as const).some((k) => touched.isTouched(k));
 
   const onSubmit = () => {
     if (!result.data) return;
@@ -39,6 +66,20 @@ export function LostFoundForm({ userId }: { userId: string }) {
 
   return (
     <View className="gap-5">
+      <View className="gap-2">
+        <ChipGroup
+          options={TYPE_OPTIONS}
+          value={chosen}
+          onChange={(t) => draft.set('lostFoundType', t)}
+          accessibilityLabel="Did you lose or find something?"
+          disabled={locked}
+        />
+        {showTypeError ? (
+          <Text accessibilityLiveRegion="polite" className="text-sm text-danger">
+            {LOST_FOUND_TYPE_REQUIRED}
+          </Text>
+        ) : null}
+      </View>
       <LostFoundNotice />
       <TextField
         label="What"
@@ -54,7 +95,7 @@ export function LostFoundForm({ userId }: { userId: string }) {
         editable={!locked}
       />
       <TextField
-        label="Where"
+        label={labels.where}
         value={location}
         onChangeText={(t) => {
           draft.set('location', t);
@@ -67,7 +108,7 @@ export function LostFoundForm({ userId }: { userId: string }) {
         editable={!locked}
       />
       <View className="gap-2">
-        <Text className="text-xs font-bold uppercase tracking-widest text-text-dim">When</Text>
+        <Text className="text-xs font-bold uppercase tracking-widest text-text-dim">{labels.when}</Text>
         <RecentDateChips
           value={eventDate}
           onChange={(d) => {
@@ -107,15 +148,8 @@ export function LostFoundForm({ userId }: { userId: string }) {
         submitting={submitting}
         disabled={!result.data || photos.busy || photos.hasFailed}
         error={error}
-        hint={
-          photos.hasFailed
-            ? 'Remove the photo that failed to continue.'
-            : photos.busy
-              ? 'Preparing photos…'
-              : !eventDate
-                ? 'Pick the date to continue.'
-                : null
-        }
+        missing={missing}
+        hint={photos.hasFailed ? 'Remove the photo that failed to continue.' : photos.busy ? 'Preparing photos…' : null}
       />
     </View>
   );

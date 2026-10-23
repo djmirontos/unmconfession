@@ -1,8 +1,11 @@
+import type { QueryData } from '@supabase/supabase-js';
+
 import { LOST_FOUND_TYPES, type LostFoundType } from '@/lib/createSchemas';
-import { parseImages, type PostImage } from '@/lib/posts';
+import type { ListingCardData } from '@/lib/listings';
+import { type FeedPost, parseImages, type PostImage } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
 import { parseTimestamp } from '@/lib/time';
-import type { Database, Tables } from '@/types/database';
+import type { Database } from '@/types/database';
 
 type Enums = Database['public']['Enums'];
 export type ContentStatus = Enums['content_status'];
@@ -29,6 +32,9 @@ export type MyItem = {
   eventDate: string | null;
   /** Lost & Found only; null for anything else. */
   lostFoundType: LostFoundType | null;
+  /** Card data, built once per row so memoized cards keep a stable object. */
+  feedPost: FeedPost | null;
+  listingCard: ListingCardData | null;
 };
 
 type Cursor = { ts: string; id: string };
@@ -42,57 +48,105 @@ export const MY_POSTS_START: MyPostsCursor = {
   listing: { cursor: null, done: false },
 };
 
-const POST_COLUMNS = 'id, kind, body, number, status, reject_reason, created_at, target_name, images';
+// Everything the shared cards need, including the author's own profile and, for polls, the options.
+const POST_COLUMNS =
+  'id, kind, body, number, status, reject_reason, created_at, target_name, images, ends_at, author_id, published_at, edited_at, reaction_count, comment_count, author:profiles!posts_author_id_fkey(nickname, avatar_key), poll_options(id, label, position, vote_count)';
 const LISTING_COLUMNS =
-  'id, kind, title, status, reject_reason, created_at, images, description, price, condition, location, event_date, lost_found_type';
+  'id, kind, title, status, reject_reason, created_at, images, description, price, condition, location, event_date, lost_found_type, published_at, edited_at, comment_count, author:profiles!listings_author_id_fkey(nickname, avatar_key)';
 
-type PostRow = Pick<
-  Tables<'posts'>,
-  'id' | 'kind' | 'body' | 'number' | 'status' | 'reject_reason' | 'created_at' | 'target_name' | 'images'
->;
-type ListingRow = Pick<
-  Tables<'listings'>,
-  | 'id' | 'kind' | 'title' | 'status' | 'reject_reason' | 'created_at' | 'images'
-  | 'description' | 'price' | 'condition' | 'location' | 'event_date' | 'lost_found_type'
->;
+const postsQuery = () => supabase.from('posts').select(POST_COLUMNS);
+const listingsQuery = () => supabase.from('listings').select(LISTING_COLUMNS);
+type PostRow = QueryData<ReturnType<typeof postsQuery>>[number];
+type ListingRow = QueryData<ReturnType<typeof listingsQuery>>[number];
 
-const toPostItem = (r: PostRow): MyItem => ({
-  source: 'post',
-  id: r.id,
-  kind: r.kind,
-  text: r.body,
-  number: r.number,
-  status: r.status,
-  rejectReason: r.reject_reason,
-  createdAt: r.created_at,
-  images: parseImages(r.images),
-  targetName: r.target_name,
-  description: null,
-  price: null,
-  condition: null,
-  location: null,
-  eventDate: null,
-  lostFoundType: null,
-});
+function toFeedPost(r: PostRow, images: PostImage[]): FeedPost {
+  const options = [...(r.poll_options ?? [])].sort((a, b) => a.position - b.position);
+  return {
+    id: r.id,
+    number: r.number,
+    kind: r.kind,
+    body: r.body,
+    target_name: r.target_name,
+    images,
+    ends_at: r.ends_at,
+    author_id: r.author_id,
+    nickname: r.author?.nickname ?? null,
+    avatar_key: r.author?.avatar_key ?? null,
+    // Not published (yet or any more): show when it was posted.
+    published_at: r.published_at ?? r.created_at,
+    reaction_count: r.reaction_count,
+    comment_count: r.comment_count,
+    my_reaction: null,
+    poll_options: r.kind === 'poll' ? options.map((o) => ({ id: o.id, label: o.label, votes: o.vote_count })) : null,
+    my_vote: null,
+    edited_at: r.edited_at,
+  };
+}
 
-const toListingItem = (r: ListingRow): MyItem => ({
-  source: 'listing',
-  id: r.id,
-  kind: r.kind,
-  text: r.title,
-  number: null,
-  status: r.status,
-  rejectReason: r.reject_reason,
-  createdAt: r.created_at,
-  images: parseImages(r.images),
-  targetName: null,
-  description: r.description,
-  price: r.price,
-  condition: r.condition,
-  location: r.location,
-  eventDate: r.event_date,
-  lostFoundType: LOST_FOUND_TYPES.find((t) => t === r.lost_found_type) ?? null,
-});
+const toPostItem = (r: PostRow): MyItem => {
+  const images = parseImages(r.images);
+  return {
+    source: 'post',
+    id: r.id,
+    kind: r.kind,
+    text: r.body,
+    number: r.number,
+    status: r.status,
+    rejectReason: r.reject_reason,
+    createdAt: r.created_at,
+    images,
+    targetName: r.target_name,
+    description: null,
+    price: null,
+    condition: null,
+    location: null,
+    eventDate: null,
+    lostFoundType: null,
+    feedPost: toFeedPost(r, images),
+    listingCard: null,
+  };
+};
+
+const toListingItem = (r: ListingRow): MyItem => {
+  const images = parseImages(r.images);
+  const lostFoundType = LOST_FOUND_TYPES.find((t) => t === r.lost_found_type) ?? null;
+  return {
+    source: 'listing',
+    id: r.id,
+    kind: r.kind,
+    text: r.title,
+    number: null,
+    status: r.status,
+    rejectReason: r.reject_reason,
+    createdAt: r.created_at,
+    images,
+    targetName: null,
+    description: r.description,
+    price: r.price,
+    condition: r.condition,
+    location: r.location,
+    eventDate: r.event_date,
+    lostFoundType,
+    feedPost: null,
+    listingCard: {
+      id: r.id,
+      kind: r.kind,
+      lostFoundType,
+      title: r.title,
+      description: r.description,
+      price: r.price,
+      condition: r.condition,
+      location: r.location,
+      eventDate: r.event_date,
+      images,
+      nickname: r.author?.nickname ?? null,
+      avatarKey: r.author?.avatar_key ?? null,
+      time: r.published_at ?? r.created_at,
+      editedAt: r.edited_at,
+      commentCount: r.comment_count,
+    },
+  };
+};
 
 /** Keyset "older than cursor" on (created_at, id), newest first. */
 function olderThan(cursor: Cursor): string {
@@ -100,7 +154,7 @@ function olderThan(cursor: Cursor): string {
 }
 
 async function fetchPosts(userId: string, cursor: Cursor | null): Promise<MyItem[]> {
-  let q = supabase.from('posts').select(POST_COLUMNS).eq('author_id', userId);
+  let q = postsQuery().eq('author_id', userId);
   if (cursor) q = q.or(olderThan(cursor));
   const { data, error } = await q.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(PAGE_SIZE);
   if (error) throw error;
@@ -108,7 +162,7 @@ async function fetchPosts(userId: string, cursor: Cursor | null): Promise<MyItem
 }
 
 async function fetchListings(userId: string, cursor: Cursor | null): Promise<MyItem[]> {
-  let q = supabase.from('listings').select(LISTING_COLUMNS).eq('author_id', userId);
+  let q = listingsQuery().eq('author_id', userId);
   if (cursor) q = q.or(olderThan(cursor));
   const { data, error } = await q.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(PAGE_SIZE);
   if (error) throw error;
@@ -121,11 +175,11 @@ async function fetchListings(userId: string, cursor: Cursor | null): Promise<MyI
  */
 export async function fetchMyItem(userId: string, source: MyItem['source'], id: string): Promise<MyItem | null> {
   if (source === 'post') {
-    const { data, error } = await supabase.from('posts').select(POST_COLUMNS).eq('id', id).eq('author_id', userId).maybeSingle();
+    const { data, error } = await postsQuery().eq('id', id).eq('author_id', userId).maybeSingle();
     if (error) throw error;
     return data ? toPostItem(data) : null;
   }
-  const { data, error } = await supabase.from('listings').select(LISTING_COLUMNS).eq('id', id).eq('author_id', userId).maybeSingle();
+  const { data, error } = await listingsQuery().eq('id', id).eq('author_id', userId).maybeSingle();
   if (error) throw error;
   return data ? toListingItem(data) : null;
 }

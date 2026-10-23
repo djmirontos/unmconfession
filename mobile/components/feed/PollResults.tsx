@@ -9,10 +9,11 @@ type Props = {
   options: readonly PollOption[];
   myVote: string | null;
   endsAt: string | null;
-  onVote: () => void;
+  /** Omit for a read-only poll (My Posts): rows are not tappable and show vote counts. */
+  onVote?: () => void;
 };
 
-/** Options with percentage bars. Voting arrives in a later module; onVote gates it. */
+/** Options with percentage bars. Voting arrives in a later module; onVote gates it. Without onVote it is read-only. */
 export function PollResults({ options, myVote, endsAt, onVote }: Props) {
   const { colors } = useTheme();
   const total = options.reduce((sum, o) => sum + o.votes, 0);
@@ -27,9 +28,9 @@ export function PollResults({ options, myVote, endsAt, onVote }: Props) {
           <Pressable
             key={option.id}
             onPress={onVote}
-            disabled={end?.ended}
-            accessibilityRole="button"
-            accessibilityLabel={`${option.label}, ${pct} percent${mine ? ', your vote' : ''}`}
+            disabled={end?.ended || !onVote}
+            accessibilityRole={onVote ? 'button' : 'text'}
+            accessibilityLabel={`${option.label}, ${pct} percent${onVote ? '' : `, ${option.votes} ${option.votes === 1 ? 'vote' : 'votes'}`}${mine ? ', your vote' : ''}`}
             className={`h-11 justify-center overflow-hidden rounded-xl border bg-surface2 ${mine ? 'border-accent' : 'border-hairline'}`}
           >
             <View
@@ -41,7 +42,10 @@ export function PollResults({ options, myVote, endsAt, onVote }: Props) {
               <Text numberOfLines={1} className={`flex-1 text-sm text-text ${mine ? 'font-bold' : ''}`}>
                 {option.label}
               </Text>
-              <Text className="text-sm font-bold text-text">{pct}%</Text>
+              <Text className="text-sm font-bold text-text">
+                {onVote ? '' : `${option.votes} · `}
+                {pct}%
+              </Text>
             </View>
           </Pressable>
         );

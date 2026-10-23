@@ -1,8 +1,8 @@
-import { memo } from 'react';
+import { memo, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { PollResults } from '@/components/feed/PollResults';
-import { PostActions } from '@/components/feed/PostActions';
+import { PostActions, PostCounts } from '@/components/feed/PostActions';
 import { PostBody } from '@/components/feed/PostBody';
 import { PostHeader } from '@/components/feed/PostHeader';
 import { PostImages } from '@/components/feed/PostImages';
@@ -13,12 +13,19 @@ type Props = {
   post: FeedPost;
   /** Omitted on the detail screen, where the card is not a link. */
   onOpen?: (id: string) => void;
-  onAction: (action: PostAction) => void;
+  /** Omit for a read-only card (My Posts): no action bar, no voting. */
+  onAction?: (action: PostAction) => void;
   /** Full text, no "Read more" (detail screen). */
   full?: boolean;
+  /** Read-only cards: show reaction and comment counts (published items only). */
+  showCounts?: boolean;
+  /** Next to the #number in the header (My Posts: status badge and "⋯"). */
+  headerAccessory?: ReactNode;
+  /** Below the card content (My Posts: review or rejection note). */
+  footer?: ReactNode;
 };
 
-function PostCardImpl({ post, onOpen, onAction, full = false }: Props) {
+function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false, headerAccessory, footer }: Props) {
   const content = (
     <View className="gap-3">
       <PostHeader
@@ -27,6 +34,8 @@ function PostCardImpl({ post, onOpen, onAction, full = false }: Props) {
         nickname={post.nickname}
         avatar_key={post.avatar_key}
         published_at={post.published_at}
+        edited_at={post.edited_at}
+        accessory={headerAccessory}
       />
       <PostBody postId={post.id} body={post.body} targetName={post.target_name} full={full} />
       <PostImages images={post.images} />
@@ -52,18 +61,23 @@ function PostCardImpl({ post, onOpen, onAction, full = false }: Props) {
           options={post.poll_options}
           myVote={post.my_vote}
           endsAt={post.ends_at}
-          onVote={() => onAction('vote')}
+          onVote={onAction ? () => onAction('vote') : undefined}
         />
       ) : null}
-      <PostActions
-        reactionCount={post.reaction_count}
-        commentCount={post.comment_count}
-        reacted={post.my_reaction !== null}
-        onAction={onAction}
-      />
+      {onAction ? (
+        <PostActions
+          reactionCount={post.reaction_count}
+          commentCount={post.comment_count}
+          reacted={post.my_reaction !== null}
+          onAction={onAction}
+        />
+      ) : showCounts ? (
+        <PostCounts reactionCount={post.reaction_count} commentCount={post.comment_count} />
+      ) : null}
+      {footer}
     </View>
   );
 }
 
-/** Feed and detail card. Memoized: the list re-renders a card only when its post object changes. */
+/** Feed, detail and My Posts card. Memoized: the list re-renders a card only when its props change. */
 export const PostCard = memo(PostCardImpl);

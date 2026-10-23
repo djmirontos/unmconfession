@@ -20,7 +20,7 @@ const TYPE_OPTIONS = [
   { value: 'found', label: 'I found something' },
 ] as const;
 
-const REQUIRED: readonly RequiredField<'lostFoundType' | 'title' | 'location' | 'eventDate'>[] = [
+export const LOST_FOUND_REQUIRED: readonly RequiredField<'lostFoundType' | 'title' | 'location' | 'eventDate'>[] = [
   { key: 'lostFoundType', label: 'Lost or Found' },
   { key: 'title', label: 'What' },
   { key: 'location', label: 'Where' },
@@ -45,7 +45,7 @@ export function LostFoundForm({ userId }: { userId: string }) {
   const result = validate(lostFoundSchema, { lostFoundType, title, description, location, eventDate });
   const errors = result.errors ?? {};
   const locked = submitting;
-  const missing = missingFields(REQUIRED, { lostFoundType, title, location, eventDate }, errors);
+  const missing = missingFields(LOST_FOUND_REQUIRED, { lostFoundType, title, location, eventDate }, errors);
   // Asked for as soon as the user starts filling in the form.
   const showTypeError =
     !chosen && (['title', 'location', 'eventDate', 'description'] as const).some((k) => touched.isTouched(k));

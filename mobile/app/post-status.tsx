@@ -1,7 +1,8 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GuestPrompt } from '@/components/auth/GuestPrompt';
 import { EmptyState, ErrorState } from '@/components/feed/ListStates';
 import { PostBody } from '@/components/feed/PostBody';
 import { PostImages } from '@/components/feed/PostImages';
@@ -9,9 +10,9 @@ import { BackHeader } from '@/components/layout/BackHeader';
 import { StatusBadge } from '@/components/myposts/StatusBadge';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { Button } from '@/components/ui/Button';
+import { useDeleteOwnItem } from '@/hooks/useDeleteOwnItem';
 import { useMyItem } from '@/hooks/useMyItem';
 import { useMembership } from '@/hooks/useProfile';
-import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { getErrorMessage } from '@/lib/errors';
 import { CONDITIONS } from '@/lib/createSchemas';
 import { CONDITION_LABELS, formatPrice } from '@/lib/listings';
@@ -27,6 +28,17 @@ const KIND_LABEL: Record<MyItem['kind'], string> = {
 };
 
 function ReasonBlock({ item }: { item: MyItem }) {
+  // Pending: never say why it is held (no keyword, no hold reason).
+  if (item.status === 'pending') {
+    return (
+      <View className="gap-1.5 rounded-xl border border-accent bg-accent-dim p-4" accessibilityRole="summary">
+        <Text accessibilityRole="header" className="text-base font-bold text-text">
+          Waiting for review
+        </Text>
+        <Text className="text-base leading-6 text-text">A moderator will check it before it is published.</Text>
+      </View>
+    );
+  }
   if (item.status !== 'rejected' && item.status !== 'removed') return null;
   const reason = item.rejectReason?.trim();
   return (
@@ -73,7 +85,7 @@ function ListingDetails({ item }: { item: MyItem }) {
   );
 }
 
-function StatusContent({ item }: { item: MyItem }) {
+function StatusContent({ item, onDelete }: { item: MyItem; onDelete: () => void }) {
   return (
     <View className="gap-4">
       <View className="flex-row items-center gap-3">
@@ -92,22 +104,13 @@ function StatusContent({ item }: { item: MyItem }) {
         )}
         <PostImages images={item.images} />
       </View>
-      {/* Edit and Delete actions go here in a later module. */}
+      {/* Rejected and removed items can only be deleted (edit_own_* refuses them). */}
+      <Button label={item.source === 'post' ? 'Delete post' : 'Delete listing'} variant="danger" icon="trash-outline" onPress={onDelete} />
     </View>
   );
 }
 
-function GuestPrompt() {
-  const requireAuth = useRequireAuth();
-  return (
-    <View className="gap-3 rounded-2xl border border-hairline bg-surface1 p-4">
-      <Text className="text-base text-text">Sign in to see the status of your posts.</Text>
-      <Button label="Sign in" onPress={() => requireAuth('default')} />
-    </View>
-  );
-}
-
-/** Read-only status of one of the user's own posts or listings (used for rejected and removed items). */
+/** Read-only status of one of the user's own posts or listings (pending, rejected and removed items). */
 export default function PostStatusScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ source?: string; id?: string }>();
@@ -115,10 +118,12 @@ export default function PostStatusScreen() {
   const id = params.id ?? '';
   const { status } = useMembership();
   const query = useMyItem(source, id);
+  const confirmDelete = useDeleteOwnItem();
+  const router = useRouter();
 
   let body;
   if (status === 'guest') {
-    body = <GuestPrompt />;
+    body = <GuestPrompt message="Sign in to see the status of your posts." />;
   } else if (!source || !id) {
     body = <EmptyState icon="alert-circle-outline" title="This item isn't available" />;
   } else if (query.data === undefined) {
@@ -132,7 +137,8 @@ export default function PostStatusScreen() {
       <EmptyState icon="eye-off-outline" title="This item isn't available" message="It may have been deleted." />
     );
   } else {
-    body = <StatusContent item={query.data} />;
+    const item = query.data;
+    body = <StatusContent item={item} onDelete={() => confirmDelete(item, () => router.back())} />;
   }
 
   return (

@@ -43,6 +43,7 @@ function RootNavigator() {
         <Stack.Screen name="post/[id]" />
         <Stack.Screen name="my-posts" />
         <Stack.Screen name="post-status" />
+        <Stack.Screen name="edit" />
         <Stack.Screen name="(auth)/sign-in" />
         <Stack.Screen name="(auth)/sign-up" />
         <Stack.Screen name="(auth)/verify" />

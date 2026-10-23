@@ -31,6 +31,8 @@ const feedPostSchema = z.object({
   my_reaction: z.enum(Constants.public.Enums.reaction_type).nullable(),
   poll_options: z.array(pollOptionSchema).nullable().catch(null),
   my_vote: z.string().nullable(),
+  // Missing on rows cached before the column existed.
+  edited_at: z.string().nullable().catch(null),
 });
 
 export type FeedPost = z.infer<typeof feedPostSchema>;

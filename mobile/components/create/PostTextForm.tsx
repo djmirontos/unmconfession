@@ -14,7 +14,7 @@ import { validate } from '@/lib/validation';
 
 type Props = { userId: string; kind: 'confession' | 'shoutout' };
 
-const REQUIRED: Record<Props['kind'], readonly RequiredField<'target' | 'body'>[]> = {
+export const POST_TEXT_REQUIRED: Record<Props['kind'], readonly RequiredField<'target' | 'body'>[]> = {
   confession: [{ key: 'body', label: 'Your confession' }],
   shoutout: [
     { key: 'target', label: "Who it's for" },
@@ -39,7 +39,7 @@ export function PostTextForm({ userId, kind }: Props) {
       : null;
   const errors: { target?: string; body?: string } = shout?.errors ?? confession?.errors ?? {};
   const locked = submitting;
-  const missing = missingFields(REQUIRED[kind], { target, body }, errors);
+  const missing = missingFields(POST_TEXT_REQUIRED[kind], { target, body }, errors);
 
   const onSubmit = () => {
     if (!input) return;

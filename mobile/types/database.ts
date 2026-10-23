@@ -303,7 +303,9 @@ export type Database = {
           comment_count: number
           condition: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
+          edited_at: string | null
           event_date: string | null
           id: string
           images: Json
@@ -324,7 +326,9 @@ export type Database = {
           comment_count?: number
           condition?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
+          edited_at?: string | null
           event_date?: string | null
           id?: string
           images?: Json
@@ -345,7 +349,9 @@ export type Database = {
           comment_count?: number
           condition?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
+          edited_at?: string | null
           event_date?: string | null
           id?: string
           images?: Json
@@ -578,6 +584,8 @@ export type Database = {
           body: string
           comment_count: number
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           ends_at: string | null
           id: string
           images: Json
@@ -596,6 +604,8 @@ export type Database = {
           body: string
           comment_count?: number
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           ends_at?: string | null
           id?: string
           images?: Json
@@ -614,6 +624,8 @@ export type Database = {
           body?: string
           comment_count?: number
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           ends_at?: string | null
           id?: string
           images?: Json
@@ -899,6 +911,7 @@ export type Database = {
           comment_count: number | null
           condition: string | null
           description: string | null
+          edited_at: string | null
           event_date: string | null
           id: string | null
           images: Json | null
@@ -927,6 +940,7 @@ export type Database = {
           avatar_key: string | null
           body: string | null
           comment_count: number | null
+          edited_at: string | null
           ends_at: string | null
           id: string | null
           images: Json | null
@@ -1082,7 +1096,9 @@ export type Database = {
           comment_count: number
           condition: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
+          edited_at: string | null
           event_date: string | null
           id: string
           images: Json
@@ -1119,6 +1135,79 @@ export type Database = {
           body: string
           comment_count: number
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          ends_at: string | null
+          id: string
+          images: Json
+          kind: Database["public"]["Enums"]["post_kind"]
+          moderated_at: string | null
+          moderated_by: string | null
+          number: number | null
+          published_at: string | null
+          reaction_count: number
+          reject_reason: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          target_name: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      delete_own_listing: { Args: { p_listing_id: string }; Returns: undefined }
+      delete_own_post: { Args: { p_post_id: string }; Returns: undefined }
+      edit_own_listing: {
+        Args: {
+          p_condition?: string
+          p_description?: string
+          p_event_date?: string
+          p_listing_id: string
+          p_location?: string
+          p_price?: number
+          p_title: string
+        }
+        Returns: {
+          author_id: string
+          comment_count: number
+          condition: string | null
+          created_at: string
+          deleted_at: string | null
+          description: string | null
+          edited_at: string | null
+          event_date: string | null
+          id: string
+          images: Json
+          is_closed: boolean
+          kind: Database["public"]["Enums"]["listing_kind"]
+          location: string | null
+          lost_found_type: string | null
+          moderated_at: string | null
+          moderated_by: string | null
+          price: number | null
+          published_at: string | null
+          reject_reason: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          title: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "listings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      edit_own_post: {
+        Args: { p_body: string; p_post_id: string; p_target_name?: string }
+        Returns: {
+          author_id: string
+          body: string
+          comment_count: number
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           ends_at: string | null
           id: string
           images: Json
@@ -1146,6 +1235,7 @@ export type Database = {
           avatar_key: string | null
           body: string | null
           comment_count: number | null
+          edited_at: string | null
           ends_at: string | null
           id: string | null
           images: Json | null
@@ -1198,6 +1288,7 @@ export type Database = {
           avatar_key: string | null
           body: string | null
           comment_count: number | null
+          edited_at: string | null
           ends_at: string | null
           id: string | null
           images: Json | null
@@ -1231,6 +1322,7 @@ export type Database = {
           comment_count: number | null
           condition: string | null
           description: string | null
+          edited_at: string | null
           event_date: string | null
           id: string | null
           images: Json | null
@@ -1257,6 +1349,7 @@ export type Database = {
           avatar_key: string | null
           body: string | null
           comment_count: number | null
+          edited_at: string | null
           ends_at: string | null
           id: string | null
           images: Json | null

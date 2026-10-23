@@ -24,6 +24,10 @@ const MESSAGES: Record<string, string> = {
   condition_required: 'Pick the item condition.',
   invalid_price: 'Enter a price from ₱0 to ₱9,999,999.',
   lost_found_type_required: 'Choose whether you lost or found something.',
+  // Edit / delete own items.
+  not_editable: 'This can no longer be edited. You can still delete it.',
+  edit_window_closed: 'The 24-hour edit window has closed. You can still delete it.',
+  not_found: 'This item no longer exists.',
   invalid_lost_found: 'Please add where it happened and choose a date from the last 60 days, up to today.',
   image_too_large: 'That photo is too large even after resizing. Try another one.',
   // Photo upload stages (thrown by lib/photos/upload.ts).

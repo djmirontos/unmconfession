@@ -59,3 +59,22 @@ export function PostActions({ reactionCount, commentCount, reacted, onAction }: 
     </View>
   );
 }
+
+/** Read-only counts (My Posts): same icons as the action bar, nothing tappable. Omit a count to hide it. */
+export function PostCounts({ reactionCount, commentCount }: { reactionCount?: number; commentCount: number }) {
+  const { colors } = useTheme();
+  const items: { icon: IconName; label: string; count: number }[] = [
+    ...(reactionCount !== undefined ? [{ icon: 'heart-outline' as const, label: 'Reactions', count: reactionCount }] : []),
+    { icon: 'chatbubble-outline', label: 'Comments', count: commentCount },
+  ];
+  return (
+    <View className="flex-row items-center gap-4">
+      {items.map((i) => (
+        <View key={i.label} className="flex-row items-center gap-1.5" accessibilityLabel={`${i.label}, ${i.count}`}>
+          <Ionicons name={i.icon} size={18} color={colors.textDim} />
+          <Text className="text-sm font-bold text-text-dim">{i.count}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}

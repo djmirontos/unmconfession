@@ -15,7 +15,7 @@ import { CONDITION_LABELS } from '@/lib/listings';
 import { missingFields, type RequiredField } from '@/lib/missingFields';
 import { validate } from '@/lib/validation';
 
-const REQUIRED: readonly RequiredField<'title' | 'price' | 'condition'>[] = [
+export const SELL_REQUIRED: readonly RequiredField<'title' | 'price' | 'condition'>[] = [
   { key: 'title', label: 'Title' },
   { key: 'price', label: 'Price' },
   { key: 'condition', label: 'Condition' },
@@ -32,7 +32,7 @@ export function SellForm({ userId }: { userId: string }) {
   const result = validate(sellSchema, { title, description, price, condition });
   const errors = result.errors ?? {};
   const locked = submitting;
-  const missing = missingFields(REQUIRED, { title, price, condition }, errors);
+  const missing = missingFields(SELL_REQUIRED, { title, price, condition }, errors);
 
   const onSubmit = () => {
     if (!result.data) return;

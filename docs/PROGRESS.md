@@ -315,3 +315,25 @@
 - `comment_count` can include a blocked user's comments, and the live "New comments" pill can count them.
 
 **Verified:** device QA passed.
+
+## Module 4.5: Notifications (2026-10-24)
+
+**Database:** `supabase/migrations/20261024120000_notifications.sql`, applied by the owner.
+- `get_notifications` (grouped, newest first, keyset on `(latest_at, group_key)`), `get_unread_notification_count` (unread groups), `mark_notifications_read`, `delete_notifications`; all SECURITY INVOKER, members only.
+- Comment notices also return the parent post or listing.
+- Reaction notifications carry the current reaction type and update when the reactor changes it, without re-notifying.
+- Blocked users' notifications are hidden.
+- Notifications older than 90 days are purged nightly (`purge_expired`, pg_cron job `unm-purge-expired`).
+
+**App**
+- Bell with unread badge in the Feed header (members only), a dot on the Profile tab and a Notifications row in Profile.
+- Notifications screen with grouped rows: reactions and comments per post/listing ("X and N others reacted…"); approved / rejected / removed notices one row each with a reason.
+- Newest first with keyset pagination, pull to refresh, Mark all as read, long-press to mark read or delete.
+- Live updates through Realtime (debounced invalidation) for the list and the badge.
+- Tap opens the post or the status screen; comment notices open the parent post; listing targets show a "soon" toast until Module 5.
+
+**Known gaps**
+- Listing notification targets cannot open until Module 5.
+- Relative times update only on re-render.
+
+**Verified:** device QA passed.

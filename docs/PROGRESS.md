@@ -282,3 +282,16 @@
 - 4.4 report and block (block only).
 - 4.5 notifications.
 - 4.6 comment reactions and one-level replies.
+
+## Module 4.3: Poll vote change (2026-10-24)
+
+**Database:** `supabase/migrations/20261024100000_poll_vote_change.sql`, applied by the owner. `vote_poll` keeps its signature; a vote can be changed until the poll ends (the old vote moves to the new option in one sub-transaction, so `vote_count` stays right). Voting for the option you already have is a no-op.
+
+**App**
+- Users can change their vote until the poll ends; tapping the current option does nothing; guests get the sign-in sheet.
+- Optimistic updates of the feed pages and the post detail with latest-only sync per poll (`lib/pollVoteSync.ts`, `hooks/usePollVote.ts`); rollback and a toast on failure; `poll_closed` also marks the poll ended in the caches.
+- Live results: the 30-second counts refresh also merges `poll_options` and `my_vote`, skipping polls with a local vote in flight.
+- Live countdown via `useMinuteClock` (one shared interval, only while an open poll is on screen); ended polls highlight the leading option(s).
+- Error texts for `poll_closed` and `invalid_option`.
+
+**Verified:** device QA passed.

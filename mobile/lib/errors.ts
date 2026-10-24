@@ -96,6 +96,12 @@ export function getReactionErrorMessage(error: unknown): string {
   return getErrorMessage(error);
 }
 
+/** Comment reactions: same as post reactions, but a missing target is a comment. */
+export function getCommentReactionErrorMessage(error: unknown): string {
+  if (getErrorCode(error) === 'not_found') return 'This comment is no longer available.';
+  return getReactionErrorMessage(error);
+}
+
 // Comment wording for codes that mean something more specific in a thread.
 const COMMENT_MESSAGES: Record<string, string> = {
   invalid_body: 'Write a comment of up to 1000 characters.',

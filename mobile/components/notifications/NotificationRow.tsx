@@ -15,8 +15,9 @@ const AVATAR = 44;
 
 function Leading({ group }: { group: NotificationGroup }) {
   const { colors } = useTheme();
-  if (group.type === 'comment' || group.type === 'reaction') {
-    const reaction = group.type === 'reaction' && group.reaction_type ? REACTIONS[group.reaction_type] : null;
+  if (group.type === 'comment' || group.type === 'reaction' || group.type === 'comment_reaction' || group.type === 'reply') {
+    const isReaction = group.type === 'reaction' || group.type === 'comment_reaction';
+    const reaction = isReaction && group.reaction_type ? REACTIONS[group.reaction_type] : null;
     return (
       <View style={{ width: AVATAR, height: AVATAR }}>
         <Avatar avatarKey={group.actor_avatar_key} size={AVATAR} />
@@ -24,7 +25,7 @@ function Leading({ group }: { group: NotificationGroup }) {
           <View className="absolute -bottom-1 -right-1 rounded-full bg-surface1 p-0.5">
             <Image source={reaction.image} style={{ width: 20, height: 20 }} contentFit="contain" />
           </View>
-        ) : group.type === 'comment' ? (
+        ) : group.type === 'comment' || group.type === 'reply' ? (
           <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-accent">
             <Ionicons name="chatbubble" size={12} color={colors.onAccent} />
           </View>
@@ -59,7 +60,10 @@ function NotificationRowImpl({ group, onPress, onLongPress }: Props) {
   const sentence = describeNotification(group);
   const reason = group.type === 'content_rejected' || group.type === 'content_removed' ? knownReason(group.reason) : null;
   const time = formatRelative(group.latest_at);
-  const reactionLabel = group.type === 'reaction' && group.reaction_type ? `, ${REACTIONS[group.reaction_type].label}` : '';
+  const reactionLabel =
+    (group.type === 'reaction' || group.type === 'comment_reaction') && group.reaction_type
+      ? `, ${REACTIONS[group.reaction_type].label}`
+      : '';
 
   return (
     <Pressable

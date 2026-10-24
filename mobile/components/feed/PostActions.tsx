@@ -6,6 +6,7 @@ import { ReactionButton } from '@/components/reactions/ReactionButton';
 import type { PostAction } from '@/hooks/useComingSoonAction';
 import { useTheme } from '@/hooks/useTheme';
 import type { ReactionType } from '@/lib/reactions';
+import { setReaction } from '@/lib/reactionSync';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
 
@@ -48,7 +49,12 @@ type Props = {
 export function PostActions({ postId, myReaction, reactionCount, commentCount, reactionsDisabled, onAction, onComment }: Props) {
   return (
     <View className="-mx-3 flex-row items-center">
-      <ReactionButton postId={postId} myReaction={myReaction} count={reactionCount} disabled={reactionsDisabled} />
+      <ReactionButton
+        myReaction={myReaction}
+        count={reactionCount}
+        onChange={(next) => setReaction(postId, myReaction, next)}
+        disabled={reactionsDisabled}
+      />
       <ActionButton
         icon="chatbubble-outline"
         label="Comments"

@@ -96,6 +96,52 @@ export type Database = {
           },
         ]
       }
+      comment_reactions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          type: Database["public"]["Enums"]["reaction_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          type: Database["public"]["Enums"]["reaction_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          type?: Database["public"]["Enums"]["reaction_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "thread_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_id: string
@@ -109,6 +155,7 @@ export type Database = {
           moderated_by: string | null
           post_id: string | null
           published_at: string | null
+          reaction_count: number
           reject_reason: string | null
           status: Database["public"]["Enums"]["content_status"]
         }
@@ -124,6 +171,7 @@ export type Database = {
           moderated_by?: string | null
           post_id?: string | null
           published_at?: string | null
+          reaction_count?: number
           reject_reason?: string | null
           status: Database["public"]["Enums"]["content_status"]
         }
@@ -139,6 +187,7 @@ export type Database = {
           moderated_by?: string | null
           post_id?: string | null
           published_at?: string | null
+          reaction_count?: number
           reject_reason?: string | null
           status?: Database["public"]["Enums"]["content_status"]
         }
@@ -978,9 +1027,11 @@ export type Database = {
           edited_at: string | null
           id: string | null
           listing_id: string | null
+          my_reaction: Database["public"]["Enums"]["reaction_type"] | null
           nickname: string | null
           post_id: string | null
           published_at: string | null
+          reaction_count: number | null
         }
         Relationships: [
           {
@@ -1078,6 +1129,7 @@ export type Database = {
           moderated_by: string | null
           post_id: string | null
           published_at: string | null
+          reaction_count: number
           reject_reason: string | null
           status: Database["public"]["Enums"]["content_status"]
         }
@@ -1184,6 +1236,7 @@ export type Database = {
           moderated_by: string | null
           post_id: string | null
           published_at: string | null
+          reaction_count: number
           reject_reason: string | null
           status: Database["public"]["Enums"]["content_status"]
         }
@@ -1306,9 +1359,11 @@ export type Database = {
           edited_at: string | null
           id: string | null
           listing_id: string | null
+          my_reaction: Database["public"]["Enums"]["reaction_type"] | null
           nickname: string | null
           post_id: string | null
           published_at: string | null
+          reaction_count: number | null
         }[]
         SetofOptions: {
           from: "*"
@@ -1493,6 +1548,13 @@ export type Database = {
           p_note?: string
           p_reason: string
           p_type: Database["public"]["Enums"]["content_type"]
+        }
+        Returns: undefined
+      }
+      set_comment_reaction: {
+        Args: {
+          p_comment_id: string
+          p_type: Database["public"]["Enums"]["reaction_type"]
         }
         Returns: undefined
       }

@@ -20,12 +20,19 @@ import { cardRect, everHovered, resetPickerShared, setCardRect, trackHover } fro
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useTheme } from '@/hooks/useTheme';
 import { REACTION_TYPES, REACTIONS, type ReactionType } from '@/lib/reactions';
-import { setReaction } from '@/lib/reactionSync';
 import { useReactionPickerStore } from '@/stores/reactionPickerStore';
 
 const HOLD_MS = 350;
 
-type Props = { postId: string; myReaction: ReactionType | null; count: number; disabled?: boolean };
+type Props = {
+  myReaction: ReactionType | null;
+  count: number;
+  /** The wanted reaction (null = remove). Callers send it through their latest-only sync. */
+  onChange: (next: ReactionType | null) => void;
+  disabled?: boolean;
+  /** Comments: smaller and quieter, count hidden at 0, comment wording for screen readers. */
+  compact?: boolean;
+};
 
 /**
  * Facebook-style reaction button. Tap: like, or remove my reaction. Hold 350 ms:
@@ -34,7 +41,7 @@ type Props = { postId: string; myReaction: ReactionType | null; count: number; d
  * tap one. Picking my current reaction removes it. A finger that moves before the
  * hold fires fails the gesture, so the list scrolls normally.
  */
-export function ReactionButton({ postId, myReaction, count, disabled = false }: Props) {
+export function ReactionButton({ myReaction, count, onChange, disabled = false, compact = false }: Props) {
   const { colors } = useTheme();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -43,7 +50,7 @@ export function ReactionButton({ postId, myReaction, count, disabled = false }: 
   // Button size from layout; its position comes from the gesture event (same coordinates as the hit-test).
   const size = useSharedValue({ width: 0, height: 0 });
 
-  const pick = (type: ReactionType) => setReaction(postId, myReaction, myReaction === type ? null : type);
+  const pick = (type: ReactionType) => onChange(myReaction === type ? null : type);
 
   const openPicker = (x: number, y: number, w: number, h: number) => {
     if (!requireAuth('react')) return; // guests: sign-in sheet, no picker
@@ -61,7 +68,7 @@ export function ReactionButton({ postId, myReaction, count, disabled = false }: 
   };
 
   const onTap = () => {
-    if (requireAuth('react')) setReaction(postId, myReaction, myReaction === null ? 'like' : null);
+    if (requireAuth('react')) onChange(myReaction === null ? 'like' : null);
   };
 
   const hold = Gesture.Pan()
@@ -104,15 +111,23 @@ export function ReactionButton({ postId, myReaction, count, disabled = false }: 
   const popStyle = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
 
   const reaction = myReaction ? REACTIONS[myReaction] : null;
-  const label = reaction ? `You reacted ${reaction.label}, ${count} reactions` : `Like, ${count} reactions`;
+  const label = compact
+    ? reaction
+      ? `Your reaction: ${reaction.label}, ${count} reactions`
+      : `React to comment, ${count} reactions`
+    : reaction
+      ? `You reacted ${reaction.label}, ${count} reactions`
+      : `Like, ${count} reactions`;
 
   const onAccessibilityAction = (e: AccessibilityActionEvent) => {
     if (disabled || !requireAuth('react')) return;
     const name = e.nativeEvent.actionName;
-    if (name === 'activate') setReaction(postId, myReaction, myReaction === null ? 'like' : null);
+    if (name === 'activate') onChange(myReaction === null ? 'like' : null);
     const type = REACTION_TYPES.find((t) => t === name);
-    if (type) setReaction(postId, myReaction, myReaction === type ? null : type);
+    if (type) onChange(myReaction === type ? null : type);
   };
+
+  const icon = compact ? 16 : 20;
 
   return (
     <GestureDetector gesture={gesture}>
@@ -131,22 +146,30 @@ export function ReactionButton({ postId, myReaction, count, disabled = false }: 
           ...REACTION_TYPES.map((t) => ({ name: t, label: `React ${REACTIONS[t].label}` })),
         ]}
         onAccessibilityAction={onAccessibilityAction}
-        className={`h-9 flex-row items-center gap-1.5 rounded-full px-3 ${disabled ? 'opacity-50' : ''}`}
+        className={
+          compact
+            ? `min-h-11 flex-row items-center gap-1 self-start rounded-full px-2 ${disabled ? 'opacity-50' : ''}`
+            : `h-9 flex-row items-center gap-1.5 rounded-full px-3 ${disabled ? 'opacity-50' : ''}`
+        }
       >
         {reaction ? (
           <Animated.View style={popStyle}>
-            <Image source={reaction.image} style={{ width: 20, height: 20 }} contentFit="contain" />
+            <Image source={reaction.image} style={{ width: icon, height: icon }} contentFit="contain" />
           </Animated.View>
         ) : (
-          <Ionicons name="thumbs-up-outline" size={18} color={colors.textDim} />
+          <Ionicons name="thumbs-up-outline" size={compact ? 15 : 18} color={colors.textDim} />
         )}
-        <Text className={`text-sm font-bold ${reaction ? 'text-accent' : 'text-text-dim'}`}>
+        <Text className={`${compact ? 'text-xs' : 'text-sm'} font-bold ${reaction ? 'text-accent' : 'text-text-dim'}`}>
           {reaction ? reaction.label : 'Like'}
         </Text>
-        {/* Reserved width so the row does not shift when the count changes. */}
-        <Text style={{ minWidth: 24 }} className="text-sm font-bold text-text-dim">
-          {count}
-        </Text>
+        {compact ? (
+          count > 0 ? <Text className="text-xs font-bold text-text-dim">{count}</Text> : null
+        ) : (
+          // Reserved width so the row does not shift when the count changes.
+          <Text style={{ minWidth: 24 }} className="text-sm font-bold text-text-dim">
+            {count}
+          </Text>
+        )}
       </View>
     </GestureDetector>
   );

@@ -12,7 +12,15 @@ export const NOTIFICATIONS_PAGE_SIZE = 20;
 export const notificationsKey = (userId: string) => ['notifications', userId] as const;
 export const unreadCountKey = (userId: string) => ['notifications-unread', userId] as const;
 
-const NOTIFICATION_TYPES = ['comment', 'reaction', 'content_approved', 'content_rejected', 'content_removed'] as const;
+const NOTIFICATION_TYPES = [
+  'comment',
+  'reaction',
+  'comment_reaction',
+  'reply',
+  'content_approved',
+  'content_rejected',
+  'content_removed',
+] as const;
 
 // RPC table columns are typed non-null by the generator; the real nulls are narrowed here.
 const rowSchema = z.object({
@@ -121,6 +129,10 @@ export function describeNotification(n: NotificationGroup): string {
       return `${actor}${andOthers} commented on your ${where}`;
     case 'reaction':
       return `${actor}${andOthers} reacted to your ${where}`;
+    case 'comment_reaction':
+      return `${actor}${andOthers} reacted to your comment`;
+    case 'reply':
+      return `${actor}${andOthers} replied to your comment`;
     case 'content_approved':
       return `Your ${targetWord(n)} was approved`;
     case 'content_rejected':

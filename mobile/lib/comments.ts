@@ -1,4 +1,5 @@
 import { logError, logInfo } from '@/lib/log';
+import type { ReactionType } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
 import { parseTimestamp } from '@/lib/time';
 import type { Database } from '@/types/database';
@@ -24,6 +25,8 @@ export type ThreadComment = {
   createdAt: string;
   editedAt: string | null;
   state: CommentState;
+  reactionCount: number;
+  myReaction: ReactionType | null;
 };
 
 export type CommentCursor = { ts: string; id: string };
@@ -56,6 +59,8 @@ export async function fetchCommentPage(target: CommentTarget, targetId: string, 
       createdAt: c.published_at,
       editedAt: c.edited_at,
       state: 'published',
+      reactionCount: c.reaction_count ?? 0,
+      myReaction: c.my_reaction,
     });
   }
   const last = items.at(-1);
@@ -90,6 +95,8 @@ export async function fetchOwnPending(target: CommentTarget, targetId: string, m
     createdAt: c.created_at,
     editedAt: c.edited_at,
     state: 'pending',
+    reactionCount: 0,
+    myReaction: null,
   }));
 }
 
@@ -109,6 +116,9 @@ export function fromRow(
     createdAt: row.created_at,
     editedAt: row.edited_at,
     state: published ? 'published' : 'pending',
+    // A new or just-edited row of mine; an edit keeps the counts already shown (see storeComment).
+    reactionCount: 0,
+    myReaction: null,
   };
 }
 

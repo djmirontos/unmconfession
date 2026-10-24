@@ -16,6 +16,7 @@ import {
   fromRow,
   type ThreadComment,
 } from '@/lib/comments';
+import { commentReactionBusy } from '@/lib/commentReactionSync';
 import { getCommentErrorMessage } from '@/lib/errors';
 import { bumpCommentCount } from '@/lib/postCounts';
 import { parseTimestamp } from '@/lib/time';
@@ -35,6 +36,8 @@ type Options = {
 
 // Reopening a thread a few seconds later refetches it; within that, the patched cache is shown.
 const THREAD_STALE_MS = 10 * 1000;
+// Realtime UPDATE of an unloaded comment counts as new only if it went public this recently (an approval).
+const JUST_PUBLISHED_MS = 90 * 1000;
 
 type ThreadData = InfiniteData<CommentPage, CommentCursor | null>;
 
@@ -122,8 +125,12 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         if (item.state !== 'published') return { ...data, pages: without };
         stored = true;
         const inPlace = data.pages.some((p) => p.items.some((c) => c.id === item.id));
+        // In place (an edit): keep the reactions already shown; the server row has none of them.
         const pages = inPlace
-          ? data.pages.map((p) => ({ ...p, items: p.items.map((c) => (c.id === item.id ? item : c)) }))
+          ? data.pages.map((p) => ({
+              ...p,
+              items: p.items.map((c) => (c.id === item.id ? { ...item, reactionCount: c.reactionCount, myReaction: c.myReaction } : c)),
+            }))
           : without.map((p, i) => (i === without.length - 1 ? { ...p, items: [...p.items, item] } : p));
         return { ...data, pages };
       });
@@ -181,6 +188,8 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         createdAt: now,
         editedAt: null,
         state: 'sending',
+        reactionCount: 0,
+        myReaction: null,
       };
       setSending((list) => [...list, temp]);
       try {
@@ -252,15 +261,21 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
     onChange: (row, event) => {
       if (row.status !== 'published') return;
       if (knownIds.current.has(row.id)) {
-        // Body / edited_at of a comment already shown (nickname and avatar stay from the refetched row).
+        // A comment already shown: refresh body / edited_at and the reaction count (nickname,
+        // avatar and my_reaction stay from the refetched row). Never a new comment, no pill.
         if (event === 'UPDATE') {
+          const keepCount = commentReactionBusy(row.id); // my own change in flight wins
           queryClient.setQueryData<InfiniteData<CommentPage, CommentCursor | null>>(threadKey, (data) =>
             data
               ? {
                   ...data,
                   pages: data.pages.map((p) => ({
                     ...p,
-                    items: p.items.map((c) => (c.id === row.id ? { ...c, body: row.body, editedAt: row.edited_at } : c)),
+                    items: p.items.map((c) =>
+                      c.id === row.id
+                        ? { ...c, body: row.body, editedAt: row.edited_at, reactionCount: keepCount ? c.reactionCount : row.reaction_count }
+                        : c,
+                    ),
                   })),
                 }
               : data,
@@ -268,6 +283,12 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         }
         return;
       }
+      // Every reaction UPDATEs its comment row, so an UPDATE of a comment not loaded here (an older
+      // page, or a blocked author's) is not new. The one exception is a held comment a moderator just
+      // approved: it turns published with published_at = now(). "Just" is a 90 s window either side of
+      // the device clock, so moderate clock skew still counts it once.
+      if (event === 'UPDATE' && !row.published_at) return;
+      if (event === 'UPDATE' && Math.abs(Date.now() - parseTimestamp(row.published_at ?? '')) > JUST_PUBLISHED_MS) return;
       if (row.author_id === userId) return; // my own: already handled locally
       if (target === 'post') bumpCommentCount(queryClient, targetId, 1);
       if (isNearBottom()) void refetchAll().then(onAppended);

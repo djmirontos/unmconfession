@@ -4,8 +4,10 @@ import { Text, View } from 'react-native';
 import { PostBody } from '@/components/feed/PostBody';
 import { MoreButton } from '@/components/myposts/MoreButton';
 import { Avatar } from '@/components/profile/Avatar';
+import { ReactionButton } from '@/components/reactions/ReactionButton';
 import { Skeleton } from '@/components/ui/Skeleton';
 import type { ThreadComment } from '@/lib/comments';
+import { setCommentReaction } from '@/lib/commentReactionSync';
 import { formatRelative } from '@/lib/time';
 
 type Props = {
@@ -39,6 +41,17 @@ function CommentItemImpl({ comment, onMore, mine = false }: Props) {
         </View>
         {/* Same 6-line "Read more" as post cards, keyed by comment id. */}
         <PostBody postId={comment.id} body={comment.body} targetName={null} />
+        {/* Only published comments can be reacted to (the server re-checks). */}
+        {comment.state === 'published' ? (
+          <View className="-my-1 -ml-2">
+            <ReactionButton
+              compact
+              myReaction={comment.myReaction}
+              count={comment.reactionCount}
+              onChange={(next) => setCommentReaction(comment.id, comment.myReaction, next)}
+            />
+          </View>
+        ) : null}
         {comment.state === 'pending' ? (
           <View className="gap-0.5 self-start rounded-xl border border-accent bg-accent-dim px-2.5 py-1.5">
             <Text className="text-xs font-bold text-text">Waiting for review</Text>

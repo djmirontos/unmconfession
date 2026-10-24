@@ -59,6 +59,10 @@ export default function NotificationsScreen() {
         case 'reaction':
           if (g.target_type === 'listing') return showToast(LISTINGS_SOON);
           return g.target_status === 'published' ? openPost(g.target_id) : showToast(UNAVAILABLE);
+        case 'comment_reaction':
+        case 'reply':
+          // Target is my comment: open the thread it belongs to.
+          return g.parent_post_id ? openPost(g.parent_post_id) : showToast(LISTINGS_SOON);
         case 'content_approved':
           if (g.target_type === 'post') return g.target_status === 'published' ? openPost(g.target_id) : showToast(UNAVAILABLE);
           if (g.target_type === 'comment' && g.parent_post_id) return openPost(g.parent_post_id);

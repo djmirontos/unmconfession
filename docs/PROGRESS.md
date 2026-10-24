@@ -337,3 +337,5 @@
 - Relative times update only on re-render.
 
 **Verified:** device QA passed.
+
+**Follow-up:** 'Delete all' in the Notifications header menu (with confirmation, optimistic with rollback; uses the existing own-rows delete permission, no migration). Device QA passed.

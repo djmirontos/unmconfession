@@ -339,3 +339,24 @@
 **Verified:** device QA passed.
 
 **Follow-up:** 'Delete all' in the Notifications header menu (with confirmation, optimistic with rollback; uses the existing own-rows delete permission, no migration). Device QA passed.
+
+## Module 4.6a: Reactions on comments (2026-10-25)
+
+**Database:** `supabase/migrations/20261025100000_comment_reactions.sql`, applied by the owner.
+- `comment_reactions` table and `comments.reaction_count` (kept by a trigger).
+- `thread_comments` exposes `reaction_count` and `my_reaction`.
+- `set_comment_reaction` RPC (null removes).
+- Notification types `comment_reaction` and `reply` (`reply` is used in 4.6b); the notification list groups them per comment.
+
+**App**
+- Same six reactions as posts: tap = Like, hold = picker, optimistic latest-only sync with rollback. `ReactionButton` is shared (new `onChange` and `compact` props).
+- Compact button and count on every published comment; guests get the sign-in sheet.
+- Realtime: reaction UPDATEs no longer count as new comments. An UPDATE of an unloaded comment counts as new only if it was published within ~90 s (a moderator-approved held comment).
+- Notifications: "X and N others reacted to your comment"; tap opens the parent post.
+
+**Known gaps**
+- Comment reactions on listing comments have no screen until Module 5.
+- A comment kept only in local state updates its reaction after the next refetch.
+- Blocked authors' INSERT events can still raise the "New comments" pill (existing 4.4 issue).
+
+**Verified:** device QA passed.

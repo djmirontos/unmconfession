@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { parseTopReactions } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
 import { Constants } from '@/types/database';
 
@@ -33,6 +34,8 @@ const feedPostSchema = z.object({
   my_vote: z.string().nullable(),
   // Missing on rows cached before the column existed.
   edited_at: z.string().nullable().catch(null),
+  // Most used first; missing on rows cached before 4.6a+, unknown types dropped.
+  top_reactions: z.unknown().transform(parseTopReactions),
 });
 
 export type FeedPost = z.infer<typeof feedPostSchema>;

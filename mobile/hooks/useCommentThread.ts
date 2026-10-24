@@ -18,6 +18,7 @@ import {
 } from '@/lib/comments';
 import { commentReactionBusy } from '@/lib/commentReactionSync';
 import { getCommentErrorMessage } from '@/lib/errors';
+import { topFromBreakdown } from '@/lib/reactions';
 import { bumpCommentCount } from '@/lib/postCounts';
 import { parseTimestamp } from '@/lib/time';
 import { useAuthStore } from '@/stores/authStore';
@@ -129,7 +130,11 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         const pages = inPlace
           ? data.pages.map((p) => ({
               ...p,
-              items: p.items.map((c) => (c.id === item.id ? { ...item, reactionCount: c.reactionCount, myReaction: c.myReaction } : c)),
+              items: p.items.map((c) =>
+                c.id === item.id
+                  ? { ...item, reactionCount: c.reactionCount, myReaction: c.myReaction, topReactions: c.topReactions }
+                  : c,
+              ),
             }))
           : without.map((p, i) => (i === without.length - 1 ? { ...p, items: [...p.items, item] } : p));
         return { ...data, pages };
@@ -190,6 +195,7 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         state: 'sending',
         reactionCount: 0,
         myReaction: null,
+        topReactions: [],
       };
       setSending((list) => [...list, temp]);
       try {
@@ -273,7 +279,14 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
                     ...p,
                     items: p.items.map((c) =>
                       c.id === row.id
-                        ? { ...c, body: row.body, editedAt: row.edited_at, reactionCount: keepCount ? c.reactionCount : row.reaction_count }
+                        ? {
+                            ...c,
+                            body: row.body,
+                            editedAt: row.edited_at,
+                            // The row carries the exact tally, so the top 3 here is exact (not approximated).
+                            reactionCount: keepCount ? c.reactionCount : row.reaction_count,
+                            topReactions: keepCount ? c.topReactions : topFromBreakdown(row.reaction_breakdown),
+                          }
                         : c,
                     ),
                   })),

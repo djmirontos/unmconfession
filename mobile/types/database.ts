@@ -155,6 +155,7 @@ export type Database = {
           moderated_by: string | null
           post_id: string | null
           published_at: string | null
+          reaction_breakdown: Json
           reaction_count: number
           reject_reason: string | null
           status: Database["public"]["Enums"]["content_status"]
@@ -171,6 +172,7 @@ export type Database = {
           moderated_by?: string | null
           post_id?: string | null
           published_at?: string | null
+          reaction_breakdown?: Json
           reaction_count?: number
           reject_reason?: string | null
           status: Database["public"]["Enums"]["content_status"]
@@ -187,6 +189,7 @@ export type Database = {
           moderated_by?: string | null
           post_id?: string | null
           published_at?: string | null
+          reaction_breakdown?: Json
           reaction_count?: number
           reject_reason?: string | null
           status?: Database["public"]["Enums"]["content_status"]
@@ -649,6 +652,7 @@ export type Database = {
           moderated_by: string | null
           number: number | null
           published_at: string | null
+          reaction_breakdown: Json
           reaction_count: number
           reject_reason: string | null
           status: Database["public"]["Enums"]["content_status"]
@@ -669,6 +673,7 @@ export type Database = {
           moderated_by?: string | null
           number?: number | null
           published_at?: string | null
+          reaction_breakdown?: Json
           reaction_count?: number
           reject_reason?: string | null
           status: Database["public"]["Enums"]["content_status"]
@@ -689,6 +694,7 @@ export type Database = {
           moderated_by?: string | null
           number?: number | null
           published_at?: string | null
+          reaction_breakdown?: Json
           reaction_count?: number
           reject_reason?: string | null
           status?: Database["public"]["Enums"]["content_status"]
@@ -1008,6 +1014,7 @@ export type Database = {
           published_at: string | null
           reaction_count: number | null
           target_name: string | null
+          top_reactions: string[] | null
         }
         Relationships: [
           {
@@ -1032,6 +1039,7 @@ export type Database = {
           post_id: string | null
           published_at: string | null
           reaction_count: number | null
+          top_reactions: string[] | null
         }
         Relationships: [
           {
@@ -1073,6 +1081,7 @@ export type Database = {
       }
     }
     Functions: {
+      _bump_reaction: { Args: { b: Json; d: number; t: string }; Returns: Json }
       _check_images: { Args: { p_images: Json; p_uid: string }; Returns: Json }
       _moderation_decision: {
         Args: {
@@ -1129,6 +1138,7 @@ export type Database = {
           moderated_by: string | null
           post_id: string | null
           published_at: string | null
+          reaction_breakdown: Json
           reaction_count: number
           reject_reason: string | null
           status: Database["public"]["Enums"]["content_status"]
@@ -1206,6 +1216,7 @@ export type Database = {
           moderated_by: string | null
           number: number | null
           published_at: string | null
+          reaction_breakdown: Json
           reaction_count: number
           reject_reason: string | null
           status: Database["public"]["Enums"]["content_status"]
@@ -1236,6 +1247,7 @@ export type Database = {
           moderated_by: string | null
           post_id: string | null
           published_at: string | null
+          reaction_breakdown: Json
           reaction_count: number
           reject_reason: string | null
           status: Database["public"]["Enums"]["content_status"]
@@ -1304,6 +1316,7 @@ export type Database = {
           moderated_by: string | null
           number: number | null
           published_at: string | null
+          reaction_breakdown: Json
           reaction_count: number
           reject_reason: string | null
           status: Database["public"]["Enums"]["content_status"]
@@ -1336,6 +1349,7 @@ export type Database = {
           published_at: string | null
           reaction_count: number | null
           target_name: string | null
+          top_reactions: string[] | null
         }[]
         SetofOptions: {
           from: "*"
@@ -1364,6 +1378,7 @@ export type Database = {
           post_id: string | null
           published_at: string | null
           reaction_count: number | null
+          top_reactions: string[] | null
         }[]
         SetofOptions: {
           from: "*"
@@ -1392,6 +1407,7 @@ export type Database = {
           published_at: string | null
           reaction_count: number | null
           target_name: string | null
+          top_reactions: string[] | null
         }[]
         SetofOptions: {
           from: "*"
@@ -1477,6 +1493,7 @@ export type Database = {
           published_at: string | null
           reaction_count: number | null
           target_name: string | null
+          top_reactions: string[] | null
         }[]
         SetofOptions: {
           from: "*"

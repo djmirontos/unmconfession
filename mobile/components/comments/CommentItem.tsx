@@ -5,6 +5,7 @@ import { PostBody } from '@/components/feed/PostBody';
 import { MoreButton } from '@/components/myposts/MoreButton';
 import { Avatar } from '@/components/profile/Avatar';
 import { ReactionButton } from '@/components/reactions/ReactionButton';
+import { TopReactions } from '@/components/reactions/TopReactions';
 import { Skeleton } from '@/components/ui/Skeleton';
 import type { ThreadComment } from '@/lib/comments';
 import { setCommentReaction } from '@/lib/commentReactionSync';
@@ -43,13 +44,14 @@ function CommentItemImpl({ comment, onMore, mine = false }: Props) {
         <PostBody postId={comment.id} body={comment.body} targetName={null} />
         {/* Only published comments can be reacted to (the server re-checks). */}
         {comment.state === 'published' ? (
-          <View className="-my-1 -ml-2">
+          <View className="-my-1 -ml-2 flex-row items-center gap-1">
             <ReactionButton
               compact
               myReaction={comment.myReaction}
               count={comment.reactionCount}
               onChange={(next) => setCommentReaction(comment.id, comment.myReaction, next)}
             />
+            <TopReactions compact ring="bg" types={comment.topReactions} total={comment.reactionCount} />
           </View>
         ) : null}
         {comment.state === 'pending' ? (

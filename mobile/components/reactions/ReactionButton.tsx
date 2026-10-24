@@ -26,6 +26,7 @@ const HOLD_MS = 350;
 
 type Props = {
   myReaction: ReactionType | null;
+  /** Total reactions, for the screen-reader label (the visible total is TopReactions). */
   count: number;
   /** The wanted reaction (null = remove). Callers send it through their latest-only sync. */
   onChange: (next: ReactionType | null) => void;
@@ -162,14 +163,7 @@ export function ReactionButton({ myReaction, count, onChange, disabled = false, 
         <Text className={`${compact ? 'text-xs' : 'text-sm'} font-bold ${reaction ? 'text-accent' : 'text-text-dim'}`}>
           {reaction ? reaction.label : 'Like'}
         </Text>
-        {compact ? (
-          count > 0 ? <Text className="text-xs font-bold text-text-dim">{count}</Text> : null
-        ) : (
-          // Reserved width so the row does not shift when the count changes.
-          <Text style={{ minWidth: 24 }} className="text-sm font-bold text-text-dim">
-            {count}
-          </Text>
-        )}
+        {/* The total is shown by TopReactions next to the button; `count` is only for the label. */}
       </View>
     </GestureDetector>
   );

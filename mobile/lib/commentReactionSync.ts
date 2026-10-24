@@ -5,7 +5,7 @@ import { getCommentReactionErrorMessage, getErrorCode } from '@/lib/errors';
 import { createLatestOnlyQueue } from '@/lib/latestOnlyQueue';
 import { logError } from '@/lib/log';
 import { queryClient } from '@/lib/queryClient';
-import type { ReactionType } from '@/lib/reactions';
+import { approxTopReactions, type ReactionType } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
 import { useToastStore } from '@/stores/toastStore';
 import type { Database } from '@/types/database';
@@ -18,7 +18,14 @@ function withReaction(comment: ThreadComment, next: Reaction): ThreadComment {
   const prev = comment.myReaction;
   if (prev === next) return comment;
   const delta = prev === null ? 1 : next === null ? -1 : 0;
-  return { ...comment, myReaction: next, reactionCount: Math.max(0, comment.reactionCount + delta) };
+  const reactionCount = Math.max(0, comment.reactionCount + delta);
+  // Top 3 approximated (see approxTopReactions); realtime rows and refetches bring the exact order.
+  return {
+    ...comment,
+    myReaction: next,
+    reactionCount,
+    topReactions: approxTopReactions(comment.topReactions, prev, next, reactionCount),
+  };
 }
 
 /** Patches the comment in every cached thread (post or listing). Threads are not persisted. */

@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import type { FeedData } from '@/lib/feed';
 import { type FeedPost, type PollOption, parsePollOptions } from '@/lib/posts';
+import { parseTopReactions } from '@/lib/reactions';
 import type { Json } from '@/types/database';
 
 export type PostCounts = {
@@ -11,7 +12,10 @@ export type PostCounts = {
   /** Polls only: fresh results and my vote. */
   poll_options?: Json | null;
   my_vote?: string | null;
+  top_reactions?: string[] | null;
 };
+
+const sameTypes = (a: readonly string[], b: readonly string[]) => a.length === b.length && a.every((t, i) => t === b[i]);
 
 export const postQueryKey = (postId: string, userId: string | null) => ['post', postId, userId ?? 'guest'] as const;
 
@@ -30,15 +34,21 @@ function applyCounts(post: FeedPost, byId: Map<string, PostCounts>, skipPoll: (p
     if (fresh && !sameOptions(fresh, poll_options)) poll_options = fresh;
     if (counts.my_vote !== undefined) my_vote = counts.my_vote;
   }
+  let top_reactions = post.top_reactions;
+  if (counts.top_reactions !== undefined) {
+    const fresh = parseTopReactions(counts.top_reactions);
+    if (!sameTypes(fresh, top_reactions)) top_reactions = fresh;
+  }
   if (
     reaction_count === post.reaction_count &&
     comment_count === post.comment_count &&
     poll_options === post.poll_options &&
-    my_vote === post.my_vote
+    my_vote === post.my_vote &&
+    top_reactions === post.top_reactions
   ) {
     return post;
   }
-  return { ...post, reaction_count, comment_count, poll_options, my_vote };
+  return { ...post, reaction_count, comment_count, poll_options, my_vote, top_reactions };
 }
 
 /**

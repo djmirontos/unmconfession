@@ -4,19 +4,25 @@ import { createLatestOnlyQueue } from '@/lib/latestOnlyQueue';
 import { logError } from '@/lib/log';
 import type { FeedPost } from '@/lib/posts';
 import { queryClient } from '@/lib/queryClient';
-import type { ReactionType } from '@/lib/reactions';
+import { approxTopReactions, type ReactionType } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
 import { useToastStore } from '@/stores/toastStore';
 import type { Database } from '@/types/database';
 
 type Reaction = ReactionType | null;
 
-/** none -> reaction: +1; A -> B: unchanged; reaction -> none: -1 (never below 0). */
+/** none -> reaction: +1; A -> B: unchanged; reaction -> none: -1 (never below 0). Top 3 approximated. */
 function withReaction(post: FeedPost, next: Reaction): FeedPost {
   const prev = post.my_reaction;
   if (prev === next) return post;
   const delta = prev === null ? 1 : next === null ? -1 : 0;
-  return { ...post, my_reaction: next, reaction_count: Math.max(0, post.reaction_count + delta) };
+  const reaction_count = Math.max(0, post.reaction_count + delta);
+  return {
+    ...post,
+    my_reaction: next,
+    reaction_count,
+    top_reactions: approxTopReactions(post.top_reactions, prev, next, reaction_count),
+  };
 }
 
 /** Patches every cache holding the post: feed pages (all viewers' keys) and the post detail. */

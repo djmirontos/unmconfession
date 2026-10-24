@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 
 const INTERVAL_MS = 30 * 1000;
 
-/** Every ~30 s while enabled, refreshes reaction/comment counts and poll results (with my vote) for the posts on screen. */
+/** Every ~30 s while enabled, refreshes reaction/comment counts, top reactions and poll results (with my vote) for the posts on screen. */
 export function usePostCountsRefresh(getVisibleIds: () => readonly string[], enabled: boolean): void {
   const queryClient = useQueryClient();
   const getIds = useRef(getVisibleIds);
@@ -24,7 +24,7 @@ export function usePostCountsRefresh(getVisibleIds: () => readonly string[], ena
       const startedAt = Date.now();
       const { data, error } = await supabase
         .from('feed_posts')
-        .select('id, reaction_count, comment_count, poll_options, my_vote')
+        .select('id, reaction_count, comment_count, poll_options, my_vote, top_reactions')
         .in('id', [...ids]);
       if (error) logError('feed.counts', error, { ids: ids.length });
       else mergePostCounts(queryClient, data, (id) => pollVoteTouchedSince(id, startedAt));

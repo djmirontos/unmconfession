@@ -62,7 +62,7 @@ export const persistOptions: ComponentProps<typeof PersistQueryClientProvider>['
     serialize,
   }),
   maxAge: MAX_AGE,
-  buster: '2', // bump when a persisted query's shape changes
+  buster: '3', // bump when a persisted query's shape changes (3: feed rows gained top_reactions)
   dehydrateOptions: {
     shouldDehydrateQuery: (query) =>
       query.state.status === 'success' &&

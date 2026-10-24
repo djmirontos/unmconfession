@@ -78,6 +78,7 @@ function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false
       {onAction ? (
         <PostActions
           reactionCount={post.reaction_count}
+          topReactions={post.top_reactions}
           commentCount={post.comment_count}
           postId={post.id}
           myReaction={post.my_reaction}
@@ -86,7 +87,7 @@ function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false
           onAction={onAction}
         />
       ) : showCounts ? (
-        <PostCounts reactionCount={post.reaction_count} commentCount={post.comment_count} />
+        <PostCounts reactionCount={post.reaction_count} topReactions={post.top_reactions} commentCount={post.comment_count} />
       ) : null}
       {footer}
     </View>

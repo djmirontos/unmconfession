@@ -48,6 +48,7 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="post/[id]" />
         <Stack.Screen name="my-posts" />
+        <Stack.Screen name="blocked-users" />
         <Stack.Screen name="post-status" />
         <Stack.Screen name="edit" />
         <Stack.Screen name="(auth)/sign-in" />

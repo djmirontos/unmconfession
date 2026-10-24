@@ -18,6 +18,7 @@ const COPY: Record<ParticipationAction, { icon: IconName; title: string }> = {
   react: { icon: 'heart-outline', title: 'Sign in to react' },
   vote: { icon: 'stats-chart-outline', title: 'Sign in to vote' },
   report: { icon: 'flag-outline', title: 'Sign in to report' },
+  block: { icon: 'ban-outline', title: 'Sign in to block' },
   share: { icon: 'share-social-outline', title: 'Sign in to share' },
   default: { icon: 'sparkles-outline', title: 'Join the conversation' },
 };

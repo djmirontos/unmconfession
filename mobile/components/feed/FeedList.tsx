@@ -8,6 +8,7 @@ import { AnnouncementCard } from '@/components/feed/AnnouncementCard';
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { NewPostsPill } from '@/components/feed/NewPostsPill';
 import { PostCard } from '@/components/feed/PostCard';
+import { ContentMenu, type ContentMenuTarget } from '@/components/moderation/ContentMenu';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { useAnnouncement } from '@/hooks/useAnnouncement';
@@ -21,6 +22,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { getErrorMessage } from '@/lib/errors';
 import { logError } from '@/lib/log';
 import type { FeedPost } from '@/lib/posts';
+import { useAuthStore } from '@/stores/authStore';
 import { usePickerOpen } from '@/stores/reactionPickerStore';
 
 // Within this distance of the top, new posts merge in silently instead of showing the pill.
@@ -86,13 +88,27 @@ export function FeedList() {
     [router, isMember],
   );
 
+  // "⋯" (Report / Block) on other members' posts; own posts keep no menu in the feed.
+  const userId = useAuthStore((s) => s.session?.user.id ?? null);
+  const [menuFor, setMenuFor] = useState<ContentMenuTarget | null>(null);
+  const openMenu = useCallback(
+    (post: FeedPost) => setMenuFor({ type: 'post', id: post.id, authorId: post.author_id, nickname: post.nickname }),
+    [],
+  );
+
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FeedPost>) => (
       <View className="pb-3">
-        <PostCard post={item} onOpen={openPost} onAction={onAction} onComment={openComments} />
+        <PostCard
+          post={item}
+          onOpen={openPost}
+          onAction={onAction}
+          onComment={openComments}
+          onMore={item.author_id === userId ? undefined : openMenu}
+        />
       </View>
     ),
-    [openPost, onAction, openComments],
+    [openPost, onAction, openComments, openMenu, userId],
   );
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<FeedPost>[] }) => {
@@ -197,6 +213,7 @@ export function FeedList() {
         }
       />
       {atTop ? null : <NewPostsPill count={pendingCount} onPress={onPillPress} />}
+      <ContentMenu target={menuFor} onClose={() => setMenuFor(null)} />
     </View>
   );
 }

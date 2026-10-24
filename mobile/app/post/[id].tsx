@@ -7,6 +7,7 @@ import { CommentThread } from '@/components/comments/CommentThread';
 import { EmptyState, ErrorState, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { PostCard } from '@/components/feed/PostCard';
 import { BackHeader } from '@/components/layout/BackHeader';
+import { ContentMenu, type ContentMenuTarget } from '@/components/moderation/ContentMenu';
 import { MoreButton } from '@/components/myposts/MoreButton';
 import { OwnItemMenu } from '@/components/myposts/OwnItemMenu';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
@@ -39,6 +40,15 @@ export default function PostDetailScreen() {
   const isOwn = !!userId && post.data?.author_id === userId;
   const own = useMyItem(isOwn ? 'post' : null, id);
   const [menuOpen, setMenuOpen] = useState(false);
+  // Someone else's post: Report / Block. Blocking its author (here or from a comment) leaves the screen.
+  const [otherMenu, setOtherMenu] = useState<ContentMenuTarget | null>(null);
+  const authorId = post.data?.author_id;
+  const onAuthorBlocked = useCallback(
+    (blockedId: string) => {
+      if (blockedId === authorId) router.back();
+    },
+    [authorId, router],
+  );
   // The card's comment button focuses the composer below.
   const [focusRequest, setFocusRequest] = useState(0);
   const focusComposer = useCallback(() => setFocusRequest((n) => n + 1), []);
@@ -92,15 +102,29 @@ export default function PostDetailScreen() {
         focusRequest={focusRequest}
         scrollEnabled={!pickerOpen}
         expectedCount={data.comment_count}
+        onAuthorBlocked={onAuthorBlocked}
       />
     );
   }
 
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: insets.top }}>
-      <BackHeader title="Post" right={isOwn && own.data ? <MoreButton onPress={() => setMenuOpen(true)} /> : undefined} />
+      <BackHeader
+        title="Post"
+        right={
+          isOwn ? (
+            own.data ? <MoreButton onPress={() => setMenuOpen(true)} /> : undefined
+          ) : data ? (
+            <MoreButton
+              onPress={() => setOtherMenu({ type: 'post', id: data.id, authorId: data.author_id, nickname: data.nickname })}
+              accessibilityLabel="More options for this post"
+            />
+          ) : undefined
+        }
+      />
       {body}
       <OwnItemMenu item={menuOpen ? (own.data ?? null) : null} onClose={() => setMenuOpen(false)} onDeleted={() => router.back()} />
+      <ContentMenu target={otherMenu} onClose={() => setOtherMenu(null)} onBlocked={onAuthorBlocked} />
     </View>
   );
 }

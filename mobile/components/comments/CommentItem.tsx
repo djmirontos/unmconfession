@@ -10,11 +10,13 @@ import { formatRelative } from '@/lib/time';
 
 type Props = {
   comment: ThreadComment;
-  /** Set for my own comments: opens the Edit / Delete menu. */
+  /** Opens the comment's menu: Edit / Delete for my own, Report / Block for others. */
   onMore?: (comment: ThreadComment) => void;
+  /** My own comment (changes the menu button's label). */
+  mine?: boolean;
 };
 
-function CommentItemImpl({ comment, onMore }: Props) {
+function CommentItemImpl({ comment, onMore, mine = false }: Props) {
   const sending = comment.state === 'sending';
   return (
     <View className={`flex-row gap-3 py-3 ${sending ? 'opacity-60' : ''}`}>
@@ -29,7 +31,10 @@ function CommentItemImpl({ comment, onMore }: Props) {
             {!sending && comment.editedAt ? ' · Edited' : ''}
           </Text>
           {onMore && !sending ? (
-            <MoreButton onPress={() => onMore(comment)} accessibilityLabel="More options for your comment" />
+            <MoreButton
+              onPress={() => onMore(comment)}
+              accessibilityLabel={mine ? 'More options for your comment' : 'More options for this comment'}
+            />
           ) : null}
         </View>
         {/* Same 6-line "Read more" as post cards, keyed by comment id. */}

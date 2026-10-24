@@ -144,9 +144,12 @@ export default function ProfileScreen() {
       {status !== 'guest' ? (
         <>
           {status === 'member' ? (
-            <Button label="My Posts" variant="secondary" icon="document-text-outline" onPress={() => router.push('/my-posts')} />
+            <>
+              <Button label="My Posts" variant="secondary" icon="document-text-outline" onPress={() => router.push('/my-posts')} />
+              <Button label="Blocked users" variant="secondary" icon="ban-outline" onPress={() => router.push('/blocked-users')} />
+            </>
           ) : null}
-          <ComingSoon label="Notifications and Blocked users arrive in later modules." />
+          <ComingSoon label="Notifications arrive in a later module." />
           <FormMessage tone="error" message={error} />
           <Button label="Log out" variant="danger" icon="log-out-outline" loading={signingOut} onPress={handleSignOut} />
         </>

@@ -6,6 +6,7 @@ import { PostActions, PostCounts } from '@/components/feed/PostActions';
 import { PostBody } from '@/components/feed/PostBody';
 import { PostHeader } from '@/components/feed/PostHeader';
 import { PostImages } from '@/components/feed/PostImages';
+import { MoreButton } from '@/components/myposts/MoreButton';
 import type { PostAction } from '@/hooks/useComingSoonAction';
 import { usePollVote } from '@/hooks/usePollVote';
 import type { FeedPost } from '@/lib/posts';
@@ -28,10 +29,14 @@ type Props = {
   reactionsDisabled?: boolean;
   /** Comment button (Feed: open the post with the composer focused; detail: focus the composer). */
   onComment?: (id: string) => void;
+  /** Feed: "⋯" in the header for someone else's post (Report / Block). Ignored when headerAccessory is set. */
+  onMore?: (post: FeedPost) => void;
 };
 
-function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false, headerAccessory, footer, reactionsDisabled = false, onComment }: Props) {
+function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false, headerAccessory, footer, reactionsDisabled = false, onComment, onMore }: Props) {
   const vote = usePollVote(post.id, post.my_vote);
+  const accessory =
+    headerAccessory ?? (onMore ? <MoreButton onPress={() => onMore(post)} accessibilityLabel="More options for this post" /> : undefined);
   const content = (
     <View className="gap-3">
       <PostHeader
@@ -41,7 +46,7 @@ function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false
         avatar_key={post.avatar_key}
         published_at={post.published_at}
         edited_at={post.edited_at}
-        accessory={headerAccessory}
+        accessory={accessory}
       />
       <PostBody postId={post.id} body={post.body} targetName={post.target_name} full={full} />
       <PostImages images={post.images} />

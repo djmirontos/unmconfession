@@ -27,6 +27,8 @@ const MESSAGES: Record<string, string> = {
   // Poll voting.
   poll_closed: 'This poll has ended.',
   invalid_option: "That option isn't available.",
+  // Reports.
+  own_content: "You can't report your own post.",
   // Edit / delete own items.
   not_editable: 'This can no longer be edited. You can still delete it.',
   edit_window_closed: 'The 24-hour edit window has closed. You can still delete it.',
@@ -106,4 +108,15 @@ const COMMENT_MESSAGES: Record<string, string> = {
 export function getCommentErrorMessage(error: unknown): string {
   const code = getErrorCode(error);
   return (code && COMMENT_MESSAGES[code]) || getErrorMessage(error);
+}
+
+// Report wording: the limit is per day and the target may be gone.
+const REPORT_MESSAGES: Record<string, string> = {
+  rate_limited: "You've sent too many reports today. Try again tomorrow.",
+  not_found: 'This content is no longer available.',
+};
+
+export function getReportErrorMessage(error: unknown): string {
+  const code = getErrorCode(error);
+  return (code && REPORT_MESSAGES[code]) || getErrorMessage(error);
 }

@@ -16,6 +16,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { CommentComposer } from '@/components/comments/CommentComposer';
 import { CommentItem, CommentSkeleton } from '@/components/comments/CommentItem';
 import { EmptyState, ErrorState } from '@/components/feed/ListStates';
+import { ContentMenu, type ContentMenuTarget } from '@/components/moderation/ContentMenu';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { ActionSheet, type SheetAction } from '@/components/ui/ActionSheet';
 import { Button } from '@/components/ui/Button';
@@ -40,6 +41,8 @@ type Props = {
   focusRequest?: number;
   /** The target's comment_count, so a stale empty thread is refetched. */
   expectedCount?: number;
+  /** After blocking a commenter from their comment's menu. */
+  onAuthorBlocked?: (authorId: string) => void;
 };
 
 /**
@@ -47,7 +50,16 @@ type Props = {
  * comments oldest first), "Load more comments", the "New comments" pill and the
  * pinned composer. One scroll view only, so nothing scrolls inside anything else.
  */
-export function CommentThread({ targetType, targetId, header, focusComposer = false, scrollEnabled = true, focusRequest = 0, expectedCount = 0 }: Props) {
+export function CommentThread({
+  targetType,
+  targetId,
+  header,
+  focusComposer = false,
+  scrollEnabled = true,
+  focusRequest = 0,
+  expectedCount = 0,
+  onAuthorBlocked,
+}: Props) {
   const reduceMotion = useReducedMotion();
   const listRef = useRef<FlashListRef<ThreadComment>>(null);
   const inputRef = useRef<TextInput>(null);
@@ -124,11 +136,18 @@ export function CommentThread({ targetType, targetId, header, focusComposer = fa
   }, [menuFor, startEdit, confirmDelete]);
 
   const myId = thread.myId;
+  // Others' comments: Report / Block (guests get the sign-in sheet from the menu).
+  const [otherMenu, setOtherMenu] = useState<ContentMenuTarget | null>(null);
+  const openOtherMenu = useCallback(
+    (c: ThreadComment) => setOtherMenu({ type: 'comment', id: c.id, authorId: c.authorId, nickname: c.nickname }),
+    [],
+  );
   const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<ThreadComment>) => (
-      <CommentItem comment={item} onMore={item.authorId === myId ? setMenuFor : undefined} />
-    ),
-    [myId],
+    ({ item }: ListRenderItemInfo<ThreadComment>) => {
+      const mine = item.authorId === myId;
+      return <CommentItem comment={item} mine={mine} onMore={mine ? setMenuFor : openOtherMenu} />;
+    },
+    [myId, openOtherMenu],
   );
 
   const listHeader = useMemo(
@@ -206,6 +225,7 @@ export function CommentThread({ targetType, targetId, header, focusComposer = fa
         autoFocus={focusComposer}
       />
       <ActionSheet visible={menuFor !== null} actions={menuActions} onClose={() => setMenuFor(null)} />
+      <ContentMenu target={otherMenu} onClose={() => setOtherMenu(null)} onBlocked={onAuthorBlocked} />
     </KeyboardAvoidingView>
   );
 }

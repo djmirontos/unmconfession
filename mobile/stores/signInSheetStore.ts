@@ -6,6 +6,7 @@ export type ParticipationAction =
   | 'react'
   | 'vote'
   | 'report'
+  | 'block'
   | 'share'
   | 'default';
 

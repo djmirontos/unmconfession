@@ -247,3 +247,38 @@
 - 4.4 report and block (block only).
 - 4.5 notifications.
 - Server work needed: edit/delete own comment, vote change, block filtering in feed / comments / trending.
+
+## Module 4.2: Comments (2026-10-24)
+
+**Database:** `supabase/migrations/20261023130000_comments_edit_delete.sql`, applied by the owner.
+- RPCs `edit_own_comment` and `delete_own_comment`.
+- `edited_at` and `deleted_at` on comments; `thread_comments` exposes `edited_at`.
+- Authors no longer see their own deleted comments.
+- `purge_expired` also removes author-deleted comments.
+
+**Rules (same as posts)**
+- Edit within 24 hours; the keyword filter re-checks every edit; "Edited" label.
+- The previous text is kept in `moderation_actions` for moderators.
+- At most 10 edits per hour per user, shared with post and listing edits.
+
+**App**
+- `CommentThread`: generic for posts and listings; it owns the detail screen's single FlashList.
+- `CommentComposer`, with a fix for the gap above the Android keyboard.
+- Edit and delete own comments.
+- Held comments are shown to their author with a "Waiting for review" tag.
+- Live updates via realtime (topic `comments:post:<uuid>:<random uuid>`) and a "New comments" pill.
+- The thread cache is patched after create / edit / delete, with a 10-second staleTime.
+- The Feed comment button opens the post with the composer focused.
+
+**Lessons**
+- A cached empty thread showed "No comments yet" next to a count of 1.
+- Staff accounts (moderator / admin) bypass the keyword filter by design. Test keyword holds with a non-admin account (second test account `djmirontos+tester@gmail.com`, nickname `tester_two`).
+
+**Still open**
+- Branding: `mobile/public/unmlogo.png` is still untracked.
+
+**Next**
+- 4.3 poll voting (vote change allowed until the poll ends).
+- 4.4 report and block (block only).
+- 4.5 notifications.
+- 4.6 comment reactions and one-level replies.

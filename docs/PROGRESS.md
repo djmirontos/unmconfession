@@ -378,3 +378,28 @@
 - Order between refreshes is approximate while reacting.
 
 **Verified:** device QA passed.
+
+## Module 4.6b: One-level replies (2026-10-25)
+
+**Database:** `supabase/migrations/20261025120000_comment_replies.sql`, applied by the owner.
+- `comments.parent_id` / `reply_to_id` / `reply_count`; `create_reply` and `get_replies` RPCs; `get_comments` returns top-level comments only.
+- Post/listing `comment_count` counts replies.
+- `reply` notification to the author of the comment answered; the post owner is notified only of top-level comments.
+- Removing or rejecting a top-level comment removes its replies; a comment merely held keeps them.
+
+**App**
+- Reply action on every comment and reply; reply mode in the composer ("Replying to {nickname}", prefill "@nickname " when answering a reply).
+- Replies collapsed behind "View N replies", loaded lazily 20 at a time via `get_replies`, indented, one level only (answering a reply lands in the same thread).
+- Same actions as comments: reactions with top 3, edit, delete, report, block.
+- Optimistic send/delete with count patching and rollback; held replies show "Waiting for review" and are not counted.
+- Flattened single-FlashList row model (comment, reply, viewReplies, viewMoreReplies, hideReplies); replies caches (`['replies', parentId]`) not persisted.
+- Realtime: replies never raise the "New comments" pill or join the top-level list; they bump the post count and refresh loaded replies.
+
+**Known gaps**
+- Pages loaded with "View more replies" collapse back to the first 20 after a refetch.
+- A moderator removing a top-level comment while you watch leaves its replies on screen until the next refetch.
+- Blocked authors' reply INSERTs still bump the comment count (4.4 issue).
+- Notification taps open the post without scrolling to the reply.
+- Restoring a removed comment does not restore its replies (handle in the Module 7 moderator panel).
+
+**Verified:** device QA passed.

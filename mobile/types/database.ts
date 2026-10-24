@@ -101,6 +101,8 @@ export type Database = {
           author_id: string
           body: string
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           id: string
           listing_id: string | null
           moderated_at: string | null
@@ -114,6 +116,8 @@ export type Database = {
           author_id: string
           body: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
           listing_id?: string | null
           moderated_at?: string | null
@@ -127,6 +131,8 @@ export type Database = {
           author_id?: string
           body?: string
           created_at?: string
+          deleted_at?: string | null
+          edited_at?: string | null
           id?: string
           listing_id?: string | null
           moderated_at?: string | null
@@ -969,6 +975,7 @@ export type Database = {
           author_id: string | null
           avatar_key: string | null
           body: string | null
+          edited_at: string | null
           id: string | null
           listing_id: string | null
           nickname: string | null
@@ -1063,6 +1070,8 @@ export type Database = {
           author_id: string
           body: string
           created_at: string
+          deleted_at: string | null
+          edited_at: string | null
           id: string
           listing_id: string | null
           moderated_at: string | null
@@ -1157,8 +1166,33 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_own_comment: { Args: { p_comment_id: string }; Returns: undefined }
       delete_own_listing: { Args: { p_listing_id: string }; Returns: undefined }
       delete_own_post: { Args: { p_post_id: string }; Returns: undefined }
+      edit_own_comment: {
+        Args: { p_body: string; p_comment_id: string }
+        Returns: {
+          author_id: string
+          body: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          listing_id: string | null
+          moderated_at: string | null
+          moderated_by: string | null
+          post_id: string | null
+          published_at: string | null
+          reject_reason: string | null
+          status: Database["public"]["Enums"]["content_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "comments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       edit_own_listing: {
         Args: {
           p_condition?: string
@@ -1268,6 +1302,7 @@ export type Database = {
           author_id: string | null
           avatar_key: string | null
           body: string | null
+          edited_at: string | null
           id: string | null
           listing_id: string | null
           nickname: string | null

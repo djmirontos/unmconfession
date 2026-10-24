@@ -90,3 +90,17 @@ export function getReactionErrorMessage(error: unknown): string {
   if (code && REACTION_GENERIC.has(code)) return NETWORK;
   return getErrorMessage(error);
 }
+
+// Comment wording for codes that mean something more specific in a thread.
+const COMMENT_MESSAGES: Record<string, string> = {
+  invalid_body: 'Write a comment of up to 1000 characters.',
+  not_found: "This post isn't available anymore.",
+  rate_limited: "You're commenting too fast. Try again in a few minutes.",
+  not_editable: 'This comment can no longer be edited. You can still delete it.',
+  edit_window_closed: 'The 24-hour edit window has closed. You can still delete it.',
+};
+
+export function getCommentErrorMessage(error: unknown): string {
+  const code = getErrorCode(error);
+  return (code && COMMENT_MESSAGES[code]) || getErrorMessage(error);
+}

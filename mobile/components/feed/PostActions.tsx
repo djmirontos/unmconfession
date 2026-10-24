@@ -41,9 +41,11 @@ type Props = {
   /** Reacting is disabled until the post is fully loaded. */
   reactionsDisabled?: boolean;
   onAction: (action: PostAction) => void;
+  /** Comment button: open the thread / focus the composer. Falls back to onAction('comment'). */
+  onComment?: () => void;
 };
 
-export function PostActions({ postId, myReaction, reactionCount, commentCount, reactionsDisabled, onAction }: Props) {
+export function PostActions({ postId, myReaction, reactionCount, commentCount, reactionsDisabled, onAction, onComment }: Props) {
   return (
     <View className="-mx-3 flex-row items-center">
       <ReactionButton postId={postId} myReaction={myReaction} count={reactionCount} disabled={reactionsDisabled} />
@@ -51,7 +53,7 @@ export function PostActions({ postId, myReaction, reactionCount, commentCount, r
         icon="chatbubble-outline"
         label="Comments"
         count={commentCount}
-        onPress={() => onAction('comment')}
+        onPress={onComment ?? (() => onAction('comment'))}
       />
       <View className="flex-1" />
       <ActionButton icon="share-social-outline" label="Share" onPress={() => onAction('share')} />

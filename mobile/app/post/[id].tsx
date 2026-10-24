@@ -1,11 +1,10 @@
-import { FlashList, type ListRenderItemInfo } from '@shopify/flash-list';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { CommentItem, CommentSkeleton } from '@/components/comments/CommentItem';
-import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
+import { CommentThread } from '@/components/comments/CommentThread';
+import { EmptyState, ErrorState, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { PostCard } from '@/components/feed/PostCard';
 import { BackHeader } from '@/components/layout/BackHeader';
 import { MoreButton } from '@/components/myposts/MoreButton';
@@ -16,27 +15,23 @@ import { Button } from '@/components/ui/Button';
 import { useAppActive } from '@/hooks/useAppActive';
 import { useComingSoonAction } from '@/hooks/useComingSoonAction';
 import { useMyItem } from '@/hooks/useMyItem';
-import { type ThreadComment, useComments } from '@/hooks/useComments';
 import { usePost } from '@/hooks/usePost';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
 import { getErrorMessage } from '@/lib/errors';
 import { useAuthStore } from '@/stores/authStore';
 import { usePickerOpen } from '@/stores/reactionPickerStore';
 
-const keyExtractor = (c: ThreadComment) => c.id;
-const renderComment = ({ item }: ListRenderItemInfo<ThreadComment>) => <CommentItem comment={item} />;
-
 export default function PostDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { id = '' } = useLocalSearchParams<{ id: string }>();
+  // focus=comment: opened from a Feed card's comment button.
+  const { id = '', focus } = useLocalSearchParams<{ id: string; focus?: string }>();
   const post = usePost(id);
-  const { query: commentsQuery, comments } = useComments(id);
   const onAction = useComingSoonAction();
   const pickerOpen = usePickerOpen();
   const appActive = useAppActive();
   const isFocused = useIsFocused();
-  // Counts poll while open; new comments also refresh them right away (useComments).
+  // Counts poll while open; comment changes also adjust them right away.
   usePostCountsRefresh(() => (id ? [id] : []), appActive && isFocused);
 
   // Own post: load status and created_at (not in feed rows) for the "⋯" menu.
@@ -44,13 +39,29 @@ export default function PostDetailScreen() {
   const isOwn = !!userId && post.data?.author_id === userId;
   const own = useMyItem(isOwn ? 'post' : null, id);
   const [menuOpen, setMenuOpen] = useState(false);
+  // The card's comment button focuses the composer below.
+  const [focusRequest, setFocusRequest] = useState(0);
+  const focusComposer = useCallback(() => setFocusRequest((n) => n + 1), []);
 
-  const onEndReached = useCallback(() => {
-    if (commentsQuery.hasNextPage && !commentsQuery.isFetchingNextPage) void commentsQuery.fetchNextPage();
-  }, [commentsQuery]);
+  const data = post.data;
+  const refetchError = post.isRefetchError;
+  const placeholder = post.isPlaceholderData;
+  const refetchPost = post.refetch;
+  const header = useMemo(
+    () =>
+      data ? (
+        <View className="gap-4">
+          {refetchError ? <RefreshErrorBanner onRetry={() => void refetchPost()} /> : null}
+          <PostCard post={data} onAction={onAction} onComment={focusComposer} full reactionsDisabled={placeholder} />
+        </View>
+      ) : (
+        <View />
+      ),
+    [data, refetchError, placeholder, refetchPost, onAction, focusComposer],
+  );
 
   let body;
-  if (post.data === undefined) {
+  if (data === undefined) {
     body = (
       <View className="p-4">
         {post.isError ? (
@@ -60,7 +71,7 @@ export default function PostDetailScreen() {
         )}
       </View>
     );
-  } else if (post.data === null) {
+  } else if (data === null) {
     body = (
       <View className="gap-4 p-4">
         <EmptyState
@@ -72,42 +83,15 @@ export default function PostDetailScreen() {
       </View>
     );
   } else {
-    const data = post.data;
     body = (
-      <FlashList
-        data={commentsQuery.data ? comments : []}
-        renderItem={renderComment}
-        keyExtractor={keyExtractor}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
+      <CommentThread
+        targetType="post"
+        targetId={id}
+        header={header}
+        focusComposer={focus === 'comment'}
+        focusRequest={focusRequest}
         scrollEnabled={!pickerOpen}
-        contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 16 }}
-        ListHeaderComponent={
-          <View className="gap-4 pb-2">
-            {post.isRefetchError ? <RefreshErrorBanner onRetry={() => void post.refetch()} /> : null}
-            <PostCard post={data} onAction={onAction} full reactionsDisabled={post.isPlaceholderData} />
-            <Text accessibilityRole="header" className="text-xs font-bold uppercase tracking-widest text-text-dim">
-              Comments
-            </Text>
-          </View>
-        }
-        ListEmptyComponent={
-          commentsQuery.isError ? (
-            <ErrorState
-              message={getErrorMessage(commentsQuery.error)}
-              onRetry={() => void commentsQuery.refetch()}
-            />
-          ) : commentsQuery.data ? (
-            <EmptyState icon="chatbubble-outline" title="No comments yet" />
-          ) : (
-            <SkeletonList item={CommentSkeleton} count={3} />
-          )
-        }
-        ListFooterComponent={
-          comments.length > 0 ? (
-            <ListFooter loadingMore={commentsQuery.isFetchingNextPage} reachedEnd={false} endLabel="" />
-          ) : null
-        }
+        expectedCount={data.comment_count}
       />
     );
   }

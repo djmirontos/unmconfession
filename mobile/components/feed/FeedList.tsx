@@ -15,6 +15,7 @@ import { useAppActive } from '@/hooks/useAppActive';
 import { useComingSoonAction } from '@/hooks/useComingSoonAction';
 import { useFeed } from '@/hooks/useFeed';
 import { useNewPosts } from '@/hooks/useNewPosts';
+import { useMembership } from '@/hooks/useProfile';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
 import { useTheme } from '@/hooks/useTheme';
 import { getErrorMessage } from '@/lib/errors';
@@ -78,14 +79,20 @@ export function FeedList() {
   usePostCountsRefresh(() => visibleIds.current, appActive && isFocused);
 
   const openPost = useCallback((id: string) => router.push({ pathname: '/post/[id]', params: { id } }), [router]);
+  // Comment button: open the post with the composer focused (guests just read; the composer shows sign-in).
+  const isMember = useMembership().status === 'member';
+  const openComments = useCallback(
+    (id: string) => router.push({ pathname: '/post/[id]', params: isMember ? { id, focus: 'comment' } : { id } }),
+    [router, isMember],
+  );
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FeedPost>) => (
       <View className="pb-3">
-        <PostCard post={item} onOpen={openPost} onAction={onAction} />
+        <PostCard post={item} onOpen={openPost} onAction={onAction} onComment={openComments} />
       </View>
     ),
-    [openPost, onAction],
+    [openPost, onAction, openComments],
   );
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<FeedPost>[] }) => {

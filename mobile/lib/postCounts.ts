@@ -38,3 +38,16 @@ export function mergePostCounts(queryClient: QueryClient, rows: readonly PostCou
 
   queryClient.setQueriesData<FeedPost | null>({ queryKey: ['post'] }, (post) => (post ? applyCounts(post, byId) : post));
 }
+
+/** comment_count += delta (never below 0) on every cached feed row and post detail for this post. */
+export function bumpCommentCount(queryClient: QueryClient, postId: string, delta: number): void {
+  const bump = (post: FeedPost): FeedPost => ({ ...post, comment_count: Math.max(0, post.comment_count + delta) });
+  queryClient.setQueriesData<FeedData>({ queryKey: ['feed'] }, (data) => {
+    if (!data || !data.pages.some((page) => page.items.some((p) => p.id === postId))) return data;
+    return {
+      ...data,
+      pages: data.pages.map((page) => ({ ...page, items: page.items.map((p) => (p.id === postId ? bump(p) : p)) })),
+    };
+  });
+  queryClient.setQueriesData<FeedPost | null>({ queryKey: ['post', postId] }, (post) => (post ? bump(post) : post));
+}

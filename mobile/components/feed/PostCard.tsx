@@ -25,9 +25,11 @@ type Props = {
   footer?: ReactNode;
   /** Detail screen: true while only the cached feed copy is shown. */
   reactionsDisabled?: boolean;
+  /** Comment button (Feed: open the post with the composer focused; detail: focus the composer). */
+  onComment?: (id: string) => void;
 };
 
-function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false, headerAccessory, footer, reactionsDisabled = false }: Props) {
+function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false, headerAccessory, footer, reactionsDisabled = false, onComment }: Props) {
   const content = (
     <View className="gap-3">
       <PostHeader
@@ -73,6 +75,7 @@ function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false
           postId={post.id}
           myReaction={post.my_reaction}
           reactionsDisabled={reactionsDisabled}
+          onComment={onComment ? () => onComment(post.id) : undefined}
           onAction={onAction}
         />
       ) : showCounts ? (

@@ -22,6 +22,8 @@ type Options<T extends Table> = {
   filter?: string;
   /** False keeps the hook unsubscribed. */
   enabled?: boolean;
+  /** Channel topic prefix (e.g. 'comments:post:<uuid>'); a random UUID is appended. Defaults to the table name. */
+  topic?: string;
   onChange: (row: Tables<T>, event: ChangeEvent) => void;
   /**
    * Called on every SUBSCRIBED after the first one: a socket rejoin, a retry,
@@ -41,6 +43,7 @@ export function usePostgresChanges<T extends Table>({
   events,
   filter,
   enabled = true,
+  topic,
   onChange,
   onResubscribed,
 }: Options<T>): void {
@@ -84,7 +87,7 @@ export function usePostgresChanges<T extends Table>({
   useEffect(() => {
     if (!enabled || !live) return;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
-    const channel = supabase.channel(`${table}:${randomUUID()}`);
+    const channel = supabase.channel(`${topic ?? table}:${randomUUID()}`);
 
     for (const event of eventsKey.split(',') as ChangeEvent[]) {
       channel.on<Tables<T>>(
@@ -117,5 +120,5 @@ export function usePostgresChanges<T extends Table>({
       clearTimeout(retryTimer);
       void supabase.removeChannel(channel);
     };
-  }, [table, eventsKey, filter, enabled, live, generation, userId]);
+  }, [table, eventsKey, filter, enabled, topic, live, generation, userId]);
 }

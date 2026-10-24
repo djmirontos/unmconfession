@@ -360,3 +360,21 @@
 - Blocked authors' INSERT events can still raise the "New comments" pill (existing 4.4 issue).
 
 **Verified:** device QA passed.
+
+## Module 4.6a+: Top reactions (2026-10-25)
+
+**Database:** `supabase/migrations/20261025110000_top_reactions.sql`, applied by the owner.
+- `posts.reaction_breakdown` / `comments.reaction_breakdown` tallies, kept by the reaction triggers (add, remove, change type) and backfilled.
+- `feed_posts` and `thread_comments` expose `top_reactions` (most used first, ties in fixed order). No identities exposed.
+
+**App**
+- Top reactions (Facebook style): posts and comments show the top 3 reaction types as overlapping emoji with the total, on the right before Share (posts) and next to the reaction button (comments, compact). Shared `TopReactions` component; the post stack is hidden when the action row is too tight.
+- Optimistic approximation of the order with an exact total; the exact order comes from the next 30 s refresh (posts) or realtime row (comments).
+- My Posts computes the same top 3 from `reaction_breakdown`.
+- Persist buster bumped 2 → 3 (one cache reset on first launch after updating).
+
+**Known gaps**
+- Trending screen is still a placeholder.
+- Order between refreshes is approximate while reacting.
+
+**Verified:** device QA passed.

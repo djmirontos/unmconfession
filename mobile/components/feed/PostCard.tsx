@@ -7,6 +7,7 @@ import { PostBody } from '@/components/feed/PostBody';
 import { PostHeader } from '@/components/feed/PostHeader';
 import { PostImages } from '@/components/feed/PostImages';
 import type { PostAction } from '@/hooks/useComingSoonAction';
+import { usePollVote } from '@/hooks/usePollVote';
 import type { FeedPost } from '@/lib/posts';
 
 type Props = {
@@ -30,6 +31,7 @@ type Props = {
 };
 
 function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false, headerAccessory, footer, reactionsDisabled = false, onComment }: Props) {
+  const vote = usePollVote(post.id, post.my_vote);
   const content = (
     <View className="gap-3">
       <PostHeader
@@ -65,7 +67,7 @@ function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false
           options={post.poll_options}
           myVote={post.my_vote}
           endsAt={post.ends_at}
-          onVote={onAction ? () => onAction('vote') : undefined}
+          onVote={onAction ? vote : undefined}
         />
       ) : null}
       {onAction ? (

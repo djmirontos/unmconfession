@@ -54,6 +54,12 @@ export function parsePost(row: unknown): FeedPost | null {
   return parsed.success ? parsed.data : null;
 }
 
+/** feed_posts.poll_options JSON; null when missing or invalid. */
+export function parsePollOptions(json: unknown): PollOption[] | null {
+  const parsed = z.array(pollOptionSchema).safeParse(json);
+  return parsed.success ? parsed.data : null;
+}
+
 /** posts.images / listings.images JSON; invalid entries make it an empty list. */
 export function parseImages(json: unknown): PostImage[] {
   const parsed = z.array(imageSchema).safeParse(json);

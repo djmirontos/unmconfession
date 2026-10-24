@@ -3,8 +3,8 @@ import { useRouter } from 'expo-router';
 import { type ReactNode, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { ComingSoon } from '@/components/layout/ComingSoon';
 import { TabScreen } from '@/components/layout/TabScreen';
+import { CountBadge } from '@/components/notifications/NotificationBell';
 import { Avatar } from '@/components/profile/Avatar';
 import { AvatarPicker } from '@/components/profile/AvatarPicker';
 import { ThemeSwitch } from '@/components/profile/ThemeSwitch';
@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useAvatarPrompt } from '@/hooks/useAvatarPrompt';
 import { type Profile, useMembership } from '@/hooks/useProfile';
 import { useTheme } from '@/hooks/useTheme';
+import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { useUpdateAvatar } from '@/hooks/useUpdateAvatar';
 import { signOut } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
@@ -58,6 +59,25 @@ function AvatarPrompt({ onPick, onDismiss }: { onPick: () => void; onDismiss: ()
   );
 }
 
+function NotificationsRow() {
+  const router = useRouter();
+  const { colors } = useTheme();
+  const unread = useUnreadNotifications();
+  return (
+    <Pressable
+      onPress={() => router.push('/notifications')}
+      accessibilityRole="button"
+      accessibilityLabel={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+      className="min-h-14 flex-row items-center gap-3 rounded-2xl border border-hairline bg-surface1 px-4 active:bg-surface2"
+    >
+      <Ionicons name="notifications-outline" size={22} color={colors.text} />
+      <Text className="flex-1 text-base font-bold text-text">Notifications</Text>
+      <CountBadge count={unread} />
+      <Ionicons name="chevron-forward" size={18} color={colors.textDim} />
+    </Pressable>
+  );
+}
+
 function MemberProfile({ profile }: { profile: Profile }) {
   const updateAvatar = useUpdateAvatar();
   const { showPrompt, markSeen } = useAvatarPrompt(profile.id);
@@ -80,6 +100,7 @@ function MemberProfile({ profile }: { profile: Profile }) {
           <Text className="text-sm text-text-dim">Your nickname is permanent.</Text>
         </View>
       </View>
+      <NotificationsRow />
       <Section title="Avatar">
         {pickerOpen ? (
           <AvatarPicker value={profile.avatar_key} onChange={(key) => updateAvatar.mutate(key)} />
@@ -149,7 +170,6 @@ export default function ProfileScreen() {
               <Button label="Blocked users" variant="secondary" icon="ban-outline" onPress={() => router.push('/blocked-users')} />
             </>
           ) : null}
-          <ComingSoon label="Notifications arrive in a later module." />
           <FormMessage tone="error" message={error} />
           <Button label="Log out" variant="danger" icon="log-out-outline" loading={signingOut} onPress={handleSignOut} />
         </>

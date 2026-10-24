@@ -8,6 +8,11 @@ const REASONS: Record<string, string> = {
   other: 'It broke the community rules.',
 };
 
+/** The plain-words reason for a known code only (notifications show nothing otherwise). */
+export function knownReason(code: string | null): string | null {
+  return code ? (REASONS[code] ?? null) : null;
+}
+
 /** Plain-words reason for a rejected or removed item. Unknown codes are shown as typed. */
 export function describeReason(code: string | null): string {
   if (!code) return 'It broke the community rules.';

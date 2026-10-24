@@ -10,6 +10,7 @@ import { ReactionPickerOverlay } from '@/components/reactions/ReactionPickerOver
 import { Toast } from '@/components/ui/Toast';
 import { ImageViewer } from '@/components/viewer/ImageViewer';
 import { useAuthBootstrap } from '@/hooks/useAuthBootstrap';
+import { useNotificationsRealtime } from '@/hooks/useNotificationsRealtime';
 import { useMembership } from '@/hooks/useProfile';
 import { persistOptions, queryClient } from '@/lib/queryClient';
 
@@ -36,6 +37,8 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { status } = useMembership();
+  // Members only (the hook checks): live badge and list for the whole session.
+  useNotificationsRealtime();
   const needsNickname = status === 'needs-nickname';
 
   return (
@@ -49,6 +52,7 @@ function RootNavigator() {
         <Stack.Screen name="post/[id]" />
         <Stack.Screen name="my-posts" />
         <Stack.Screen name="blocked-users" />
+        <Stack.Screen name="notifications" />
         <Stack.Screen name="post-status" />
         <Stack.Screen name="edit" />
         <Stack.Screen name="(auth)/sign-in" />

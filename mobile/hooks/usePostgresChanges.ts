@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { Tables } from '@/types/database';
 
-type Table = 'feed_events' | 'comments';
+type Table = 'feed_events' | 'comments' | 'notifications';
 type ChangeEvent = 'INSERT' | 'UPDATE';
 
 // A short trip to the background keeps the channel; after this it is closed

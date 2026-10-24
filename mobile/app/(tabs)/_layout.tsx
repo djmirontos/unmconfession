@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router/js-tabs';
 import type { ComponentProps } from 'react';
-import type { ColorValue } from 'react-native';
+import { type ColorValue, View } from 'react-native';
 
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { useTheme } from '@/hooks/useTheme';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
@@ -13,6 +14,19 @@ function tabIcon(active: IconName, inactive: IconName) {
     return <Ionicons name={focused ? active : inactive} size={size} color={color} />;
   }
   return TabIcon;
+}
+
+// Profile tab: a small accent dot while there are unread notifications.
+function ProfileTabIcon({ focused, color, size }: { focused: boolean; color: ColorValue; size: number }) {
+  const unread = useUnreadNotifications();
+  return (
+    <View>
+      <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+      {unread > 0 ? (
+        <View className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full border border-surface1 bg-accent" />
+      ) : null}
+    </View>
+  );
 }
 
 export default function TabsLayout() {
@@ -50,7 +64,7 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: 'Profile', tabBarIcon: tabIcon('person', 'person-outline') }}
+        options={{ title: 'Profile', tabBarIcon: ProfileTabIcon }}
       />
     </Tabs>
   );

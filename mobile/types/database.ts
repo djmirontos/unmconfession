@@ -1166,6 +1166,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_notifications: { Args: { p_keys: string[] }; Returns: undefined }
       delete_own_comment: { Args: { p_comment_id: string }; Returns: undefined }
       delete_own_listing: { Args: { p_listing_id: string }; Returns: undefined }
       delete_own_post: { Args: { p_post_id: string }; Returns: undefined }
@@ -1377,6 +1378,30 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_notifications: {
+        Args: { p_before_key?: string; p_before_ts?: string; p_limit?: number }
+        Returns: {
+          actor_avatar_key: string
+          actor_count: number
+          actor_id: string
+          actor_nickname: string
+          event_count: number
+          group_key: string
+          latest_at: string
+          parent_listing_id: string
+          parent_post_id: string
+          reaction_type: string
+          reason: string
+          target_exists: boolean
+          target_id: string
+          target_kind: string
+          target_preview: string
+          target_status: string
+          target_type: Database["public"]["Enums"]["content_type"]
+          type: string
+          unread_count: number
+        }[]
+      }
       get_trending: {
         Args: { p_limit?: number }
         Returns: {
@@ -1405,9 +1430,14 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_unread_notification_count: { Args: never; Returns: number }
       is_admin: { Args: never; Returns: boolean }
       is_nickname_available: { Args: { p_nickname: string }; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      mark_notifications_read: {
+        Args: { p_keys?: string[] }
+        Returns: undefined
+      }
       mod_edit_content: {
         Args: {
           p_id: string

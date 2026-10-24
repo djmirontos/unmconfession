@@ -16,7 +16,11 @@ export function useAuthBootstrap() {
 
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);
-      if (event === 'SIGNED_OUT') queryClient.removeQueries({ queryKey: ['profile'] });
+      if (event === 'SIGNED_OUT') {
+        queryClient.removeQueries({ queryKey: ['profile'] });
+        queryClient.removeQueries({ queryKey: ['notifications'] });
+        queryClient.removeQueries({ queryKey: ['notifications-unread'] });
+      }
     });
     return () => data.subscription.unsubscribe();
   }, []);

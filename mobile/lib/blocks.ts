@@ -3,6 +3,7 @@ import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 import type { CommentCursor, CommentPage } from '@/lib/comments';
 import type { FeedData } from '@/lib/feed';
 import { logError, logInfo } from '@/lib/log';
+import { invalidateNotifications } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 
 export type BlockedUser = { id: string; nickname: string | null; avatarKey: string | null; blockedAt: string };
@@ -59,6 +60,8 @@ const AUTHORED_LISTS = [['feed'], ['post'], ['comments'], ['trending']] as const
 
 function invalidateAuthoredLists(queryClient: QueryClient): void {
   for (const queryKey of AUTHORED_LISTS) void queryClient.invalidateQueries({ queryKey });
+  // Notices caused by a blocked member are hidden server-side; the list and badge change too.
+  invalidateNotifications(queryClient);
 }
 
 /** After a block: drop the author's posts and comments from every cached list at once, then refetch. */

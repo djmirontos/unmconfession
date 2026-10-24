@@ -3,6 +3,7 @@ import { create } from 'zustand';
 export type ParticipationAction =
   | 'post'
   | 'comment'
+  | 'reply'
   | 'react'
   | 'vote'
   | 'report'

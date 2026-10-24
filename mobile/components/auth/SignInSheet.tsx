@@ -15,6 +15,7 @@ type IconName = ComponentProps<typeof Ionicons>['name'];
 const COPY: Record<ParticipationAction, { icon: IconName; title: string }> = {
   post: { icon: 'create-outline', title: 'Sign in to post' },
   comment: { icon: 'chatbubble-outline', title: 'Sign in to comment' },
+  reply: { icon: 'arrow-undo-outline', title: 'Sign in to reply' },
   react: { icon: 'heart-outline', title: 'Sign in to react' },
   vote: { icon: 'stats-chart-outline', title: 'Sign in to vote' },
   report: { icon: 'flag-outline', title: 'Sign in to report' },

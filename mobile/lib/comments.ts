@@ -7,10 +7,11 @@ import type { Database } from '@/types/database';
 export type CommentTarget = 'post' | 'listing';
 export const COMMENT_MAX = 1000;
 export const COMMENT_PAGE_SIZE = 30;
+export const REPLY_PAGE_SIZE = 20;
 // Mirrors edit_own_comment; the server re-checks.
 const EDIT_WINDOW_MS = 24 * 60 * 60 * 1000;
 
-/** 'sending' exists only on the device until create_comment answers. */
+/** 'sending' exists only on the device until create_comment / create_reply answers. */
 export type CommentState = 'published' | 'pending' | 'sending';
 
 export type ThreadComment = {
@@ -29,13 +30,54 @@ export type ThreadComment = {
   myReaction: ReactionType | null;
   /** Most used types, first = most used (up to 3). */
   topReactions: ReactionType[];
+  /** Replies: the top-level comment they belong to (one level only). Null for top-level comments. */
+  parentId: string | null;
+  /** Replies: the exact comment answered (a top-level comment or another reply). */
+  replyToId: string | null;
+  /** Top-level comments: published replies. */
+  replyCount: number;
 };
 
 export type CommentCursor = { ts: string; id: string };
 export type CommentPage = { items: ThreadComment[]; nextCursor: CommentCursor | null };
 
 type Status = Database['public']['Enums']['content_status'];
+type ViewRow = Database['public']['Views']['thread_comments']['Row'];
 
+/** A thread_comments row (get_comments / get_replies); null if it lacks what a published comment always has. */
+function fromViewRow(c: ViewRow): ThreadComment | null {
+  if (!c.id || c.body === null || !c.published_at || !c.author_id) return null;
+  return {
+    id: c.id,
+    body: c.body,
+    authorId: c.author_id,
+    nickname: c.nickname,
+    avatarKey: c.avatar_key,
+    time: c.published_at,
+    createdAt: c.published_at,
+    editedAt: c.edited_at,
+    state: 'published',
+    reactionCount: c.reaction_count ?? 0,
+    myReaction: c.my_reaction,
+    topReactions: parseTopReactions(c.top_reactions),
+    parentId: c.parent_id,
+    replyToId: c.reply_to_id,
+    replyCount: c.reply_count ?? 0,
+  };
+}
+
+/** Keyset page: the last row's (published_at, id), oldest first. A short page means the end. */
+function toPage(rows: readonly ViewRow[], size: number): CommentPage {
+  const items: ThreadComment[] = [];
+  for (const row of rows) {
+    const item = fromViewRow(row);
+    if (item) items.push(item);
+  }
+  const last = items.at(-1);
+  return { items, nextCursor: rows.length === size && last ? { ts: last.time, id: last.id } : null };
+}
+
+/** Top-level comments only; replies come from fetchReplyPage. */
 export async function fetchCommentPage(target: CommentTarget, targetId: string, cursor: CommentCursor | null): Promise<CommentPage> {
   const { data, error } = await supabase.rpc('get_comments', {
     p_target_type: target,
@@ -48,37 +90,32 @@ export async function fetchCommentPage(target: CommentTarget, targetId: string, 
     logError('rpc.get_comments', error, { target });
     throw error;
   }
-  const items: ThreadComment[] = [];
-  for (const c of data) {
-    if (!c.id || c.body === null || !c.published_at || !c.author_id) continue;
-    items.push({
-      id: c.id,
-      body: c.body,
-      authorId: c.author_id,
-      nickname: c.nickname,
-      avatarKey: c.avatar_key,
-      time: c.published_at,
-      createdAt: c.published_at,
-      editedAt: c.edited_at,
-      state: 'published',
-      reactionCount: c.reaction_count ?? 0,
-      myReaction: c.my_reaction,
-      topReactions: parseTopReactions(c.top_reactions),
-    });
+  return toPage(data, COMMENT_PAGE_SIZE);
+}
+
+/** Replies of one top-level comment, oldest first (empty when the parent is not visible). */
+export async function fetchReplyPage(parentId: string, cursor: CommentCursor | null): Promise<CommentPage> {
+  const { data, error } = await supabase.rpc('get_replies', {
+    p_parent_id: parentId,
+    p_after_ts: cursor?.ts,
+    p_after_id: cursor?.id,
+    p_limit: REPLY_PAGE_SIZE,
+  });
+  if (error) {
+    logError('rpc.get_replies', error);
+    throw error;
   }
-  const last = items.at(-1);
-  // Keyset cursor: the last row's (published_at, id), oldest first. A short page means the end.
-  return { items, nextCursor: data.length === COMMENT_PAGE_SIZE && last ? { ts: last.time, id: last.id } : null };
+  return toPage(data, REPLY_PAGE_SIZE);
 }
 
 type Author = { id: string; nickname: string | null; avatarKey: string | null };
 
-/** My own comments on this target that a keyword filter is holding (RLS lets authors read them). */
+/** My own comments and replies on this target that a keyword filter is holding (RLS lets authors read them). */
 export async function fetchOwnPending(target: CommentTarget, targetId: string, me: Author): Promise<ThreadComment[]> {
   const column = target === 'post' ? 'post_id' : 'listing_id';
   const { data, error } = await supabase
     .from('comments')
-    .select('id, body, created_at, edited_at')
+    .select('id, body, created_at, edited_at, parent_id, reply_to_id')
     .eq(column, targetId)
     .eq('author_id', me.id)
     .eq('status', 'pending')
@@ -101,14 +138,26 @@ export async function fetchOwnPending(target: CommentTarget, targetId: string, m
     reactionCount: 0,
     myReaction: null,
     topReactions: [],
+    parentId: c.parent_id,
+    replyToId: c.reply_to_id,
+    replyCount: 0,
   }));
 }
 
-/** A server comments row (create / edit) as a thread item, with my own profile for display. */
-export function fromRow(
-  row: { id: string; body: string; status: Status; created_at: string; published_at: string | null; edited_at: string | null },
-  me: Author,
-): ThreadComment {
+type CommentRow = {
+  id: string;
+  body: string;
+  status: Status;
+  created_at: string;
+  published_at: string | null;
+  edited_at: string | null;
+  parent_id: string | null;
+  reply_to_id: string | null;
+  reply_count: number;
+};
+
+/** A server comments row (create / reply / edit) as a thread item, with my own profile for display. */
+export function fromRow(row: CommentRow, me: Author): ThreadComment {
   const published = row.status === 'published';
   return {
     id: row.id,
@@ -124,6 +173,9 @@ export function fromRow(
     reactionCount: 0,
     myReaction: null,
     topReactions: [],
+    parentId: row.parent_id,
+    replyToId: row.reply_to_id,
+    replyCount: row.reply_count,
   };
 }
 
@@ -134,6 +186,17 @@ export async function createComment(target: CommentTarget, targetId: string, bod
     throw error;
   }
   logInfo('rpc.create_comment', 'ok', { status: data.status });
+  return data;
+}
+
+/** `toId` is the comment answered; the server files the reply under its top-level comment. */
+export async function createReply(toId: string, body: string) {
+  const { data, error } = await supabase.rpc('create_reply', { p_to_comment_id: toId, p_body: body });
+  if (error) {
+    logError('rpc.create_reply', error);
+    throw error;
+  }
+  logInfo('rpc.create_reply', 'ok', { status: data.status });
   return data;
 }
 

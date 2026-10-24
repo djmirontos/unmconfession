@@ -1,6 +1,7 @@
 import { FlashList, type FlashListRef, type ListRenderItemInfo } from '@shopify/flash-list';
 import { type ReactElement, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   type NativeScrollEvent,
@@ -20,13 +21,40 @@ import { ContentMenu, type ContentMenuTarget } from '@/components/moderation/Con
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { ActionSheet, type SheetAction } from '@/components/ui/ActionSheet';
 import { Button } from '@/components/ui/Button';
-import { useCommentThread } from '@/hooks/useCommentThread';
+import { type ThreadRow, useCommentThread } from '@/hooks/useCommentThread';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useTheme } from '@/hooks/useTheme';
 import { canEditComment, type CommentTarget, type ThreadComment } from '@/lib/comments';
 import { getErrorMessage } from '@/lib/errors';
 
 // Within this distance of the end, new comments from others are appended instead of raising the pill.
 const NEAR_BOTTOM_PX = 160;
-const keyExtractor = (c: ThreadComment) => c.id;
+// Replies and their links sit this far in from the comment they belong to.
+const REPLY_INDENT = 36;
+const keyExtractor = (row: ThreadRow) => row.key;
+const getItemType = (row: ThreadRow) => row.kind;
+
+type LinkProps = { label: string; onPress: () => void; busy?: boolean };
+
+/** "View 3 replies" / "View more replies" / "Hide replies": a quiet, indented text button. */
+function ReplyLink({ label, onPress, busy = false }: LinkProps) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={busy}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ busy }}
+      style={{ marginLeft: REPLY_INDENT }}
+      className="min-h-11 flex-row items-center gap-2 self-start rounded-full px-2 active:bg-surface2"
+    >
+      <View className="h-px w-5 bg-hairline" />
+      {busy ? <ActivityIndicator size="small" color={colors.textDim} /> : null}
+      <Text className="text-xs font-bold text-text-dim">{label}</Text>
+    </Pressable>
+  );
+}
 
 type Props = {
   targetType: CommentTarget;
@@ -47,8 +75,9 @@ type Props = {
 
 /**
  * A whole discussion screen body: one FlashList (the item as its header, then the
- * comments oldest first), "Load more comments", the "New comments" pill and the
- * pinned composer. One scroll view only, so nothing scrolls inside anything else.
+ * top-level comments oldest first with their replies flattened in), "Load more
+ * comments", the "New comments" pill and the pinned composer. One scroll view only,
+ * so nothing scrolls inside anything else.
  */
 export function CommentThread({
   targetType,
@@ -61,7 +90,8 @@ export function CommentThread({
   onAuthorBlocked,
 }: Props) {
   const reduceMotion = useReducedMotion();
-  const listRef = useRef<FlashListRef<ThreadComment>>(null);
+  const requireAuth = useRequireAuth();
+  const listRef = useRef<FlashListRef<ThreadRow>>(null);
   const inputRef = useRef<TextInput>(null);
   const nearBottom = useRef(false);
 
@@ -81,51 +111,87 @@ export function CommentThread({
   const [busy, setBusy] = useState(false);
   const [composerError, setComposerError] = useState<string | null>(null);
   const [editing, setEditing] = useState<ThreadComment | null>(null);
+  const [replyTo, setReplyTo] = useState<ThreadComment | null>(null);
   const [menuFor, setMenuFor] = useState<ThreadComment | null>(null);
+  // A reply just sent: scrolled into view once its row exists.
+  const [revealId, setRevealId] = useState<string | null>(null);
 
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
     nearBottom.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - NEAR_BOTTOM_PX;
   }, []);
 
-  const cancelEdit = useCallback(() => {
+  const resetComposer = useCallback(() => {
     setEditing(null);
+    setReplyTo(null);
     setText('');
     setComposerError(null);
   }, []);
+
+  const rows = thread.rows;
+  useEffect(() => {
+    if (!revealId) return;
+    const index = rows.findIndex((r) => r.key === revealId);
+    if (index < 0) return;
+    const timer = setTimeout(() => {
+      listRef.current?.scrollToIndex({ index, animated: !reduceMotion, viewPosition: 0.5 });
+      setRevealId(null);
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [rows, revealId, reduceMotion]);
 
   const submit = async () => {
     const body = text.trim();
     if (!body || busy) return;
     setBusy(true);
     setComposerError(null);
-    const result = editing ? await thread.edit(editing, body) : await thread.send(body);
+    const result = editing ? await thread.edit(editing, body) : replyTo ? await thread.reply(replyTo, body) : await thread.send(body);
     setBusy(false);
     if (!result.ok) {
-      setComposerError(result.message); // text and edit mode stay so they can retry
+      // Text and edit / reply mode stay so they can retry; reply failures already showed a toast.
+      if (editing || !replyTo) setComposerError(result.message);
       return;
     }
-    if (editing) setEditing(null);
-    else scrollToEnd();
-    setText('');
+    if (replyTo && !editing) setRevealId(result.id);
+    else if (!editing) scrollToEnd();
+    resetComposer();
   };
 
   const confirmDelete = useCallback(
     (comment: ThreadComment) => {
-      Alert.alert('Delete this comment?', "It disappears right away and can't be undone.", [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Delete', style: 'destructive', onPress: () => void thread.remove(comment) },
-      ]);
+      const withReplies = comment.parentId === null && comment.replyCount > 0;
+      Alert.alert(
+        comment.parentId ? 'Delete this reply?' : 'Delete this comment?',
+        withReplies ? "It and its replies disappear right away. This can't be undone." : "It disappears right away and can't be undone.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: () => void thread.remove(comment) },
+        ],
+      );
     },
     [thread],
   );
 
   const startEdit = useCallback((comment: ThreadComment) => {
+    setReplyTo(null);
     setEditing(comment);
     setText(comment.body);
     setComposerError(null);
     setTimeout(() => inputRef.current?.focus(), 50);
   }, []);
+
+  /** Reply mode: answering a reply prefills "@name " (plain text); a top-level comment does not. */
+  const startReply = useCallback(
+    (comment: ThreadComment) => {
+      if (!requireAuth('reply')) return;
+      setEditing(null);
+      setReplyTo(comment);
+      setText(comment.parentId && comment.nickname ? `@${comment.nickname} ` : '');
+      setComposerError(null);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    },
+    [requireAuth],
+  );
 
   const menuActions = useMemo<SheetAction[]>(() => {
     if (!menuFor) return [];
@@ -142,12 +208,44 @@ export function CommentThread({
     (c: ThreadComment) => setOtherMenu({ type: 'comment', id: c.id, authorId: c.authorId, nickname: c.nickname }),
     [],
   );
+  const { setReplies, loadMoreReplies, retryReplies } = thread;
   const renderItem = useCallback(
-    ({ item }: ListRenderItemInfo<ThreadComment>) => {
-      const mine = item.authorId === myId;
-      return <CommentItem comment={item} mine={mine} onMore={mine ? setMenuFor : openOtherMenu} />;
+    ({ item }: ListRenderItemInfo<ThreadRow>) => {
+      switch (item.kind) {
+        case 'comment':
+        case 'reply': {
+          const mine = item.comment.authorId === myId;
+          const comment = (
+            <CommentItem
+              comment={item.comment}
+              mine={mine}
+              onMore={mine ? setMenuFor : openOtherMenu}
+              onReply={startReply}
+              isReply={item.kind === 'reply'}
+            />
+          );
+          return item.kind === 'reply' ? <View style={{ paddingLeft: REPLY_INDENT }}>{comment}</View> : comment;
+        }
+        case 'viewReplies': {
+          if (item.state === 'error') {
+            return <ReplyLink label="Couldn't load replies. Tap to retry" onPress={() => retryReplies(item.parentId)} />;
+          }
+          const label = item.count === 1 ? 'View 1 reply' : `View ${item.count} replies`;
+          return (
+            <ReplyLink
+              label={item.state === 'loading' ? 'Loading replies…' : label}
+              busy={item.state === 'loading'}
+              onPress={() => setReplies(item.parentId, true)}
+            />
+          );
+        }
+        case 'viewMoreReplies':
+          return <ReplyLink label="View more replies" busy={item.loading} onPress={() => void loadMoreReplies(item.parentId)} />;
+        case 'hideReplies':
+          return <ReplyLink label="Hide replies" onPress={() => setReplies(item.parentId, false)} />;
+      }
     },
-    [myId, openOtherMenu],
+    [myId, openOtherMenu, startReply, setReplies, loadMoreReplies, retryReplies],
   );
 
   const listHeader = useMemo(
@@ -185,9 +283,10 @@ export function CommentThread({
       <View className="flex-1">
         <FlashList
           ref={listRef}
-          data={thread.items}
+          data={rows}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
+          getItemType={getItemType}
           ListHeaderComponent={listHeader}
           ListEmptyComponent={empty}
           ListFooterComponent={footer}
@@ -221,7 +320,9 @@ export function CommentThread({
         busy={busy}
         error={composerError}
         editing={editing !== null}
-        onCancelEdit={cancelEdit}
+        onCancelEdit={resetComposer}
+        replyingTo={replyTo ? (replyTo.nickname ?? 'member') : null}
+        onCancelReply={resetComposer}
         autoFocus={focusComposer}
       />
       <ActionSheet visible={menuFor !== null} actions={menuActions} onClose={() => setMenuFor(null)} />

@@ -153,11 +153,14 @@ export type Database = {
           listing_id: string | null
           moderated_at: string | null
           moderated_by: string | null
+          parent_id: string | null
           post_id: string | null
           published_at: string | null
           reaction_breakdown: Json
           reaction_count: number
           reject_reason: string | null
+          reply_count: number
+          reply_to_id: string | null
           status: Database["public"]["Enums"]["content_status"]
         }
         Insert: {
@@ -170,11 +173,14 @@ export type Database = {
           listing_id?: string | null
           moderated_at?: string | null
           moderated_by?: string | null
+          parent_id?: string | null
           post_id?: string | null
           published_at?: string | null
           reaction_breakdown?: Json
           reaction_count?: number
           reject_reason?: string | null
+          reply_count?: number
+          reply_to_id?: string | null
           status: Database["public"]["Enums"]["content_status"]
         }
         Update: {
@@ -187,11 +193,14 @@ export type Database = {
           listing_id?: string | null
           moderated_at?: string | null
           moderated_by?: string | null
+          parent_id?: string | null
           post_id?: string | null
           published_at?: string | null
           reaction_breakdown?: Json
           reaction_count?: number
           reject_reason?: string | null
+          reply_count?: number
+          reply_to_id?: string | null
           status?: Database["public"]["Enums"]["content_status"]
         }
         Relationships: [
@@ -224,6 +233,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "thread_comments"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "comments_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
@@ -235,6 +258,20 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "thread_comments"
             referencedColumns: ["id"]
           },
         ]
@@ -1036,9 +1073,12 @@ export type Database = {
           listing_id: string | null
           my_reaction: Database["public"]["Enums"]["reaction_type"] | null
           nickname: string | null
+          parent_id: string | null
           post_id: string | null
           published_at: string | null
           reaction_count: number | null
+          reply_count: number | null
+          reply_to_id: string | null
           top_reactions: string[] | null
         }
         Relationships: [
@@ -1064,6 +1104,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "thread_comments"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "comments_post_id_fkey"
             columns: ["post_id"]
             isOneToOne: false
@@ -1075,6 +1129,20 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: false
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comments_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "thread_comments"
             referencedColumns: ["id"]
           },
         ]
@@ -1136,11 +1204,14 @@ export type Database = {
           listing_id: string | null
           moderated_at: string | null
           moderated_by: string | null
+          parent_id: string | null
           post_id: string | null
           published_at: string | null
           reaction_breakdown: Json
           reaction_count: number
           reject_reason: string | null
+          reply_count: number
+          reply_to_id: string | null
           status: Database["public"]["Enums"]["content_status"]
         }
         SetofOptions: {
@@ -1229,6 +1300,35 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      create_reply: {
+        Args: { p_body: string; p_to_comment_id: string }
+        Returns: {
+          author_id: string
+          body: string
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          id: string
+          listing_id: string | null
+          moderated_at: string | null
+          moderated_by: string | null
+          parent_id: string | null
+          post_id: string | null
+          published_at: string | null
+          reaction_breakdown: Json
+          reaction_count: number
+          reject_reason: string | null
+          reply_count: number
+          reply_to_id: string | null
+          status: Database["public"]["Enums"]["content_status"]
+        }
+        SetofOptions: {
+          from: "*"
+          to: "comments"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       delete_notifications: { Args: { p_keys: string[] }; Returns: undefined }
       delete_own_comment: { Args: { p_comment_id: string }; Returns: undefined }
       delete_own_listing: { Args: { p_listing_id: string }; Returns: undefined }
@@ -1245,11 +1345,14 @@ export type Database = {
           listing_id: string | null
           moderated_at: string | null
           moderated_by: string | null
+          parent_id: string | null
           post_id: string | null
           published_at: string | null
           reaction_breakdown: Json
           reaction_count: number
           reject_reason: string | null
+          reply_count: number
+          reply_to_id: string | null
           status: Database["public"]["Enums"]["content_status"]
         }
         SetofOptions: {
@@ -1375,9 +1478,12 @@ export type Database = {
           listing_id: string | null
           my_reaction: Database["public"]["Enums"]["reaction_type"] | null
           nickname: string | null
+          parent_id: string | null
           post_id: string | null
           published_at: string | null
           reaction_count: number | null
+          reply_count: number | null
+          reply_to_id: string | null
           top_reactions: string[] | null
         }[]
         SetofOptions: {
@@ -1472,6 +1578,37 @@ export type Database = {
           type: string
           unread_count: number
         }[]
+      }
+      get_replies: {
+        Args: {
+          p_after_id?: string
+          p_after_ts?: string
+          p_limit?: number
+          p_parent_id: string
+        }
+        Returns: {
+          author_id: string | null
+          avatar_key: string | null
+          body: string | null
+          edited_at: string | null
+          id: string | null
+          listing_id: string | null
+          my_reaction: Database["public"]["Enums"]["reaction_type"] | null
+          nickname: string | null
+          parent_id: string | null
+          post_id: string | null
+          published_at: string | null
+          reaction_count: number | null
+          reply_count: number | null
+          reply_to_id: string | null
+          top_reactions: string[] | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "thread_comments"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_trending: {
         Args: { p_limit?: number }

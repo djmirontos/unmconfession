@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { PostBody } from '@/components/feed/PostBody';
 import { MoreButton } from '@/components/myposts/MoreButton';
@@ -17,17 +17,22 @@ type Props = {
   onMore?: (comment: ThreadComment) => void;
   /** My own comment (changes the menu button's label). */
   mine?: boolean;
+  /** "Reply" action (guests get the sign-in sheet from the caller). */
+  onReply?: (comment: ThreadComment) => void;
+  /** A reply: smaller avatar (the row is indented by the list). */
+  isReply?: boolean;
 };
 
-function CommentItemImpl({ comment, onMore, mine = false }: Props) {
+function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = false }: Props) {
   const sending = comment.state === 'sending';
+  const name = comment.nickname ?? 'member';
   return (
-    <View className={`flex-row gap-3 py-3 ${sending ? 'opacity-60' : ''}`}>
-      <Avatar avatarKey={comment.avatarKey} size={32} />
+    <View className={`flex-row gap-3 ${isReply ? 'py-2' : 'py-3'} ${sending ? 'opacity-60' : ''}`}>
+      <Avatar avatarKey={comment.avatarKey} size={isReply ? 24 : 32} />
       <View className="flex-1 gap-1">
         <View className="flex-row items-center gap-2">
           <Text numberOfLines={1} className="shrink text-sm font-bold text-text">
-            {comment.nickname ?? 'member'}
+            {name}
           </Text>
           <Text className="flex-1 text-xs text-text-dim">
             {sending ? 'Sending…' : formatRelative(comment.time)}
@@ -52,6 +57,16 @@ function CommentItemImpl({ comment, onMore, mine = false }: Props) {
               onChange={(next) => setCommentReaction(comment.id, comment.myReaction, next)}
             />
             <TopReactions compact ring="bg" types={comment.topReactions} total={comment.reactionCount} />
+            {onReply ? (
+              <Pressable
+                onPress={() => onReply(comment)}
+                accessibilityRole="button"
+                accessibilityLabel={`Reply to ${name}`}
+                className="min-h-11 justify-center rounded-full px-2 active:bg-surface2"
+              >
+                <Text className="text-xs font-bold text-text-dim">Reply</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
         {comment.state === 'pending' ? (

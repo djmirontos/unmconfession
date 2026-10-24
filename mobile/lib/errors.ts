@@ -116,6 +116,12 @@ export function getCommentErrorMessage(error: unknown): string {
   return (code && COMMENT_MESSAGES[code]) || getErrorMessage(error);
 }
 
+/** Replies: comment wording, except that the missing target is the comment being answered. */
+export function getReplyErrorMessage(error: unknown): string {
+  if (getErrorCode(error) === 'not_found') return 'This comment is no longer available.';
+  return getCommentErrorMessage(error);
+}
+
 // Report wording: the limit is per day and the target may be gone.
 const REPORT_MESSAGES: Record<string, string> = {
   rate_limited: "You've sent too many reports today. Try again tomorrow.",

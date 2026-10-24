@@ -26,12 +26,28 @@ type Props = {
   error: string | null;
   editing: boolean;
   onCancelEdit: () => void;
+  /** Reply mode: the nickname being answered (null = a normal comment). */
+  replyingTo?: string | null;
+  onCancelReply?: () => void;
   autoFocus?: boolean;
   inputRef?: Ref<TextInput>;
 };
 
 /** Bottom composer for a thread. Guests get a sign-in button instead. */
-export function CommentComposer({ value, onChangeText, onSubmit, busy, error, editing, onCancelEdit, autoFocus, inputRef }: Props) {
+export function CommentComposer({
+  value,
+  onChangeText,
+  onSubmit,
+  busy,
+  error,
+  editing,
+  onCancelEdit,
+  replyingTo = null,
+  onCancelReply,
+  autoFocus,
+  inputRef,
+}: Props) {
+  const replying = replyingTo !== null && !editing;
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
   const requireAuth = useRequireAuth();
@@ -61,6 +77,22 @@ export function CommentComposer({ value, onChangeText, onSubmit, busy, error, ed
             <Ionicons name="close" size={20} color={colors.textDim} />
           </Pressable>
         </View>
+      ) : replying ? (
+        <View className="flex-row items-center gap-2 px-1">
+          <Ionicons name="arrow-undo-outline" size={16} color={colors.textDim} />
+          <Text numberOfLines={1} className="flex-1 text-xs font-bold text-text-dim">
+            Replying to {replyingTo}
+          </Text>
+          <Pressable
+            onPress={onCancelReply}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel={`Replying to ${replyingTo}, cancel`}
+            className="h-8 w-8 items-center justify-center rounded-full active:bg-surface2"
+          >
+            <Ionicons name="close" size={20} color={colors.textDim} />
+          </Pressable>
+        </View>
       ) : null}
       {error ? (
         <Text accessibilityLiveRegion="polite" className="px-1 text-sm text-danger">
@@ -73,14 +105,14 @@ export function CommentComposer({ value, onChangeText, onSubmit, busy, error, ed
             ref={inputRef}
             value={value}
             onChangeText={onChangeText}
-            placeholder="Write a comment…"
+            placeholder={replying ? 'Write a reply…' : 'Write a comment…'}
             placeholderTextColor={colors.textDim}
             selectionColor={colors.accent}
             multiline
             autoFocus={autoFocus}
             editable={!busy}
             textAlignVertical="top"
-            accessibilityLabel={editing ? 'Edit your comment' : 'Write a comment'}
+            accessibilityLabel={editing ? 'Edit your comment' : replying ? `Write a reply to ${replyingTo}` : 'Write a comment'}
             style={{
               maxHeight: 120 + KEYBOARD_GAP,
               paddingTop: INPUT_PAD_Y,
@@ -94,7 +126,7 @@ export function CommentComposer({ value, onChangeText, onSubmit, busy, error, ed
           onPress={onSubmit}
           disabled={!canSend}
           accessibilityRole="button"
-          accessibilityLabel={editing ? 'Save comment' : 'Send comment'}
+          accessibilityLabel={editing ? 'Save comment' : replying ? 'Send reply' : 'Send comment'}
           accessibilityState={{ disabled: !canSend, busy }}
           className={`h-11 min-w-11 items-center justify-center rounded-full px-3 ${canSend ? 'bg-accent' : 'bg-surface2'}`}
         >

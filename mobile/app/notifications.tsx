@@ -2,12 +2,13 @@ import { FlashList, type ListRenderItemInfo } from '@shopify/flash-list';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, Text, View } from 'react-native';
+import { RefreshControl, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GuestPrompt } from '@/components/auth/GuestPrompt';
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { BackHeader } from '@/components/layout/BackHeader';
+import { MoreButton } from '@/components/myposts/MoreButton';
 import { NotificationRow, NotificationRowSkeleton } from '@/components/notifications/NotificationRow';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { ActionSheet, type SheetAction } from '@/components/ui/ActionSheet';
@@ -33,10 +34,11 @@ export default function NotificationsScreen() {
   const { colors } = useTheme();
   const queryClient = useQueryClient();
   const showToast = useToastStore((s) => s.show);
-  const { query, items, unreadInList, markRead, remove, signedIn } = useNotifications();
+  const { query, items, unreadInList, markRead, remove, removeAll, signedIn } = useNotifications();
   const unreadCount = useUnreadNotifications();
   const [pulling, setPulling] = useState(false);
   const [menuFor, setMenuFor] = useState<NotificationGroup | null>(null);
+  const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
 
   // Leaving the screen: the badge refetches (reads made here may be pending on the server).
   useFocusEffect(
@@ -97,18 +99,15 @@ export default function NotificationsScreen() {
 
   const contentContainerStyle = useMemo(() => ({ padding: 16, paddingBottom: insets.bottom + 16 }), [insets.bottom]);
 
-  const canMarkAll = signedIn && (unreadCount > 0 || unreadInList);
-  const markAll = (
-    <Pressable
-      onPress={() => markRead('all')}
-      disabled={!canMarkAll}
-      accessibilityRole="button"
-      accessibilityLabel="Mark all as read"
-      accessibilityState={{ disabled: !canMarkAll }}
-      className={`min-h-11 justify-center rounded-full px-3 active:bg-surface2 ${canMarkAll ? '' : 'opacity-40'}`}
-    >
-      <Text className="text-sm font-bold text-accent">Mark all as read</Text>
-    </Pressable>
+  // Header "⋯": shown only once the list has loaded with something in it.
+  const canMarkAll = unreadCount > 0 || unreadInList;
+  const showHeaderMenu = signedIn && !!query.data && items.length > 0;
+  const headerActions = useMemo<SheetAction[]>(
+    () => [
+      ...(canMarkAll ? [{ label: 'Mark all as read', icon: 'checkmark-done-outline' as const, onPress: () => markRead('all') }] : []),
+      { label: 'Delete all', icon: 'trash-outline', destructive: true, onPress: removeAll },
+    ],
+    [canMarkAll, markRead, removeAll],
   );
 
   let body;
@@ -172,9 +171,13 @@ export default function NotificationsScreen() {
 
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: insets.top }}>
-      <BackHeader title="Notifications" right={signedIn ? markAll : undefined} />
+      <BackHeader
+        title="Notifications"
+        right={showHeaderMenu ? <MoreButton onPress={() => setHeaderMenuOpen(true)} accessibilityLabel="More options" /> : undefined}
+      />
       {body}
       <ActionSheet visible={menuFor !== null} actions={menuActions} onClose={() => setMenuFor(null)} />
+      <ActionSheet visible={headerMenuOpen && showHeaderMenu} actions={headerActions} onClose={() => setHeaderMenuOpen(false)} />
     </View>
   );
 }

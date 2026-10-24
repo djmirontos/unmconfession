@@ -1,9 +1,11 @@
 import { skipToken, useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
+import { Alert } from 'react-native';
 
 import { useMembership } from '@/hooks/useProfile';
 import { getErrorMessage } from '@/lib/errors';
 import {
+  deleteAllNotifications,
   deleteNotifications,
   fetchNotificationPage,
   invalidateNotifications,
@@ -13,7 +15,9 @@ import {
   type NotificationsData,
   notificationsKey,
   patchDelete,
+  patchDeleteAll,
   patchRead,
+  unreadCountKey,
 } from '@/lib/notifications';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -79,5 +83,34 @@ export function useNotifications() {
     [queryClient, userId, showToast],
   );
 
-  return { query, items, unreadInList, markRead, remove, signedIn: member };
+  /** Confirm, then delete everything optimistically; on failure the snapshot comes back and Retry is offered. */
+  const removeAll = useCallback(() => {
+    if (!userId) return;
+    const run = () => {
+      const listKey = notificationsKey(userId);
+      const countKey = unreadCountKey(userId);
+      const snapshot = { list: queryClient.getQueryData<NotificationsData>(listKey), count: queryClient.getQueryData<number>(countKey) };
+      patchDeleteAll(queryClient, userId);
+      deleteAllNotifications(userId)
+        .then(() => {
+          showToast('All notifications deleted');
+          invalidateNotifications(queryClient);
+        })
+        .catch((error: unknown) => {
+          queryClient.setQueryData(listKey, snapshot.list);
+          queryClient.setQueryData(countKey, snapshot.count);
+          invalidateNotifications(queryClient);
+          Alert.alert('Could not delete notifications', getErrorMessage(error), [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Retry', onPress: run },
+          ]);
+        });
+    };
+    Alert.alert('Delete all notifications?', "This can't be undone.", [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete all', style: 'destructive', onPress: run },
+    ]);
+  }, [queryClient, userId, showToast]);
+
+  return { query, items, unreadInList, markRead, remove, removeAll, signedIn: member };
 }

@@ -89,6 +89,15 @@ export async function deleteNotifications(keys: readonly string[]): Promise<void
   }
 }
 
+/** Every notification of mine: a direct delete (the authenticated delete grant; RLS keeps it to my rows). */
+export async function deleteAllNotifications(userId: string): Promise<void> {
+  const { error } = await supabase.from('notifications').delete().eq('user_id', userId);
+  if (error) {
+    logError('notifications.deleteAll', error);
+    throw error;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Wording
 
@@ -157,6 +166,14 @@ export function patchRead(queryClient: QueryClient, userId: string, keys: readon
 export function patchDelete(queryClient: QueryClient, userId: string, key: string, wasUnread: boolean): void {
   patchGroups(queryClient, userId, (g) => (g.group_key === key ? null : g));
   if (wasUnread) queryClient.setQueryData<number>(unreadCountKey(userId), (count) => (count === undefined ? count : Math.max(0, count - 1)));
+}
+
+/** Empties the list (one empty page, so the empty state shows) and zeroes the badge. */
+export function patchDeleteAll(queryClient: QueryClient, userId: string): void {
+  queryClient.setQueryData<NotificationsData>(notificationsKey(userId), (data) =>
+    data ? { pages: [{ items: [], nextCursor: null }], pageParams: [null] } : data,
+  );
+  queryClient.setQueryData<number>(unreadCountKey(userId), (count) => (count === undefined ? count : 0));
 }
 
 /** Refetch the badge and the list. A list nobody is looking at is cut to its first page first (cheap to reload). */

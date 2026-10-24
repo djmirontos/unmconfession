@@ -295,3 +295,23 @@
 - Error texts for `poll_closed` and `invalid_option`.
 
 **Verified:** device QA passed.
+
+## Module 4.4: Report + Block (2026-10-24)
+
+**Database:** `supabase/migrations/20261024110000_block_filtering.sql`, applied by the owner. It includes `grant select on user_blocks to anon`, so guests can still read the feed views (RLS has no anon policy, so anon sees no rows).
+- Blocked authors are hidden server-side for the blocker in Feed, Trending, active polls, listings and comment threads (`feed_posts`, `feed_listings`, `thread_comments`).
+- No comment or reaction notifications from blocked users.
+- Reporting your own content is rejected (`own_content`).
+
+**App**
+- Report sheet: six reasons, optional note up to 500 characters, on posts and comments (listings supported; the screen comes with Module 5).
+- One-way Block from the "⋯" menu of other people's posts and comments; their content leaves the cached lists at once, then the lists refetch. Blocking the author of an open post goes back.
+- Blocked users screen under Profile with Unblock (optimistic).
+- Guests get "Sign in to report" / "Sign in to block".
+- Report sheet keyboard fix on Android ("pan" mode): `TextField` `keyboardGap`, the same padding + negative margin technique as the comment composer, so the note and the full Submit button stay above the keyboard.
+- Blocked users rows redesigned as separate cards with a compact Unblock pill.
+
+**Known issues**
+- `comment_count` can include a blocked user's comments, and the live "New comments" pill can count them.
+
+**Verified:** device QA passed.

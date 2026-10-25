@@ -403,3 +403,22 @@
 - Restoring a removed comment does not restore its replies (handle in the Module 7 moderator panel).
 
 **Verified:** device QA passed.
+
+## Module 5.1: Trending tab (2026-10-25)
+
+**No migrations.** Server ranking (`get_trending`) is recomputed every 5 min by pg_cron (verified active); `get_active_polls` serves open polls.
+
+**App**
+- Header like the Feed (title + bell); segmented control Trending | Polls (last segment remembered in memory).
+- Trending = top posts of the last 7 days ranked by reactions + 2×comments, up to 50, with a quiet rank badge (top 3 in accent).
+- Polls = active polls, most votes first, inline voting / vote change and "Ends in" countdown.
+- Same PostCard as the Feed with all interactions; both lists stay mounted so switching keeps scroll.
+- Pull-to-refresh, skeleton, empty, error and offline states; refetch on focus / foreground only when older than 60 s; not persisted.
+- Shared cache patcher (`lib/postLists.ts` `updateListedPosts`) keeps Feed, Trending and Polls coherent for reactions, votes, counts, edits, deletes, block/unblock and sign-out. Block now also removes the blocked user's replies from loaded threads.
+- Shared hooks / components: `usePostListActions`, `PostListView`. `ChipGroup` chips get a 44 px touch target (hit slop).
+
+**Known gaps**
+- A post you just reacted to moves in the ranking only after the next 5-minute server refresh.
+- An ended poll shows "Ended" until the next refetch removes it.
+
+**Verified:** device QA passed.

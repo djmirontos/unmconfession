@@ -20,7 +20,9 @@ import { EmptyState, ErrorState } from '@/components/feed/ListStates';
 import { ContentMenu, type ContentMenuTarget } from '@/components/moderation/ContentMenu';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { ActionSheet, type SheetAction } from '@/components/ui/ActionSheet';
+import { BackToTopButton } from '@/components/ui/BackToTopButton';
 import { Button } from '@/components/ui/Button';
+import { useBackToTop } from '@/hooks/useBackToTop';
 import { type ThreadRow, useCommentThread } from '@/hooks/useCommentThread';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useTheme } from '@/hooks/useTheme';
@@ -120,6 +122,7 @@ export function CommentThread({
     const { contentOffset, layoutMeasurement, contentSize } = e.nativeEvent;
     nearBottom.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - NEAR_BOTTOM_PX;
   }, []);
+  const backToTop = useBackToTop(listRef, onScroll);
 
   const resetComposer = useCallback(() => {
     setEditing(null);
@@ -290,8 +293,8 @@ export function CommentThread({
           ListHeaderComponent={listHeader}
           ListEmptyComponent={empty}
           ListFooterComponent={footer}
-          onScroll={onScroll}
-          scrollEventThrottle={32}
+          onScroll={backToTop.onScroll}
+          scrollEventThrottle={backToTop.scrollEventThrottle}
           scrollEnabled={scrollEnabled}
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={{ padding: 16 }}
@@ -308,6 +311,8 @@ export function CommentThread({
             </Pressable>
           </View>
         ) : null}
+        {/* Inside the list's box, so it always sits above the composer, keyboard open or not. */}
+        <BackToTopButton visible={backToTop.visible} onPress={backToTop.scrollToTop} bottom={12} />
       </View>
       <CommentComposer
         inputRef={inputRef}

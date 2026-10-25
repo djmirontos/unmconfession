@@ -1,6 +1,6 @@
-import { FlashList, type ListRenderItemInfo } from '@shopify/flash-list';
+import { FlashList, type FlashListRef, type ListRenderItemInfo } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -10,6 +10,8 @@ import { MyItemCard, rowTarget } from '@/components/myposts/MyItemCard';
 import { OwnItemMenu } from '@/components/myposts/OwnItemMenu';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
+import { BackToTopButton } from '@/components/ui/BackToTopButton';
+import { useBackToTop } from '@/hooks/useBackToTop';
 import { useMyPosts } from '@/hooks/useMyPosts';
 import { useTheme } from '@/hooks/useTheme';
 import { getErrorMessage } from '@/lib/errors';
@@ -35,6 +37,8 @@ export default function MyPostsScreen() {
   const { query, items } = useMyPosts();
   const [pulling, setPulling] = useState(false);
   const [menuItem, setMenuItem] = useState<MyItem | null>(null);
+  const listRef = useRef<FlashListRef<MyItem>>(null);
+  const backToTop = useBackToTop(listRef);
 
   const openItem = useCallback(
     (item: MyItem) => {
@@ -100,27 +104,33 @@ export default function MyPostsScreen() {
     );
   } else {
     body = (
-      <FlashList
-        data={items}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        getItemType={getItemType}
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        contentContainerStyle={contentContainerStyle}
-        ListHeaderComponent={header}
-        ListEmptyComponent={EMPTY}
-        ListFooterComponent={footer}
-        refreshControl={
-          <RefreshControl
-            refreshing={pulling}
-            onRefresh={onRefresh}
-            tintColor={colors.accent}
-            colors={[colors.accent]}
-            progressBackgroundColor={colors.surface1}
-          />
-        }
-      />
+      <View className="flex-1">
+        <FlashList
+          ref={listRef}
+          data={items}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          getItemType={getItemType}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.5}
+          onScroll={backToTop.onScroll}
+          scrollEventThrottle={backToTop.scrollEventThrottle}
+          contentContainerStyle={contentContainerStyle}
+          ListHeaderComponent={header}
+          ListEmptyComponent={EMPTY}
+          ListFooterComponent={footer}
+          refreshControl={
+            <RefreshControl
+              refreshing={pulling}
+              onRefresh={onRefresh}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+              progressBackgroundColor={colors.surface1}
+            />
+          }
+        />
+        <BackToTopButton visible={backToTop.visible} onPress={backToTop.scrollToTop} bottom={insets.bottom + 16} />
+      </View>
     );
   }
 

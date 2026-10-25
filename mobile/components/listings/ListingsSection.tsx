@@ -8,9 +8,11 @@ import { ListingGridCard } from '@/components/listings/ListingGridCard';
 import { ListingCardSkeleton } from '@/components/skeletons/ListingCardSkeleton';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
+import { BackToTopButton } from '@/components/ui/BackToTopButton';
 import { ChipGroup } from '@/components/ui/ChipGroup';
 import { InlineCheckbox } from '@/components/ui/InlineCheckbox';
 import { SearchField } from '@/components/ui/SearchField';
+import { useBackToTop } from '@/hooks/useBackToTop';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useListings } from '@/hooks/useListings';
 import { useRefetchWhenStale } from '@/hooks/useRefetchWhenStale';
@@ -77,6 +79,7 @@ export function ListingsSection({ kind, active, onOpen }: Props) {
   );
   const { query, listings } = useListings(filters);
   useRefetchWhenStale(query, active);
+  const backToTop = useBackToTop(listRef);
 
   // A new filter combination starts at the top.
   useEffect(() => {
@@ -177,6 +180,8 @@ export function ListingsSection({ kind, active, onOpen }: Props) {
           }
           onEndReached={onEndReached}
           onEndReachedThreshold={0.5}
+          onScroll={backToTop.onScroll}
+          scrollEventThrottle={backToTop.scrollEventThrottle}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           contentContainerStyle={LIST_PADDING}
@@ -198,6 +203,8 @@ export function ListingsSection({ kind, active, onOpen }: Props) {
     <View className="flex-1">
       {controls}
       {body}
+      {/* Outside the dimmed wrapper, so it never fades with the previous results. */}
+      {showFull ? null : <BackToTopButton visible={backToTop.visible} onPress={backToTop.scrollToTop} />}
     </View>
   );
 }

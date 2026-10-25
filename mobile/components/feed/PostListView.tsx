@@ -1,4 +1,4 @@
-import { FlashList, type ListRenderItemInfo, type ViewToken } from '@shopify/flash-list';
+import { FlashList, type FlashListRef, type ListRenderItemInfo, type ViewToken } from '@shopify/flash-list';
 import type { UseQueryResult } from '@tanstack/react-query';
 import { useIsFocused } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
@@ -8,7 +8,9 @@ import { EmptyState, ErrorState, RefreshErrorBanner } from '@/components/feed/Li
 import { PostCard } from '@/components/feed/PostCard';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
+import { BackToTopButton } from '@/components/ui/BackToTopButton';
 import { useAppActive } from '@/hooks/useAppActive';
+import { useBackToTop } from '@/hooks/useBackToTop';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
 import { usePostListActions } from '@/hooks/usePostListActions';
 import { useRefetchWhenStale } from '@/hooks/useRefetchWhenStale';
@@ -43,6 +45,8 @@ export function PostListView({ query, active, ranked = false, empty }: Props) {
   const pickerOpen = usePickerOpen();
   const [pulling, setPulling] = useState(false);
   const visibleIds = useRef<string[]>([]);
+  const listRef = useRef<FlashListRef<FeedPost>>(null);
+  const backToTop = useBackToTop(listRef);
   const { onAction, openPost, openComments, moreFor, menu } = usePostListActions();
 
   const { refetch } = query;
@@ -92,7 +96,10 @@ export function PostListView({ query, active, ranked = false, empty }: Props) {
   return (
     <View className="flex-1">
       <FlashList
+        ref={listRef}
         data={query.data}
+        onScroll={backToTop.onScroll}
+        scrollEventThrottle={backToTop.scrollEventThrottle}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         getItemType={getItemType}
@@ -118,6 +125,7 @@ export function PostListView({ query, active, ranked = false, empty }: Props) {
           />
         }
       />
+      <BackToTopButton visible={backToTop.visible} onPress={backToTop.scrollToTop} />
       {menu}
     </View>
   );

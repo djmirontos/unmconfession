@@ -10,8 +10,10 @@ import { NewPostsPill } from '@/components/feed/NewPostsPill';
 import { PostCard } from '@/components/feed/PostCard';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
+import { BackToTopButton } from '@/components/ui/BackToTopButton';
 import { useAnnouncement } from '@/hooks/useAnnouncement';
 import { useAppActive } from '@/hooks/useAppActive';
+import { useBackToTop } from '@/hooks/useBackToTop';
 import { useFeed } from '@/hooks/useFeed';
 import { useNewPosts } from '@/hooks/useNewPosts';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
@@ -102,6 +104,7 @@ export function FeedList() {
       void runTopRefresh();
     }
   }, [clear, runTopRefresh]);
+  const backToTop = useBackToTop(listRef, onScroll);
 
   const onEndReached = useCallback(() => {
     if (query.hasNextPage && !query.isFetchingNextPage && !query.isFetchNextPageError) void query.fetchNextPage();
@@ -171,8 +174,8 @@ export function FeedList() {
         }
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
-        onScroll={onScroll}
-        scrollEventThrottle={32}
+        onScroll={backToTop.onScroll}
+        scrollEventThrottle={backToTop.scrollEventThrottle}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={VIEWABILITY}
         maintainVisibleContentPosition={KEEP_POSITION}
@@ -189,6 +192,7 @@ export function FeedList() {
         }
       />
       {atTop ? null : <NewPostsPill count={pendingCount} onPress={onPillPress} />}
+      <BackToTopButton visible={backToTop.visible} onPress={backToTop.scrollToTop} />
       {menu}
     </View>
   );

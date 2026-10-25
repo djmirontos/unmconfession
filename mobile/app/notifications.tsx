@@ -1,7 +1,7 @@
-import { FlashList, type ListRenderItemInfo } from '@shopify/flash-list';
+import { FlashList, type FlashListRef, type ListRenderItemInfo } from '@shopify/flash-list';
 import { useQueryClient } from '@tanstack/react-query';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,6 +12,8 @@ import { MoreButton } from '@/components/myposts/MoreButton';
 import { NotificationRow, NotificationRowSkeleton } from '@/components/notifications/NotificationRow';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { ActionSheet, type SheetAction } from '@/components/ui/ActionSheet';
+import { BackToTopButton } from '@/components/ui/BackToTopButton';
+import { useBackToTop } from '@/hooks/useBackToTop';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useTheme } from '@/hooks/useTheme';
 import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
@@ -38,6 +40,8 @@ export default function NotificationsScreen() {
   const [pulling, setPulling] = useState(false);
   const [menuFor, setMenuFor] = useState<NotificationGroup | null>(null);
   const [headerMenuOpen, setHeaderMenuOpen] = useState(false);
+  const listRef = useRef<FlashListRef<NotificationGroup>>(null);
+  const backToTop = useBackToTop(listRef);
 
   // Leaving the screen: the badge refetches (reads made here may be pending on the server).
   useFocusEffect(
@@ -139,43 +143,49 @@ export default function NotificationsScreen() {
     );
   } else {
     body = (
-      <FlashList
-        data={items}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        ItemSeparatorComponent={Separator}
-        contentContainerStyle={contentContainerStyle}
-        ListHeaderComponent={
-          query.isRefetchError ? (
-            <View className="pb-3">
-              <RefreshErrorBanner onRetry={() => void query.refetch()} />
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={
-          <EmptyState icon="notifications-outline" title="You're all caught up" message="Replies, reactions and moderation updates show up here." />
-        }
-        ListFooterComponent={
-          query.isFetchNextPageError ? (
-            <View className="py-3">
-              <RefreshErrorBanner onRetry={() => void query.fetchNextPage()} />
-            </View>
-          ) : (
-            <ListFooter loadingMore={query.isFetchingNextPage} reachedEnd={false} endLabel="" />
-          )
-        }
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        refreshControl={
-          <RefreshControl
-            refreshing={pulling}
-            onRefresh={onRefresh}
-            tintColor={colors.accent}
-            colors={[colors.accent]}
-            progressBackgroundColor={colors.surface1}
-          />
-        }
-      />
+      <View className="flex-1">
+        <FlashList
+          ref={listRef}
+          data={items}
+          onScroll={backToTop.onScroll}
+          scrollEventThrottle={backToTop.scrollEventThrottle}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          ItemSeparatorComponent={Separator}
+          contentContainerStyle={contentContainerStyle}
+          ListHeaderComponent={
+            query.isRefetchError ? (
+              <View className="pb-3">
+                <RefreshErrorBanner onRetry={() => void query.refetch()} />
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={
+            <EmptyState icon="notifications-outline" title="You're all caught up" message="Replies, reactions and moderation updates show up here." />
+          }
+          ListFooterComponent={
+            query.isFetchNextPageError ? (
+              <View className="py-3">
+                <RefreshErrorBanner onRetry={() => void query.fetchNextPage()} />
+              </View>
+            ) : (
+              <ListFooter loadingMore={query.isFetchingNextPage} reachedEnd={false} endLabel="" />
+            )
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.5}
+          refreshControl={
+            <RefreshControl
+              refreshing={pulling}
+              onRefresh={onRefresh}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+              progressBackgroundColor={colors.surface1}
+            />
+          }
+        />
+        <BackToTopButton visible={backToTop.visible} onPress={backToTop.scrollToTop} bottom={insets.bottom + 16} />
+      </View>
     );
   }
 

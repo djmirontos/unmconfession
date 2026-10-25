@@ -441,3 +441,28 @@
 - A close toggle in the first moment patches only the My Posts copy until the fetch arrives.
 
 **Verified:** device QA passed except the guest check, which moves to 5.3 because listings are not reachable for guests until the Buy & Sell tab exists (verified at the database level: guests can read `feed_listings`, `get_listings` and listing comments).
+
+## Module 5.3: Buy & Sell tab (2026-10-25)
+
+**Migration** `20261025130000_listings_filters.sql`: `get_listings` gains `p_lost_found_type`, `p_include_closed` and `p_search` (server-side, so keyset paging stays correct). Types regenerated.
+
+**App**
+- Buy & Sell tab (replaces the placeholder): header like Trending (title + bell), segmented switch Buy & Sell | Lost & Found (remembered in memory only). Both sections stay mounted, each with its own search, filters and scroll.
+- Search box per section: 400 ms debounce, trimmed, max 60 characters, clear (X) button; clearing applies at once.
+- Buy & Sell: 2-column grid (`ListingGridCard`): square first photo or a placeholder, price (`formatPrice`), 2-line title, SOLD badge. "Hide sold" on by default.
+- Lost & Found: chips All | Lost | Found, the existing `ListingCard` (LOST / FOUND tag, date and place line, Found / Claimed badge, comment count). "Hide returned" on by default.
+- One infinite query per section and filter combination (`['listings', viewer, filters]`), keyset paging, 20 per page, not persisted. While a new combination loads, the previous list stays on screen dimmed (no spinner).
+- Listing cache patcher now covers every cached list page: close / reopen (hide-closed lists drop a closed item; on reopen they are marked stale and refetch on focus), comment-count changes, delete (dropped at once), edit (lists refetch), block (seller's listings dropped at once, then refetch), sign-out (lists removed). A new listing from Create invalidates the lists.
+- States: skeleton grid / cards, search vs "nothing here yet" empty texts, error with Retry, "Couldn't refresh" banner on cached lists, pull-to-refresh, "Loading more…" footer, refetch on focus / foreground when older than 60 s.
+- The listing detail screen paints instantly from a cached list card.
+- Shared: `useDebouncedValue` (moved out of the nickname hook), `useRefetchWhenStale` (moved out of `PostListView`), `SearchField`, `InlineCheckbox`.
+- 5.3c fixes: the tall gaps under the search box came from the form `Checkbox`, whose `flex-1` label got no width inside the filter row, so the text wrapped one letter per line. Replaced by `InlineCheckbox` (box + label, one 44 px target). Floating "+" removed (the Create tab does this; nothing else used Create's `?kind=` support, so it went too). Grid tiles keep a fixed price + 2-line title height so rows align; the list starts 8 px under the filters.
+- 5.3d: listing detail shows the seller row (`AuthorLine`) at the top, above the gallery, for Sell and Lost & Found; the loading skeleton (`ListingDetailSkeleton`) matches.
+
+**Known gaps**
+- No realtime on the lists: new listings by others show after a pull-to-refresh, a focus refetch (older than 60 s) or a filter change.
+- An edit refreshes the lists by refetching instead of patching in place.
+- A reopened listing (or a failed close that rolls back) comes back to a hide-closed list only after the refetch, not instantly.
+- The no-payments / safety notices show on the detail screen, not on the grid cards.
+
+**Verified:** typecheck and lint pass. Device QA pending (including the guest check carried over from 5.2).

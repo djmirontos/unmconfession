@@ -481,3 +481,26 @@
 - On a thread, while the "New comments" pill shows, the pill (centred) and the button (right) share the bottom edge; they do not overlap on phone widths, but sit side by side.
 
 **Verified:** typecheck and lint pass. Device QA pending.
+
+## Module 6: Share card (2026-10-25)
+
+**No migrations.** Installed with `npx expo install` (both in Expo Go): `react-native-view-shot` 5.1.0, `expo-sharing` ~57.0.24 (its config plugin was added to `app.json`).
+
+**App**
+- `ShareCard` (360 x 450 dp, captured at exactly 1080 x 1350 px): fixed indigo brand look, the same in light and dark, font scaling off so the system text size cannot push text out. Variants: confession (#number chip + body), shoutout ("Shoutout to …" + body), poll (question, up to 4 options, "+N more", no counts), sell (first photo, SELL chip, price, 2-line title), lost & found (big LOST / FOUND, title, place, date, photo if any). Sold / found / claimed listings get their badge. Posts with photos stay text-only. No author, nickname or avatar on any card.
+- Brand in one place: `components/share/ShareCardBrand.tsx` (`SHARE_COLORS`, `ShareCardLogo` text wordmark; swap the logo there at the branding step).
+- Text rules in `lib/shareText.ts` (pure, `npm run test:share`, 9 tests): over 600 characters cut at a word boundary with "…" and a "read more in the app" line; counted by code point (emoji never split); blank lines collapsed, at most 10 line breaks; runs over 20 characters without spaces (URLs) get zero-width break points; body size steps 30 / 24 / 19 / 16 / 14 px by length (line breaks count extra), each with a line cap that fits the box; polls cap the question at 3 lines and options at 1 line when 3+ / 4 options are shown.
+- Capture: one `ShareCardHost` at the root (no hidden card per row), driven by `shareCardStore`. During a share the card is laid out at the top-left inside an `opacity: 0`, `pointerEvents="none"`, screen-reader-hidden wrapper (not off-screen: Android can skip drawing views outside the screen); the card view itself (`collapsable={false}`) is captured, so the wrapper's opacity is not in the image. Waits for layout and the listing photo (max 5 s; on error or timeout the card is shared without it), then `captureRef` → PNG in the cache → `Sharing.shareAsync` (image/png) → the file is deleted (best effort). Dev log prints the PNG size to spot blank captures.
+- `useShareCard()`: sign-in check (guests get the sign-in sheet, per the PRD), `Sharing.isAvailableAsync()` first, one share at a time (other taps ignored), friendly toast on failure, closing the share sheet shows nothing.
+- Wired: Share button in the post action bar (Feed, Trending, Polls, post screen) with a spinner and "busy" state for that post only; My Posts: "Share" in the "⋯" menu of published items; listing screen: share icon in the header, left of "⋯".
+- 6b: confessions and shoutouts with photos show the first photo (cover-cropped, 240 dp tall, rounded, inset like the text) with the #number chip on its top-left and "+N more" bottom-right, then a caption of at most 5 lines (line breaks flattened, cut at 160 characters, 100 for shoutouts, plus "read more in the app" when cut). Same stored image as the feed (already 1440 px JPEG; there is no smaller rendition), same 5 s wait; a photo that fails falls back to the text-only card. Text-only cards: body centred between the chip and the footer, new 36 px step for texts up to 40 characters, a faint opening quote mark above short confessions.
+
+**Deviation from the brief:** the brief said guests can share without signing in; the PRD (and CLAUDE.md) say sharing needs sign-in. Kept the PRD rule, confirmed with the owner.
+
+**Known gaps**
+- No direct Facebook / Instagram Story share until the dev build (system share sheet only).
+- No link or QR code in the footer yet.
+- Logo is a text wordmark placeholder until branding.
+- The brand accent on the card is indigo; the app's accent is amber (one constant to change).
+
+**Verified:** typecheck, lint and `test:share` pass. Device QA pending (including a check that Android captures are not blank).

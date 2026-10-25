@@ -108,6 +108,8 @@ function invalidateOwnItem(queryClient: QueryClient, source: MyItem['source'], i
     void queryClient.invalidateQueries({ queryKey: ['post', id] });
     void queryClient.invalidateQueries({ queryKey: ['trending'] });
     void queryClient.invalidateQueries({ queryKey: ['polls'] });
+  } else {
+    void queryClient.invalidateQueries({ queryKey: ['listing', id] });
   }
 }
 

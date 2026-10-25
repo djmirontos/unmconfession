@@ -40,7 +40,8 @@ export default function MyPostsScreen() {
     (item: MyItem) => {
       const target = rowTarget(item);
       if (target === 'post') router.push({ pathname: '/post/[id]', params: { id: item.id } });
-      else if (target === 'status') router.push({ pathname: '/post-status', params: { source: item.source, id: item.id } });
+      else if (target === 'listing') router.push({ pathname: '/listing/[id]', params: { id: item.id } });
+      else router.push({ pathname: '/post-status', params: { source: item.source, id: item.id } });
     },
     [router],
   );

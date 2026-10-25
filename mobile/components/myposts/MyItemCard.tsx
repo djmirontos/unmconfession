@@ -8,13 +8,12 @@ import { StatusBadge } from '@/components/myposts/StatusBadge';
 import { describeReason } from '@/lib/moderationReasons';
 import type { MyItem } from '@/lib/myPosts';
 
-/** Where a tap goes: published posts to their page; pending, rejected and removed items to the status page. */
-export type MyPostTarget = 'post' | 'status' | null;
+/** Where a tap goes: published items to their page; pending, rejected and removed items to the status page. */
+export type MyPostTarget = 'post' | 'listing' | 'status';
 
 export function rowTarget(item: MyItem): MyPostTarget {
   if (item.status !== 'published') return 'status';
-  // Published listings have no detail screen yet, so they do not open.
-  return item.source === 'post' ? 'post' : null;
+  return item.source;
 }
 
 function detail(item: MyItem): string | null {
@@ -56,7 +55,7 @@ function MyItemCardImpl({ item, onOpen, onMore }: Props) {
       <MoreButton onPress={() => onMore(item)} />
     </View>
   );
-  const open = rowTarget(item) !== null ? () => onOpen(item) : undefined;
+  const open = () => onOpen(item);
   const published = item.status === 'published';
 
   if (item.feedPost) {

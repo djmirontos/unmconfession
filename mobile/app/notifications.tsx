@@ -21,7 +21,6 @@ import { useToastStore } from '@/stores/toastStore';
 
 const keyExtractor = (g: NotificationGroup) => g.group_key;
 const UNAVAILABLE = 'This content is no longer available.';
-const LISTINGS_SOON = 'Listings open in Buy & Sell soon.';
 
 function Separator() {
   return <View className="h-3" />;
@@ -54,23 +53,30 @@ export default function NotificationsScreen() {
       markRead([g]);
       if (!g.target_exists) return showToast(UNAVAILABLE);
       const openPost = (id: string) => router.push({ pathname: '/post/[id]', params: { id } });
+      const openListing = (id: string) => router.push({ pathname: '/listing/[id]', params: { id } });
+      // A post or listing target, if it is still published.
+      const openTarget = () => {
+        if (g.target_status !== 'published') return showToast(UNAVAILABLE);
+        return g.target_type === 'listing' ? openListing(g.target_id) : openPost(g.target_id);
+      };
+      // A comment target: the thread it belongs to.
+      const openParent = () =>
+        g.parent_post_id ? openPost(g.parent_post_id) : g.parent_listing_id ? openListing(g.parent_listing_id) : showToast(UNAVAILABLE);
       switch (g.type) {
         case 'comment':
         case 'reaction':
-          if (g.target_type === 'listing') return showToast(LISTINGS_SOON);
-          return g.target_status === 'published' ? openPost(g.target_id) : showToast(UNAVAILABLE);
+          return openTarget();
         case 'comment_reaction':
         case 'reply':
-          // Target is my comment: open the thread it belongs to.
-          return g.parent_post_id ? openPost(g.parent_post_id) : showToast(LISTINGS_SOON);
+          return openParent();
         case 'content_approved':
-          if (g.target_type === 'post') return g.target_status === 'published' ? openPost(g.target_id) : showToast(UNAVAILABLE);
-          if (g.target_type === 'comment' && g.parent_post_id) return openPost(g.parent_post_id);
-          return showToast(LISTINGS_SOON);
+          return g.target_type === 'comment' ? openParent() : openTarget();
         case 'content_rejected':
         case 'content_removed':
-          // The row's second line already says why for comments and listings.
-          if (g.target_type === 'post') router.push({ pathname: '/post-status', params: { source: 'post', id: g.target_id } });
+          // Posts and listings: their status screen. Comments: the row's second line already says why.
+          if (g.target_type !== 'comment') {
+            router.push({ pathname: '/post-status', params: { source: g.target_type, id: g.target_id } });
+          }
           return;
       }
     },

@@ -7,7 +7,7 @@ import { CardTag } from '@/components/feed/CardTag';
 import { PostBody } from '@/components/feed/PostBody';
 import { PostImages } from '@/components/feed/PostImages';
 import { CONDITIONS } from '@/lib/createSchemas';
-import { CONDITION_LABELS, formatEventLine, formatPrice, type ListingCardData } from '@/lib/listings';
+import { closedLabel, CONDITION_LABELS, formatEventLine, formatPrice, type ListingCardData } from '@/lib/listings';
 
 function typeLabel(listing: ListingCardData): string {
   if (listing.kind === 'sell') return 'SELL';
@@ -16,7 +16,7 @@ function typeLabel(listing: ListingCardData): string {
 
 type Props = {
   listing: ListingCardData;
-  /** Omit when there is nowhere to go (no listing detail screen yet). */
+  /** Opens the listing (or, for My Posts items not yet published, their status page). */
   onOpen?: (id: string) => void;
   /** Show the comment count read-only (published listings). */
   showCommentCount?: boolean;
@@ -35,6 +35,9 @@ function ListingCardImpl({ listing, onOpen, showCommentCount = false, headerAcce
       <View className="flex-row items-center gap-2">
         <AuthorLine nickname={listing.nickname} avatarKey={listing.avatarKey} time={listing.time} editedAt={listing.editedAt} />
         <CardTag label={typeLabel(listing)} />
+        {listing.isClosed ? (
+          <Text className="rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-on-accent">{closedLabel(listing)}</Text>
+        ) : null}
         {headerAccessory}
       </View>
       <Text className="text-lg font-bold text-text">{listing.title}</Text>

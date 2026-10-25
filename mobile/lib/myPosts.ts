@@ -53,7 +53,7 @@ export const MY_POSTS_START: MyPostsCursor = {
 const POST_COLUMNS =
   'id, kind, body, number, status, reject_reason, created_at, target_name, images, ends_at, author_id, published_at, edited_at, reaction_count, reaction_breakdown, comment_count, author:profiles!posts_author_id_fkey(nickname, avatar_key), poll_options(id, label, position, vote_count)';
 const LISTING_COLUMNS =
-  'id, kind, title, status, reject_reason, created_at, images, description, price, condition, location, event_date, lost_found_type, published_at, edited_at, comment_count, author:profiles!listings_author_id_fkey(nickname, avatar_key)';
+  'id, kind, title, status, reject_reason, created_at, images, description, price, condition, location, event_date, lost_found_type, is_closed, author_id, published_at, edited_at, comment_count, author:profiles!listings_author_id_fkey(nickname, avatar_key)';
 
 const postsQuery = () => supabase.from('posts').select(POST_COLUMNS);
 const listingsQuery = () => supabase.from('listings').select(LISTING_COLUMNS);
@@ -142,11 +142,13 @@ const toListingItem = (r: ListingRow): MyItem => {
       location: r.location,
       eventDate: r.event_date,
       images,
+      authorId: r.author_id,
       nickname: r.author?.nickname ?? null,
       avatarKey: r.author?.avatar_key ?? null,
       time: r.published_at ?? r.created_at,
       editedAt: r.edited_at,
       commentCount: r.comment_count,
+      isClosed: r.is_closed,
     },
   };
 };

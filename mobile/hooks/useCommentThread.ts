@@ -20,6 +20,7 @@ import {
 } from '@/lib/comments';
 import { commentReactionBusy } from '@/lib/commentReactionSync';
 import { getCommentErrorMessage, getErrorCode, getReplyErrorMessage } from '@/lib/errors';
+import { bumpListingCommentCount } from '@/lib/listings';
 import { bumpCommentCount } from '@/lib/postCounts';
 import { topFromBreakdown } from '@/lib/reactions';
 import { parseTimestamp } from '@/lib/time';
@@ -284,9 +285,11 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
     }
   }, [thread, publishedCount, expectedCount]);
 
+  /** comment_count of the post (feed, lists, detail) or the listing (screen, My Posts). */
   const bumpTargetCount = useCallback(
     (delta: number) => {
       if (target === 'post') bumpCommentCount(queryClient, targetId, delta);
+      else bumpListingCommentCount(queryClient, targetId, delta);
     },
     [queryClient, target, targetId],
   );
@@ -413,7 +416,7 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
             bumpTargetCount(-(1 + comment.replyCount));
             setReplies(comment.id, false);
             queryClient.removeQueries({ queryKey: repliesKey(comment.id) });
-            if (target === 'post') void queryClient.invalidateQueries({ queryKey: ['post', targetId] });
+            void queryClient.invalidateQueries({ queryKey: [target, targetId] });
           }
         }
         showToast('Deleted');

@@ -56,7 +56,7 @@ export async function unblockUser(blockerId: string, blockedId: string): Promise
 
 // Every list that can show another member's content. The server filters blocked
 // authors, so after a block or unblock these refetch and the server result takes over.
-const AUTHORED_LISTS = [['feed'], ['post'], ['comments'], ['replies'], ['trending'], ['polls']] as const;
+const AUTHORED_LISTS = [['feed'], ['post'], ['listing'], ['comments'], ['replies'], ['trending'], ['polls']] as const;
 
 function invalidateAuthoredLists(queryClient: QueryClient): void {
   for (const queryKey of AUTHORED_LISTS) void queryClient.invalidateQueries({ queryKey });

@@ -1,0 +1,137 @@
+import { FlashList, type ListRenderItemInfo, type ViewToken } from '@shopify/flash-list';
+import type { UseQueryResult } from '@tanstack/react-query';
+import { useFocusEffect, useIsFocused } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { RefreshControl, View } from 'react-native';
+
+import { EmptyState, ErrorState, RefreshErrorBanner } from '@/components/feed/ListStates';
+import { PostCard } from '@/components/feed/PostCard';
+import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
+import { SkeletonList } from '@/components/skeletons/SkeletonList';
+import { useAppActive } from '@/hooks/useAppActive';
+import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
+import { usePostListActions } from '@/hooks/usePostListActions';
+import { useTheme } from '@/hooks/useTheme';
+import { getErrorMessage } from '@/lib/errors';
+import type { FeedPost } from '@/lib/posts';
+import { usePickerOpen } from '@/stores/reactionPickerStore';
+
+const VIEWABILITY = { itemVisiblePercentThreshold: 30 };
+const keyExtractor = (post: FeedPost) => post.id;
+const getItemType = (post: FeedPost) => post.kind;
+
+type Props = {
+  query: UseQueryResult<FeedPost[]>;
+  /** False while another segment is shown: no refresh timers, no focus refetch. */
+  active: boolean;
+  /** Show the position as a rank badge (Trending). */
+  ranked?: boolean;
+  empty: { icon: 'flame-outline' | 'stats-chart-outline'; title: string };
+};
+
+/**
+ * A single-page list of post cards (Trending, active polls) with the Feed's card
+ * behaviour: open, comments, reactions, voting and the "⋯" menu. Refetches when it
+ * comes into view or the app returns while the data is stale; counts refresh every
+ * 30 s for the visible posts.
+ */
+export function PostListView({ query, active, ranked = false, empty }: Props) {
+  const { colors } = useTheme();
+  const appActive = useAppActive();
+  const isFocused = useIsFocused();
+  const pickerOpen = usePickerOpen();
+  const [pulling, setPulling] = useState(false);
+  const visibleIds = useRef<string[]>([]);
+  const { onAction, openPost, openComments, moreFor, menu } = usePostListActions();
+
+  const { refetch, isStale } = query;
+  const refreshIfStale = useCallback(() => {
+    if (isStale) void refetch();
+  }, [isStale, refetch]);
+  // Tab focus and segment switches.
+  useFocusEffect(
+    useCallback(() => {
+      if (active) refreshIfStale();
+    }, [active, refreshIfStale]),
+  );
+  // Back from the background.
+  const wasActive = useRef(appActive);
+  useEffect(() => {
+    if (appActive && !wasActive.current && active && isFocused) refreshIfStale();
+    wasActive.current = appActive;
+  }, [appActive, active, isFocused, refreshIfStale]);
+
+  usePostCountsRefresh(() => visibleIds.current, appActive && isFocused && active);
+
+  const renderItem = useCallback(
+    ({ item, index }: ListRenderItemInfo<FeedPost>) => (
+      <View className="pb-3">
+        <PostCard
+          post={item}
+          onOpen={openPost}
+          onAction={onAction}
+          onComment={openComments}
+          onMore={moreFor(item)}
+          rank={ranked ? index + 1 : undefined}
+        />
+      </View>
+    ),
+    [openPost, onAction, openComments, moreFor, ranked],
+  );
+
+  const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<FeedPost>[] }) => {
+    visibleIds.current = viewableItems.map((token) => token.key);
+  }, []);
+
+  const onRefresh = useCallback(async () => {
+    setPulling(true);
+    await refetch();
+    setPulling(false);
+  }, [refetch]);
+
+  // First load only: skeletons. Afterwards the cached list stays on screen.
+  if (!query.data) {
+    return (
+      <View className="flex-1 p-4">
+        {query.isError ? (
+          <ErrorState message={getErrorMessage(query.error)} onRetry={() => void refetch()} />
+        ) : (
+          <SkeletonList item={PostCardSkeleton} count={3} />
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <View className="flex-1">
+      <FlashList
+        data={query.data}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        getItemType={getItemType}
+        ListHeaderComponent={
+          query.isRefetchError ? (
+            <View className="pb-3">
+              <RefreshErrorBanner onRetry={() => void refetch()} />
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={<EmptyState icon={empty.icon} title={empty.title} />}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={VIEWABILITY}
+        scrollEnabled={!pickerOpen}
+        contentContainerStyle={{ padding: 16 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={pulling}
+            onRefresh={onRefresh}
+            tintColor={colors.accent}
+            colors={[colors.accent]}
+            progressBackgroundColor={colors.surface1}
+          />
+        }
+      />
+      {menu}
+    </View>
+  );
+}

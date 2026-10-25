@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 
-import type { FeedData } from '@/lib/feed';
+import { updateListedPost, updateListedPosts } from '@/lib/postLists';
 import { type FeedPost, type PollOption, parsePollOptions } from '@/lib/posts';
 import { parseTopReactions } from '@/lib/reactions';
 import type { Json } from '@/types/database';
@@ -52,8 +52,9 @@ function applyCounts(post: FeedPost, byId: Map<string, PostCounts>, skipPoll: (p
 }
 
 /**
- * Writes fresh counts (and poll results) into every cached feed and post-detail entry.
- * Unchanged posts keep their identity. `skipPoll` keeps the poll data of posts with a local vote in flight.
+ * Writes fresh counts (and poll results) into every cached post list (feed, Trending,
+ * active polls) and post-detail entry. Unchanged posts keep their identity. `skipPoll`
+ * keeps the poll data of posts with a local vote in flight.
  */
 export function mergePostCounts(
   queryClient: QueryClient,
@@ -64,34 +65,15 @@ export function mergePostCounts(
   for (const row of rows) if (row.id) byId.set(row.id, row);
   if (byId.size === 0) return;
 
-  queryClient.setQueriesData<FeedData>({ queryKey: ['feed'] }, (data) => {
-    if (!data) return data;
-    let changed = false;
-    const pages = data.pages.map((page) => {
-      const items = page.items.map((p) => applyCounts(p, byId, skipPoll));
-      if (items.some((p, i) => p !== page.items[i])) {
-        changed = true;
-        return { ...page, items };
-      }
-      return page;
-    });
-    return changed ? { ...data, pages } : data;
-  });
-
+  updateListedPosts(queryClient, (p) => applyCounts(p, byId, skipPoll));
   queryClient.setQueriesData<FeedPost | null>({ queryKey: ['post'] }, (post) =>
     post ? applyCounts(post, byId, skipPoll) : post,
   );
 }
 
-/** comment_count += delta (never below 0) on every cached feed row and post detail for this post. */
+/** comment_count += delta (never below 0) on every cached post list and the post detail for this post. */
 export function bumpCommentCount(queryClient: QueryClient, postId: string, delta: number): void {
   const bump = (post: FeedPost): FeedPost => ({ ...post, comment_count: Math.max(0, post.comment_count + delta) });
-  queryClient.setQueriesData<FeedData>({ queryKey: ['feed'] }, (data) => {
-    if (!data || !data.pages.some((page) => page.items.some((p) => p.id === postId))) return data;
-    return {
-      ...data,
-      pages: data.pages.map((page) => ({ ...page, items: page.items.map((p) => (p.id === postId ? bump(p) : p)) })),
-    };
-  });
+  updateListedPost(queryClient, postId, bump);
   queryClient.setQueriesData<FeedPost | null>({ queryKey: ['post', postId] }, (post) => (post ? bump(post) : post));
 }

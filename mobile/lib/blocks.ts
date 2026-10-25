@@ -1,9 +1,9 @@
-import type { InfiniteData, QueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 
-import type { CommentCursor, CommentPage } from '@/lib/comments';
-import type { FeedData } from '@/lib/feed';
+import type { RepliesData, ThreadData } from '@/lib/commentCache';
 import { logError, logInfo } from '@/lib/log';
 import { invalidateNotifications } from '@/lib/notifications';
+import { updateListedPosts } from '@/lib/postLists';
 import { supabase } from '@/lib/supabase';
 
 export type BlockedUser = { id: string; nickname: string | null; avatarKey: string | null; blockedAt: string };
@@ -56,7 +56,7 @@ export async function unblockUser(blockerId: string, blockedId: string): Promise
 
 // Every list that can show another member's content. The server filters blocked
 // authors, so after a block or unblock these refetch and the server result takes over.
-const AUTHORED_LISTS = [['feed'], ['post'], ['comments'], ['trending']] as const;
+const AUTHORED_LISTS = [['feed'], ['post'], ['comments'], ['replies'], ['trending'], ['polls']] as const;
 
 function invalidateAuthoredLists(queryClient: QueryClient): void {
   for (const queryKey of AUTHORED_LISTS) void queryClient.invalidateQueries({ queryKey });
@@ -66,14 +66,17 @@ function invalidateAuthoredLists(queryClient: QueryClient): void {
 
 /** After a block: drop the author's posts and comments from every cached list at once, then refetch. */
 export function afterBlock(queryClient: QueryClient, userId: string, authorId: string): void {
-  queryClient.setQueriesData<FeedData>({ queryKey: ['feed'] }, (data) => {
-    if (!data || !data.pages.some((page) => page.items.some((p) => p.author_id === authorId))) return data;
-    return { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.filter((p) => p.author_id !== authorId) })) };
-  });
-  queryClient.setQueriesData<InfiniteData<CommentPage, CommentCursor | null>>({ queryKey: ['comments'] }, (data) => {
+  // Feed, Trending and active polls.
+  updateListedPosts(queryClient, (p) => (p.author_id === authorId ? null : p));
+  queryClient.setQueriesData<ThreadData>({ queryKey: ['comments'] }, (data) => {
     if (!data || !data.pages.some((page) => page.items.some((c) => c.authorId === authorId))) return data;
     return { ...data, pages: data.pages.map((page) => ({ ...page, items: page.items.filter((c) => c.authorId !== authorId) })) };
   });
+  queryClient.setQueriesData<RepliesData>({ queryKey: ['replies'] }, (data) =>
+    data && data.items.some((c) => c.authorId === authorId)
+      ? { ...data, items: data.items.filter((c) => c.authorId !== authorId) }
+      : data,
+  );
   invalidateAuthoredLists(queryClient);
   void queryClient.invalidateQueries({ queryKey: blockedUsersKey(userId) });
 }

@@ -1,7 +1,7 @@
 import { getReactionErrorMessage } from '@/lib/errors';
-import type { FeedData } from '@/lib/feed';
 import { createLatestOnlyQueue } from '@/lib/latestOnlyQueue';
 import { logError } from '@/lib/log';
+import { updateListedPost } from '@/lib/postLists';
 import type { FeedPost } from '@/lib/posts';
 import { queryClient } from '@/lib/queryClient';
 import { approxTopReactions, type ReactionType } from '@/lib/reactions';
@@ -25,18 +25,9 @@ function withReaction(post: FeedPost, next: Reaction): FeedPost {
   };
 }
 
-/** Patches every cache holding the post: feed pages (all viewers' keys) and the post detail. */
+/** Patches every cache holding the post: feed pages, Trending, active polls and the post detail. */
 function patchCaches(postId: string, next: Reaction): void {
-  queryClient.setQueriesData<FeedData>({ queryKey: ['feed'] }, (data) => {
-    if (!data) return data;
-    let changed = false;
-    const pages = data.pages.map((page) => {
-      if (!page.items.some((p) => p.id === postId)) return page;
-      changed = true;
-      return { ...page, items: page.items.map((p) => (p.id === postId ? withReaction(p, next) : p)) };
-    });
-    return changed ? { ...data, pages } : data;
-  });
+  updateListedPost(queryClient, postId, (p) => withReaction(p, next));
   queryClient.setQueriesData<FeedPost | null>({ queryKey: ['post', postId] }, (post) =>
     post ? withReaction(post, next) : post,
   );

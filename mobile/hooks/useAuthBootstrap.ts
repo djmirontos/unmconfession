@@ -20,6 +20,8 @@ export function useAuthBootstrap() {
         queryClient.removeQueries({ queryKey: ['profile'] });
         queryClient.removeQueries({ queryKey: ['notifications'] });
         queryClient.removeQueries({ queryKey: ['notifications-unread'] });
+        queryClient.removeQueries({ queryKey: ['trending'] });
+        queryClient.removeQueries({ queryKey: ['polls'] });
       }
     });
     return () => data.subscription.unsubscribe();

@@ -28,6 +28,8 @@ export function ChipGroup<T extends string | number>({
         key={String(option.value)}
         onPress={() => onChange(option.value)}
         disabled={disabled}
+        // 36 px chips, 44 px touch targets (the 8 px gap keeps neighbours from overlapping).
+        hitSlop={4}
         accessibilityRole="radio"
         accessibilityLabel={option.label}
         accessibilityState={{ selected, disabled }}

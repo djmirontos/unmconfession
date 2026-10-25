@@ -1,5 +1,5 @@
 import { memo, type ReactNode } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { PollResults } from '@/components/feed/PollResults';
 import { PostActions, PostCounts } from '@/components/feed/PostActions';
@@ -31,9 +31,35 @@ type Props = {
   onComment?: (id: string) => void;
   /** Feed: "⋯" in the header for someone else's post (Report / Block). Ignored when headerAccessory is set. */
   onMore?: (post: FeedPost) => void;
+  /** Trending: position in the ranking (1 = first), shown quietly before the author. */
+  rank?: number;
 };
 
-function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false, headerAccessory, footer, reactionsDisabled = false, onComment, onMore }: Props) {
+function RankBadge({ rank }: { rank: number }) {
+  return (
+    <View
+      accessible
+      accessibilityLabel={`Rank ${rank}`}
+      className="h-6 min-w-6 items-center justify-center rounded-full border border-hairline bg-surface2 px-1.5"
+    >
+      <Text className={`text-xs font-bold ${rank <= 3 ? 'text-accent' : 'text-text-dim'}`}>{rank}</Text>
+    </View>
+  );
+}
+
+function PostCardImpl({
+  post,
+  onOpen,
+  onAction,
+  full = false,
+  showCounts = false,
+  headerAccessory,
+  footer,
+  reactionsDisabled = false,
+  onComment,
+  onMore,
+  rank,
+}: Props) {
   const vote = usePollVote(post.id, post.my_vote);
   const accessory =
     headerAccessory ?? (onMore ? <MoreButton onPress={() => onMore(post)} accessibilityLabel="More options for this post" /> : undefined);
@@ -47,6 +73,7 @@ function PostCardImpl({ post, onOpen, onAction, full = false, showCounts = false
         published_at={post.published_at}
         edited_at={post.edited_at}
         accessory={accessory}
+        leading={rank !== undefined ? <RankBadge rank={rank} /> : undefined}
       />
       <PostBody postId={post.id} body={post.body} targetName={post.target_name} full={full} />
       <PostImages images={post.images} />

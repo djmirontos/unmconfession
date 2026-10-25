@@ -1,8 +1,8 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import type { Condition } from '@/lib/createSchemas';
-import type { FeedData } from '@/lib/feed';
 import { logError, logInfo } from '@/lib/log';
+import { updateListedPost } from '@/lib/postLists';
 import type { MyItem } from '@/lib/myPosts';
 import type { FeedPost } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
@@ -95,30 +95,19 @@ export async function deleteOwnItem(source: MyItem['source'], id: string): Promi
   logInfo(`rpc.delete_own_${source}`, 'ok');
 }
 
+/** The post in the feed, Trending and active polls caches (null drops it). */
 function updateFeed(queryClient: QueryClient, id: string, change: (post: FeedPost) => FeedPost | null) {
-  queryClient.setQueriesData<FeedData>({ queryKey: ['feed'] }, (data) => {
-    if (!data) return data;
-    return {
-      ...data,
-      pages: data.pages.map((page) => ({
-        ...page,
-        items: page.items.flatMap((p) => {
-          if (p.id !== id) return [p];
-          const next = change(p);
-          return next ? [next] : [];
-        }),
-      })),
-    };
-  });
+  updateListedPost(queryClient, id, change);
 }
 
-/** Refreshes only what an own-item change touches: My Posts, the item, its detail, and Trending. */
+/** Refreshes only what an own-item change touches: My Posts, the item, its detail, Trending and polls. */
 function invalidateOwnItem(queryClient: QueryClient, source: MyItem['source'], id: string) {
   void queryClient.invalidateQueries({ queryKey: ['my-posts'] });
   void queryClient.invalidateQueries({ queryKey: ['my-item'] });
   if (source === 'post') {
     void queryClient.invalidateQueries({ queryKey: ['post', id] });
     void queryClient.invalidateQueries({ queryKey: ['trending'] });
+    void queryClient.invalidateQueries({ queryKey: ['polls'] });
   }
 }
 

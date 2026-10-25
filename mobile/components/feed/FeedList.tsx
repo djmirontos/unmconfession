@@ -1,5 +1,5 @@
 import { FlashList, type FlashListRef, type ListRenderItemInfo, type ViewToken } from '@shopify/flash-list';
-import { useRouter, useIsFocused } from 'expo-router';
+import { useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type NativeScrollEvent, type NativeSyntheticEvent, RefreshControl, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
@@ -8,21 +8,18 @@ import { AnnouncementCard } from '@/components/feed/AnnouncementCard';
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { NewPostsPill } from '@/components/feed/NewPostsPill';
 import { PostCard } from '@/components/feed/PostCard';
-import { ContentMenu, type ContentMenuTarget } from '@/components/moderation/ContentMenu';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { useAnnouncement } from '@/hooks/useAnnouncement';
 import { useAppActive } from '@/hooks/useAppActive';
-import { useComingSoonAction } from '@/hooks/useComingSoonAction';
 import { useFeed } from '@/hooks/useFeed';
 import { useNewPosts } from '@/hooks/useNewPosts';
-import { useMembership } from '@/hooks/useProfile';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
+import { usePostListActions } from '@/hooks/usePostListActions';
 import { useTheme } from '@/hooks/useTheme';
 import { getErrorMessage } from '@/lib/errors';
 import { logError } from '@/lib/log';
 import type { FeedPost } from '@/lib/posts';
-import { useAuthStore } from '@/stores/authStore';
 import { usePickerOpen } from '@/stores/reactionPickerStore';
 
 // Within this distance of the top, new posts merge in silently instead of showing the pill.
@@ -35,14 +32,12 @@ const keyExtractor = (post: FeedPost) => post.id;
 const getItemType = (post: FeedPost) => post.kind;
 
 export function FeedList() {
-  const router = useRouter();
   const { colors } = useTheme();
   const reduceMotion = useReducedMotion();
   const appActive = useAppActive();
   const isFocused = useIsFocused();
   const { query, posts, refreshTop } = useFeed();
   const announcement = useAnnouncement();
-  const onAction = useComingSoonAction();
   // The reaction picker owns the touch while open; the list must not scroll under it.
   const pickerOpen = usePickerOpen();
   const listRef = useRef<FlashListRef<FeedPost>>(null);
@@ -80,35 +75,16 @@ export function FeedList() {
 
   usePostCountsRefresh(() => visibleIds.current, appActive && isFocused);
 
-  const openPost = useCallback((id: string) => router.push({ pathname: '/post/[id]', params: { id } }), [router]);
-  // Comment button: open the post with the composer focused (guests just read; the composer shows sign-in).
-  const isMember = useMembership().status === 'member';
-  const openComments = useCallback(
-    (id: string) => router.push({ pathname: '/post/[id]', params: isMember ? { id, focus: 'comment' } : { id } }),
-    [router, isMember],
-  );
-
-  // "⋯" (Report / Block) on other members' posts; own posts keep no menu in the feed.
-  const userId = useAuthStore((s) => s.session?.user.id ?? null);
-  const [menuFor, setMenuFor] = useState<ContentMenuTarget | null>(null);
-  const openMenu = useCallback(
-    (post: FeedPost) => setMenuFor({ type: 'post', id: post.id, authorId: post.author_id, nickname: post.nickname }),
-    [],
-  );
+  // Open / comments / share, and "⋯" (Report / Block) on other members' posts; own posts keep no menu here.
+  const { onAction, openPost, openComments, moreFor, menu } = usePostListActions();
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FeedPost>) => (
       <View className="pb-3">
-        <PostCard
-          post={item}
-          onOpen={openPost}
-          onAction={onAction}
-          onComment={openComments}
-          onMore={item.author_id === userId ? undefined : openMenu}
-        />
+        <PostCard post={item} onOpen={openPost} onAction={onAction} onComment={openComments} onMore={moreFor(item)} />
       </View>
     ),
-    [openPost, onAction, openComments, openMenu, userId],
+    [openPost, onAction, openComments, moreFor],
   );
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<FeedPost>[] }) => {
@@ -213,7 +189,7 @@ export function FeedList() {
         }
       />
       {atTop ? null : <NewPostsPill count={pendingCount} onPress={onPillPress} />}
-      <ContentMenu target={menuFor} onClose={() => setMenuFor(null)} />
+      {menu}
     </View>
   );
 }

@@ -1,7 +1,7 @@
 import { getErrorCode, getErrorMessage } from '@/lib/errors';
-import type { FeedData } from '@/lib/feed';
 import { createLatestOnlyQueue } from '@/lib/latestOnlyQueue';
 import { logError } from '@/lib/log';
+import { updateListedPost } from '@/lib/postLists';
 import type { FeedPost } from '@/lib/posts';
 import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
@@ -19,18 +19,9 @@ function withVote(post: FeedPost, next: Vote): FeedPost {
   return { ...post, my_vote: next, poll_options };
 }
 
-/** Applies `update` to the post in every cache holding it: feed pages (all viewers' keys) and the post detail. */
+/** Applies `update` to the post in every cache holding it: feed pages, Trending, active polls and the post detail. */
 function patchCaches(postId: string, update: (post: FeedPost) => FeedPost): void {
-  queryClient.setQueriesData<FeedData>({ queryKey: ['feed'] }, (data) => {
-    if (!data) return data;
-    let changed = false;
-    const pages = data.pages.map((page) => {
-      if (!page.items.some((p) => p.id === postId)) return page;
-      changed = true;
-      return { ...page, items: page.items.map((p) => (p.id === postId ? update(p) : p)) };
-    });
-    return changed ? { ...data, pages } : data;
-  });
+  updateListedPost(queryClient, postId, update);
   queryClient.setQueriesData<FeedPost | null>({ queryKey: ['post', postId] }, (post) => (post ? update(post) : post));
 }
 

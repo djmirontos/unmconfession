@@ -23,6 +23,7 @@ export function useAuthBootstrap() {
         queryClient.removeQueries({ queryKey: ['trending'] });
         queryClient.removeQueries({ queryKey: ['polls'] });
         queryClient.removeQueries({ queryKey: ['listings'] });
+        queryClient.removeQueries({ queryKey: ['my-settings'] });
       }
     });
     return () => data.subscription.unsubscribe();

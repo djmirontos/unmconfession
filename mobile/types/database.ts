@@ -967,6 +967,7 @@ export type Database = {
       }
       user_flags: {
         Row: {
+          deleted_at: string | null
           role: Database["public"]["Enums"]["app_role"]
           status: Database["public"]["Enums"]["account_status"]
           status_reason: string | null
@@ -975,6 +976,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          deleted_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["account_status"]
           status_reason?: string | null
@@ -983,6 +985,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          deleted_at?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           status?: Database["public"]["Enums"]["account_status"]
           status_reason?: string | null
@@ -993,6 +996,41 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "user_flags_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_settings: {
+        Row: {
+          nickname_changed_at: string | null
+          notify_comments: boolean
+          notify_reactions: boolean
+          notify_replies: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          nickname_changed_at?: string | null
+          notify_comments?: boolean
+          notify_reactions?: boolean
+          notify_replies?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          nickname_changed_at?: string | null
+          notify_comments?: boolean
+          notify_reactions?: boolean
+          notify_replies?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_settings_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
@@ -1162,6 +1200,7 @@ export type Database = {
           out_term: string
         }[]
       }
+      _nickname_flagged: { Args: { p: string }; Returns: string }
       _re_escape: { Args: { p: string }; Returns: string }
       _validate_nickname: { Args: { p: string }; Returns: undefined }
       admin_set_nickname: {
@@ -1188,6 +1227,7 @@ export type Database = {
         }[]
       }
       assert_active_member: { Args: never; Returns: string }
+      change_nickname: { Args: { p_nickname: string }; Returns: undefined }
       create_comment: {
         Args: {
           p_body: string
@@ -1329,6 +1369,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_my_account: { Args: { p_confirm: string }; Returns: undefined }
       delete_notifications: { Args: { p_keys: string[] }; Returns: undefined }
       delete_own_comment: { Args: { p_comment_id: string }; Returns: undefined }
       delete_own_listing: { Args: { p_listing_id: string }; Returns: undefined }
@@ -1558,6 +1599,16 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_my_settings: {
+        Args: never
+        Returns: {
+          nickname_changed_at: string
+          nickname_next_change_at: string
+          notify_comments: boolean
+          notify_reactions: boolean
+          notify_replies: boolean
+        }[]
+      }
       get_notifications: {
         Args: { p_before_key?: string; p_before_ts?: string; p_limit?: number }
         Returns: {
@@ -1720,6 +1771,14 @@ export type Database = {
         Returns: undefined
       }
       set_nickname: { Args: { p_nickname: string }; Returns: undefined }
+      set_notification_prefs: {
+        Args: {
+          p_comments?: boolean
+          p_reactions?: boolean
+          p_replies?: boolean
+        }
+        Returns: undefined
+      }
       set_reaction: {
         Args: {
           p_post_id: string

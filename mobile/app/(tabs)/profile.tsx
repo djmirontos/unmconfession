@@ -7,17 +7,26 @@ import { TabScreen } from '@/components/layout/TabScreen';
 import { CountBadge } from '@/components/notifications/NotificationBell';
 import { Avatar } from '@/components/profile/Avatar';
 import { AvatarPicker } from '@/components/profile/AvatarPicker';
+import { SettingsGroup, SettingsRow } from '@/components/profile/SettingsRow';
 import { ThemeSwitch } from '@/components/profile/ThemeSwitch';
 import { Button } from '@/components/ui/Button';
 import { FormMessage } from '@/components/ui/FormMessage';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAvatarPrompt } from '@/hooks/useAvatarPrompt';
+import { useMySettings } from '@/hooks/useMySettings';
 import { type Profile, useMembership } from '@/hooks/useProfile';
 import { useTheme } from '@/hooks/useTheme';
 import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { useUpdateAvatar } from '@/hooks/useUpdateAvatar';
 import { signOut } from '@/lib/auth';
 import { getErrorMessage } from '@/lib/errors';
+import { formatManilaDay } from '@/lib/manilaDate';
+import { inNicknameCooldown } from '@/lib/settings';
+import { useToastStore } from '@/stores/toastStore';
+
+const AVATAR_SIZE = 80;
+// Any avatar failure (offline, a deleted account, …) rolls back and shows the same short line.
+const AVATAR_FAILED = 'Could not change your avatar. Please try again.';
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -59,57 +68,123 @@ function AvatarPrompt({ onPick, onDismiss }: { onPick: () => void; onDismiss: ()
   );
 }
 
-function NotificationsRow() {
-  const router = useRouter();
+/** Avatar (tap to change, pencil badge), nickname and email. */
+function ProfileHeader({ profile, email, onChangeAvatar }: { profile: Profile; email: string | null; onChangeAvatar: () => void }) {
   const { colors } = useTheme();
-  const unread = useUnreadNotifications();
   return (
-    <Pressable
-      onPress={() => router.push('/notifications')}
-      accessibilityRole="button"
-      accessibilityLabel={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
-      className="min-h-14 flex-row items-center gap-3 rounded-2xl border border-hairline bg-surface1 px-4 active:bg-surface2"
-    >
-      <Ionicons name="notifications-outline" size={22} color={colors.text} />
-      <Text className="flex-1 text-base font-bold text-text">Notifications</Text>
-      <CountBadge count={unread} />
-      <Ionicons name="chevron-forward" size={18} color={colors.textDim} />
-    </Pressable>
+    <View className="flex-row items-center gap-4 rounded-2xl border border-hairline bg-surface1 p-4">
+      <Pressable onPress={onChangeAvatar} accessibilityRole="button" accessibilityLabel="Change avatar" className="active:opacity-80">
+        <Avatar avatarKey={profile.avatar_key} size={AVATAR_SIZE} />
+        <View className="absolute -bottom-0.5 -right-0.5 h-7 w-7 items-center justify-center rounded-full border-2 border-surface1 bg-accent">
+          <Ionicons name="pencil" size={13} color={colors.onAccent} />
+        </View>
+      </Pressable>
+      <View className="min-w-0 flex-1 gap-1">
+        <Text numberOfLines={1} ellipsizeMode="tail" className="text-2xl font-bold text-text">
+          {profile.nickname}
+        </Text>
+        {email ? (
+          <Text numberOfLines={1} ellipsizeMode="tail" className="text-sm text-text-dim">
+            {email}
+          </Text>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
-function MemberProfile({ profile }: { profile: Profile }) {
+function AccountGroup({ nickname }: { nickname: string | null }) {
+  const router = useRouter();
+  const unread = useUnreadNotifications();
+  const settings = useMySettings();
+  const next = settings.data?.nicknameNextChangeAt;
+  const nicknameValue = inNicknameCooldown(settings.data) && next ? `Next change on ${formatManilaDay(next)}` : (nickname ?? '');
+
+  return (
+    <SettingsGroup title="Account">
+      <SettingsRow first icon="at-outline" label="Nickname" value={nicknameValue} onPress={() => router.push('/change-nickname')} />
+      <SettingsRow icon="document-text-outline" label="My Posts" onPress={() => router.push('/my-posts')} />
+      <SettingsRow
+        icon="notifications-outline"
+        label="Notifications"
+        accessory={<CountBadge count={unread} />}
+        accessibilityLabel={unread > 0 ? `Notifications, ${unread} unread` : 'Notifications'}
+        onPress={() => router.push('/notifications')}
+      />
+      <SettingsRow icon="ban-outline" label="Blocked users" onPress={() => router.push('/blocked-users')} />
+      <SettingsRow icon="options-outline" label="Notification preferences" onPress={() => router.push('/notification-preferences')} />
+    </SettingsGroup>
+  );
+}
+
+function AboutGroup() {
+  const router = useRouter();
+  return (
+    <SettingsGroup title="About">
+      <SettingsRow first icon="reader-outline" label="Terms of Use" onPress={() => router.push('/legal/terms')} />
+      <SettingsRow icon="shield-checkmark-outline" label="Privacy Policy" onPress={() => router.push('/legal/privacy')} />
+      <SettingsRow icon="code-slash-outline" label="Open source notices" onPress={() => router.push('/licenses')} />
+    </SettingsGroup>
+  );
+}
+
+function MemberProfile({ profile, email }: { profile: Profile; email: string | null }) {
   const updateAvatar = useUpdateAvatar();
+  const showToast = useToastStore((s) => s.show);
   const { showPrompt, markSeen } = useAvatarPrompt(profile.id);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const openPicker = () => {
     setPickerOpen(true);
     markSeen();
   };
+  const chooseAvatar = (key: string) => {
+    setPickerOpen(false);
+    if (key === profile.avatar_key) return;
+    updateAvatar.mutate(key, {
+      onSuccess: () => showToast('Avatar updated'),
+      onError: () => showToast(AVATAR_FAILED),
+    });
+  };
+
+  const handleSignOut = async () => {
+    setError(null);
+    setSigningOut(true);
+    try {
+      await signOut();
+    } catch (e) {
+      setError(getErrorMessage(e));
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   return (
-    <>
+    <View className="gap-3">
       {showPrompt ? <AvatarPrompt onPick={openPicker} onDismiss={markSeen} /> : null}
-      <View className="flex-row items-center gap-4">
-        <Avatar avatarKey={profile.avatar_key} size={64} />
-        <View className="flex-1 gap-1">
-          <Text className="text-2xl font-bold text-text" accessibilityLabel={`Nickname ${profile.nickname ?? ''}`}>
-            {profile.nickname}
-          </Text>
-          <Text className="text-sm text-text-dim">Your nickname is permanent.</Text>
+      <ProfileHeader profile={profile} email={email} onChangeAvatar={openPicker} />
+      <AccountGroup nickname={profile.nickname} />
+      <AboutGroup />
+      <SettingsGroup title="Appearance">
+        <View className="p-3">
+          <ThemeSwitch />
         </View>
-      </View>
-      <NotificationsRow />
-      <Section title="Avatar">
-        {pickerOpen ? (
-          <AvatarPicker value={profile.avatar_key} onChange={(key) => updateAvatar.mutate(key)} />
-        ) : (
-          <Button label="Change avatar" variant="secondary" icon="happy-outline" onPress={openPicker} />
-        )}
-        <FormMessage tone="error" message={updateAvatar.isError ? getErrorMessage(updateAvatar.error) : null} />
-      </Section>
-    </>
+      </SettingsGroup>
+      <SettingsGroup>
+        <SettingsRow
+          first
+          destructive
+          icon="log-out-outline"
+          label={signingOut ? 'Logging out…' : 'Log out'}
+          disabled={signingOut}
+          onPress={() => void handleSignOut()}
+        />
+      </SettingsGroup>
+      <FormMessage tone="error" message={error} />
+      <AvatarPicker visible={pickerOpen} value={profile.avatar_key} onSelect={chooseAvatar} onClose={() => setPickerOpen(false)} />
+    </View>
   );
 }
 
@@ -125,9 +200,9 @@ function ProfileSkeleton() {
   );
 }
 
-export default function ProfileScreen() {
+/** Guests and the moment before the profile loads: the screen as it was before 8c. */
+function GuestOrLoading({ loading }: { loading: boolean }) {
   const router = useRouter();
-  const { status, profile } = useMembership();
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -144,15 +219,11 @@ export default function ProfileScreen() {
   };
 
   return (
-    <TabScreen title="Profile">
-      {status === 'guest' ? <GuestProfile /> : null}
-      {status === 'loading' ? <ProfileSkeleton /> : null}
-      {status === 'member' && profile ? <MemberProfile profile={profile} /> : null}
-
+    <>
+      {loading ? <ProfileSkeleton /> : <GuestProfile />}
       <Section title="Appearance">
         <ThemeSwitch />
       </Section>
-
       <Section title="About">
         <Button
           label="Open source notices"
@@ -161,19 +232,26 @@ export default function ProfileScreen() {
           onPress={() => router.push('/licenses')}
         />
       </Section>
-
-      {status !== 'guest' ? (
+      {loading ? (
         <>
-          {status === 'member' ? (
-            <>
-              <Button label="My Posts" variant="secondary" icon="document-text-outline" onPress={() => router.push('/my-posts')} />
-              <Button label="Blocked users" variant="secondary" icon="ban-outline" onPress={() => router.push('/blocked-users')} />
-            </>
-          ) : null}
           <FormMessage tone="error" message={error} />
           <Button label="Log out" variant="danger" icon="log-out-outline" loading={signingOut} onPress={handleSignOut} />
         </>
       ) : null}
+    </>
+  );
+}
+
+export default function ProfileScreen() {
+  const { status, profile, session } = useMembership();
+
+  return (
+    <TabScreen title="Profile">
+      {status === 'member' && profile ? (
+        <MemberProfile profile={profile} email={session?.user.email ?? null} />
+      ) : (
+        <GuestOrLoading loading={status !== 'guest'} />
+      )}
     </TabScreen>
   );
 }

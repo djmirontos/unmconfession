@@ -10,10 +10,13 @@ type Props = {
   onChangeText: (value: string) => void;
   error?: string;
   editable?: boolean;
+  /** Change nickname: the member's current name (not reported as taken). */
+  ownNickname?: string | null;
+  label?: string;
 };
 
 const STATUS_TEXT: Record<NicknameStatus['state'], string> = {
-  idle: '3–20 characters: letters, numbers, underscore or dot. Permanent once set.',
+  idle: '3–20 characters: letters, numbers, underscore or dot.',
   invalid: '',
   checking: 'Checking…',
   available: 'Available',
@@ -22,9 +25,9 @@ const STATUS_TEXT: Record<NicknameStatus['state'], string> = {
 };
 
 /** Nickname input with debounced live availability feedback. */
-export function NicknameField({ value, onChangeText, error, editable }: Props) {
+export function NicknameField({ value, onChangeText, error, editable, ownNickname, label = 'Nickname' }: Props) {
   const { colors } = useTheme();
-  const status = useNicknameAvailability(value);
+  const status = useNicknameAvailability(value, ownNickname);
   const message = status.state === 'invalid' ? status.message : STATUS_TEXT[status.state];
   const tone =
     status.state === 'available'
@@ -35,7 +38,7 @@ export function NicknameField({ value, onChangeText, error, editable }: Props) {
 
   return (
     <TextField
-      label="Nickname"
+      label={label}
       value={value}
       onChangeText={onChangeText}
       editable={editable}

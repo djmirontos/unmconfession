@@ -44,6 +44,11 @@ export function lostFoundDateRange(now = Date.now()): { min: string; max: string
   return { min: addDays(max, -LOST_FOUND_MAX_AGE_DAYS), max };
 }
 
+/** The Manila calendar day of a timestamp, as "Nov 24" (or "Nov 24, 2027" in another year). */
+export function formatManilaDay(iso: string, now = Date.now()): string {
+  return formatEventDate(manilaToday(Date.parse(iso)), now);
+}
+
 /** Event date as "Oct 9", or "Oct 9, 2025" when not this (Manila) year. Built from the Y-M-D parts. */
 export function formatEventDate(ymd: string, now = Date.now()): string {
   const sameYear = ymd.slice(0, 4) === manilaToday(now).slice(0, 4);

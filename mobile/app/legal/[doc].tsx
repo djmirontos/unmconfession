@@ -9,8 +9,8 @@ const DOCS = {
   terms: {
     title: 'Terms of Use',
     sections: [
-      'You must be a UNM student or staff member to create an account.',
-      'Posts are shown under your permanent nickname. Posts are pseudonymous, not anonymous.',
+      'Anyone can read UNM Freedom Confessions without an account. To create an account you must be of legal age in the country where you live, or have the permission of a parent or legal guardian. By creating an account you confirm this. You are responsible for the account you register and for everything that is posted with it.',
+      'Posts are shown under your nickname. You can change it once every 30 days; the new name shows on all your old posts and comments. Posts are pseudonymous, not anonymous.',
       'Admins can see the email address behind any nickname to handle abuse. Every such lookup is recorded in an audit log.',
       'Do not post names, phone numbers or other details that identify people without their consent. Bullying, harassment and prohibited items are removed.',
       'Moderators may hold, edit, reject or remove content and may suspend or ban accounts.',

@@ -56,6 +56,8 @@ function RootNavigator() {
         <Stack.Screen name="my-posts" />
         <Stack.Screen name="blocked-users" />
         <Stack.Screen name="notifications" />
+        <Stack.Screen name="change-nickname" />
+        <Stack.Screen name="notification-preferences" />
         <Stack.Screen name="post-status" />
         <Stack.Screen name="edit" />
         <Stack.Screen name="(auth)/sign-in" />

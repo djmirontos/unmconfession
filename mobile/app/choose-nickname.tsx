@@ -50,7 +50,7 @@ export default function ChooseNicknameScreen() {
     <Screen>
       <AuthHeader
         title="Choose your nickname"
-        subtitle="It appears on everything you post and cannot be changed later, so pick carefully."
+        subtitle="It appears on everything you post. You can change it once every 30 days, and the new name shows on your old posts too."
         canGoBack={false}
       />
       <FormMessage tone="error" message={formError} />

@@ -1,9 +1,9 @@
 import type { QueryClient } from '@tanstack/react-query';
 
+import { invalidateAuthoredLists } from '@/lib/authoredLists';
 import type { RepliesData, ThreadData } from '@/lib/commentCache';
 import { updateListedListings } from '@/lib/listings';
 import { logError, logInfo } from '@/lib/log';
-import { invalidateNotifications } from '@/lib/notifications';
 import { updateListedPosts } from '@/lib/postLists';
 import { supabase } from '@/lib/supabase';
 
@@ -53,25 +53,6 @@ export async function unblockUser(blockerId: string, blockedId: string): Promise
     throw error;
   }
   logInfo('blocks.delete', 'ok');
-}
-
-// Every list that can show another member's content. The server filters blocked
-// authors, so after a block or unblock these refetch and the server result takes over.
-const AUTHORED_LISTS = [
-  ['feed'],
-  ['post'],
-  ['listing'],
-  ['listings'],
-  ['comments'],
-  ['replies'],
-  ['trending'],
-  ['polls'],
-] as const;
-
-function invalidateAuthoredLists(queryClient: QueryClient): void {
-  for (const queryKey of AUTHORED_LISTS) void queryClient.invalidateQueries({ queryKey });
-  // Notices caused by a blocked member are hidden server-side; the list and badge change too.
-  invalidateNotifications(queryClient);
 }
 
 /** After a block: drop the author's posts and comments from every cached list at once, then refetch. */

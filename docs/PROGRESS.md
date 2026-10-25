@@ -422,3 +422,22 @@
 - An ended poll shows "Ended" until the next refetch removes it.
 
 **Verified:** device QA passed.
+
+## Module 5.2: Listing detail screen (2026-10-25)
+
+**No migrations.**
+
+**App**
+- Listing detail screen (`/listing/[id]`): paged photo gallery (whole photos, no cropping; tap opens the zoomable full-screen viewer).
+- Sell details (price, condition, Sold badge) and Lost & Found details (Lost/Found tag, place, Manila date, Found/Claimed badge); seller line; the existing MarketNotice / LostFoundNotice.
+- Full comment thread with replies and comment reactions.
+- Owner menu (Edit/Delete) and close toggle (Mark as sold / available, Mark as found / claimed / reopen) with optimistic cache patching and rollback; others get Report/Block.
+- Unavailable, blocked and offline states; paints instantly from a cached My Posts card.
+- Entry points: My Posts (published listings) and notification taps (comment / reply / comment reaction on a listing, approved listing / comment). Rejected / removed listing notices open `/post-status?source=listing`. The "Listings open in Buy & Sell soon" toasts are gone.
+
+**Known gaps**
+- Buy & Sell list/cache not built yet (add it to the listing patcher in 5.3).
+- Closing a listing that was deleted meanwhile rolls back with the generic error text.
+- A close toggle in the first moment patches only the My Posts copy until the fetch arrives.
+
+**Verified:** device QA passed except the guest check, which moves to 5.3 because listings are not reachable for guests until the Buy & Sell tab exists (verified at the database level: guests can read `feed_listings`, `get_listings` and listing comments).

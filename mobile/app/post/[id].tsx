@@ -18,7 +18,9 @@ import { useComingSoonAction } from '@/hooks/useComingSoonAction';
 import { useMyItem } from '@/hooks/useMyItem';
 import { usePost } from '@/hooks/usePost';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
+import { useShareCard } from '@/hooks/useShareCard';
 import { getErrorMessage } from '@/lib/errors';
+import type { FeedPost } from '@/lib/posts';
 import { useAuthStore } from '@/stores/authStore';
 import { usePickerOpen } from '@/stores/reactionPickerStore';
 
@@ -29,6 +31,8 @@ export default function PostDetailScreen() {
   const { id = '', focus } = useLocalSearchParams<{ id: string; focus?: string }>();
   const post = usePost(id);
   const onAction = useComingSoonAction();
+  const share = useShareCard();
+  const sharePost = useCallback((p: FeedPost) => void share({ type: 'post', post: p }), [share]);
   const pickerOpen = usePickerOpen();
   const appActive = useAppActive();
   const isFocused = useIsFocused();
@@ -62,12 +66,19 @@ export default function PostDetailScreen() {
       data ? (
         <View className="gap-4">
           {refetchError ? <RefreshErrorBanner onRetry={() => void refetchPost()} /> : null}
-          <PostCard post={data} onAction={onAction} onComment={focusComposer} full reactionsDisabled={placeholder} />
+          <PostCard
+            post={data}
+            onAction={onAction}
+            onComment={focusComposer}
+            onShare={sharePost}
+            full
+            reactionsDisabled={placeholder}
+          />
         </View>
       ) : (
         <View />
       ),
-    [data, refetchError, placeholder, refetchPost, onAction, focusComposer],
+    [data, refetchError, placeholder, refetchPost, onAction, focusComposer, sharePost],
   );
 
   let body;

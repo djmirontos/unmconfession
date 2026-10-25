@@ -138,7 +138,7 @@ export default function MyPostsScreen() {
     <View className="flex-1 bg-bg" style={{ paddingTop: insets.top }}>
       <BackHeader title="My Posts" />
       {body}
-      <OwnItemMenu item={menuItem} onClose={() => setMenuItem(null)} />
+      <OwnItemMenu item={menuItem} onClose={() => setMenuItem(null)} withShare />
     </View>
   );
 }

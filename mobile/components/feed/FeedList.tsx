@@ -78,15 +78,22 @@ export function FeedList() {
   usePostCountsRefresh(() => visibleIds.current, appActive && isFocused);
 
   // Open / comments / share, and "⋯" (Report / Block) on other members' posts; own posts keep no menu here.
-  const { onAction, openPost, openComments, moreFor, menu } = usePostListActions();
+  const { onAction, openPost, openComments, sharePost, moreFor, menu } = usePostListActions();
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FeedPost>) => (
       <View className="pb-3">
-        <PostCard post={item} onOpen={openPost} onAction={onAction} onComment={openComments} onMore={moreFor(item)} />
+        <PostCard
+          post={item}
+          onOpen={openPost}
+          onAction={onAction}
+          onComment={openComments}
+          onShare={sharePost}
+          onMore={moreFor(item)}
+        />
       </View>
     ),
-    [openPost, onAction, openComments, moreFor],
+    [openPost, onAction, openComments, sharePost, moreFor],
   );
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<FeedPost>[] }) => {

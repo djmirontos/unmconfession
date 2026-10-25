@@ -29,6 +29,8 @@ type Props = {
   reactionsDisabled?: boolean;
   /** Comment button (Feed: open the post with the composer focused; detail: focus the composer). */
   onComment?: (id: string) => void;
+  /** Share button: the image card (see useShareCard). */
+  onShare?: (post: FeedPost) => void;
   /** Feed: "⋯" in the header for someone else's post (Report / Block). Ignored when headerAccessory is set. */
   onMore?: (post: FeedPost) => void;
   /** Trending: position in the ranking (1 = first), shown quietly before the author. */
@@ -57,6 +59,7 @@ function PostCardImpl({
   footer,
   reactionsDisabled = false,
   onComment,
+  onShare,
   onMore,
   rank,
 }: Props) {
@@ -111,6 +114,7 @@ function PostCardImpl({
           myReaction={post.my_reaction}
           reactionsDisabled={reactionsDisabled}
           onComment={onComment ? () => onComment(post.id) : undefined}
+          onShare={onShare ? () => onShare(post) : undefined}
           onAction={onAction}
         />
       ) : showCounts ? (

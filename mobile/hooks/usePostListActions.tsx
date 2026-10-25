@@ -4,12 +4,13 @@ import { useCallback, useState } from 'react';
 import { ContentMenu, type ContentMenuTarget } from '@/components/moderation/ContentMenu';
 import { useComingSoonAction } from '@/hooks/useComingSoonAction';
 import { useMembership } from '@/hooks/useProfile';
+import { useShareCard } from '@/hooks/useShareCard';
 import type { FeedPost } from '@/lib/posts';
 import { useAuthStore } from '@/stores/authStore';
 
 /**
  * What a list of post cards needs (Feed, Trending, Polls): open the post, open it with the
- * composer focused, the share / guest actions, and the "⋯" Report / Block menu for other
+ * composer focused, share as an image card, the guest actions, and the "⋯" Report / Block menu for other
  * members' posts. Render `menu` once next to the list.
  */
 export function usePostListActions() {
@@ -34,5 +35,8 @@ export function usePostListActions() {
 
   const menu = <ContentMenu target={menuFor} onClose={() => setMenuFor(null)} />;
 
-  return { onAction, openPost, openComments, moreFor, menu };
+  const share = useShareCard();
+  const sharePost = useCallback((post: FeedPost) => void share({ type: 'post', post }), [share]);
+
+  return { onAction, openPost, openComments, sharePost, moreFor, menu };
 }

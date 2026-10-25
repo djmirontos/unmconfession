@@ -10,11 +10,14 @@ import { ListingDetails } from '@/components/listings/ListingDetails';
 import { ContentMenu, type ContentMenuTarget } from '@/components/moderation/ContentMenu';
 import { MoreButton } from '@/components/myposts/MoreButton';
 import { OwnItemMenu } from '@/components/myposts/OwnItemMenu';
+import { ShareIconButton } from '@/components/share/ShareIconButton';
 import { ListingDetailSkeleton } from '@/components/skeletons/ListingDetailSkeleton';
 import { Button } from '@/components/ui/Button';
 import { useListing, useToggleListingClosed } from '@/hooks/useListing';
 import { useMyItem } from '@/hooks/useMyItem';
+import { useShareCard } from '@/hooks/useShareCard';
 import { getErrorMessage } from '@/lib/errors';
+import { listingShareKey } from '@/lib/share';
 import { useAuthStore } from '@/stores/authStore';
 import { usePickerOpen } from '@/stores/reactionPickerStore';
 
@@ -26,6 +29,7 @@ export default function ListingDetailScreen() {
   const listing = useListing(id);
   const pickerOpen = usePickerOpen();
   const toggleClosed = useToggleListingClosed();
+  const share = useShareCard();
 
   // Own listing: Edit / Delete need the row's status and created_at (not in feed_listings).
   const userId = useAuthStore((s) => s.session?.user.id ?? null);
@@ -101,9 +105,17 @@ export default function ListingDetailScreen() {
     />
   );
 
+  // Share sits left of the "⋯", for any available (published) listing.
+  const headerRight = data ? (
+    <View className="flex-row items-center gap-1">
+      <ShareIconButton shareKey={listingShareKey(data.id)} onPress={() => void share({ type: 'listing', listing: data })} />
+      {right}
+    </View>
+  ) : undefined;
+
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: insets.top }}>
-      <BackHeader title={title} right={right} />
+      <BackHeader title={title} right={headerRight} />
       {body}
       <OwnItemMenu item={ownMenuOpen ? (own.data ?? null) : null} onClose={() => setOwnMenuOpen(false)} onDeleted={() => router.back()} />
       <ContentMenu target={otherMenu} onClose={() => setOtherMenu(null)} onBlocked={onAuthorBlocked} />

@@ -47,7 +47,7 @@ export function PostListView({ query, active, ranked = false, empty }: Props) {
   const visibleIds = useRef<string[]>([]);
   const listRef = useRef<FlashListRef<FeedPost>>(null);
   const backToTop = useBackToTop(listRef);
-  const { onAction, openPost, openComments, moreFor, menu } = usePostListActions();
+  const { onAction, openPost, openComments, sharePost, moreFor, menu } = usePostListActions();
 
   const { refetch } = query;
   useRefetchWhenStale(query, active);
@@ -62,12 +62,13 @@ export function PostListView({ query, active, ranked = false, empty }: Props) {
           onOpen={openPost}
           onAction={onAction}
           onComment={openComments}
+          onShare={sharePost}
           onMore={moreFor(item)}
           rank={ranked ? index + 1 : undefined}
         />
       </View>
     ),
-    [openPost, onAction, openComments, moreFor, ranked],
+    [openPost, onAction, openComments, sharePost, moreFor, ranked],
   );
 
   const onViewableItemsChanged = useCallback(({ viewableItems }: { viewableItems: ViewToken<FeedPost>[] }) => {

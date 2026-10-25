@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SignInSheet } from '@/components/auth/SignInSheet';
 import { ThemeRoot } from '@/components/layout/ThemeRoot';
 import { ReactionPickerOverlay } from '@/components/reactions/ReactionPickerOverlay';
+import { ShareCardHost } from '@/components/share/ShareCardHost';
 import { Toast } from '@/components/ui/Toast';
 import { ImageViewer } from '@/components/viewer/ImageViewer';
 import { useAuthBootstrap } from '@/hooks/useAuthBootstrap';
@@ -29,6 +30,7 @@ export default function RootLayout() {
           <Toast />
           <ReactionPickerOverlay />
           <ImageViewer />
+          <ShareCardHost />
         </ThemeRoot>
       </PersistQueryClientProvider>
     </GestureHandlerRootView>

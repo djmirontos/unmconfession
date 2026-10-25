@@ -466,3 +466,18 @@
 - The no-payments / safety notices show on the detail screen, not on the grid cards.
 
 **Verified:** typecheck and lint pass. Device QA pending (including the guest check carried over from 5.2).
+
+## Module 5.4: Back to top button (2026-10-25)
+
+**No migrations.**
+
+**App**
+- Shared `useBackToTop(listRef, onScroll?)` + `BackToTopButton` (44 px round arrow-up, surface + hairline border, shadow, "Back to top"). Offset kept in a ref; state changes only when the button shows or hides, so scrolling never re-renders rows. `scrollEventThrottle` 16; an existing list `onScroll` (Feed at-top merge, comment thread near-bottom) is chained, not replaced.
+- Shows past max(list height, 600 px), hides below it; fades and scales in over 150 ms (instant with reduce motion). While hidden it takes no touches and is hidden from screen readers.
+- Tap: animated scroll to 0. Past 4 screens it first jumps to 1.5 screens from the top, then animates (a long animated scroll renders every row on the way). Reduce motion: jumps straight to the top.
+- On Feed, Trending, Polls, Buy & Sell grid, Lost & Found list, My Posts, Notifications and the comment thread (post and listing). Tab screens: 16 px above the tab bar; stack screens: 16 px + bottom safe area; threads: 12 px above the composer, inside the list's box, so the keyboard moves it with the composer.
+
+**Known gaps**
+- On a thread, while the "New comments" pill shows, the pill (centred) and the button (right) share the bottom edge; they do not overlap on phone widths, but sit side by side.
+
+**Verified:** typecheck and lint pass. Device QA pending.

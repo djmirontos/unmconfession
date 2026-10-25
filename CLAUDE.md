@@ -1,6 +1,6 @@
 # UNM Freedom Confessions
 
-A guest-first mobile app (Expo / React Native, Android first) for UNM students that replaces the school's Facebook confessions group. Anyone can read the feed; signed-in members post confessions, shoutouts and polls under a permanent public nickname, react, comment, vote, and trade in Buy & Sell / Lost & Found. Moderators and admins keep it safe through a keyword hold, a moderation queue, reports and audit-logged identity lookups. Backend is Supabase (Postgres + RLS, RPCs, Realtime, Storage).
+A guest-first mobile app (Expo / React Native, Android first) for UNM students that replaces the school's Facebook confessions group. Anyone can read the feed; signed-in members post confessions, shoutouts and polls under a unique public nickname, react, comment, vote, and trade in Buy & Sell / Lost & Found. Moderators and admins keep it safe through a keyword hold, a moderation queue, reports and audit-logged identity lookups. Backend is Supabase (Postgres + RLS, RPCs, Realtime, Storage).
 
 ## Source of truth
 
@@ -14,7 +14,8 @@ The PRD at `UNM Freedom Confessions V1 PRD.md` (repo root). Read it before start
 
 - Guest-first: reading needs no account; posting, commenting, reacting, voting and sharing need sign-in. Guests have no Supabase session (no anonymous sign-ins).
 - Posts, comments and listings show the author's nickname. Email is private and visible only to admins, with every lookup audit-logged.
-- Nickname is permanent. Only an admin can rename a user, via `admin_set_nickname`. The PRD's "Edit information" in Settings means avatar, email and password only. Do NOT build nickname editing.
+- Nickname is unique and shown on all of the user's posts and comments (old ones too, after a change). The user can change it once every 30 days (`change_nickname`); an admin can rename anyone (`admin_set_nickname`). Names containing flagged words (keywords with the `nickname` scope) are refused.
+- Account data: `user_settings` (notification switches, last nickname change) via `get_my_settings` / `set_notification_prefs`; `delete_my_account` removes the sign-in and private data and keeps the content under a nameless profile, marked by `user_flags.deleted_at`.
 - No real name collected. Email OTP verification at sign-up.
 - Feed is newest first. Trending is the only engagement-ranked view. Max 3 images per post or listing (none on polls), resized on the phone (1440px long side, quality 0.8) with EXIF removed.
 - Post-moderation by default. A keyword match always holds the post for moderator approval. An admin can switch moderation mode to pre-moderation.

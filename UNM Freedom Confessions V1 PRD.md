@@ -30,7 +30,7 @@ The app is open to read and needs an account only to take part, Yipster style. T
 | Post, comment, react, vote, share | No (prompt to sign in) | Yes |
 | Report, block, mute | No | Yes |
 
-**Registration fields:** email, nickname (unique and permanent), password or Google sign-in. Real name is not collected.
+**Registration fields:** email, nickname (unique; the user can change it once every 30 days), password or Google sign-in. Real name is not collected. Nicknames with flagged words (keywords with the 'nickname' scope) are refused.
 
 **Email verification (OTP)** is required so the admin identity view points to a real, reachable email.
 
@@ -95,7 +95,7 @@ Posts, comments and listings show the author's nickname. Email stays private. Ad
 - Every admin identity lookup is written to an audit log (who looked, which post, when).
 - Image metadata (EXIF, including GPS) is removed before upload.
 - Profile photos are preset avatars only, never real photos.
-- Nicknames are permanent and shown on every post and comment, so one person's activity can be linked together. Posts are pseudonymous, not anonymous. The team accepted this trade-off.
+- Nicknames are shown on every post and comment, so one person's activity can be linked together. A user can change their nickname once every 30 days; the new name shows on all their old posts and comments too. Admins can rename anyone. Posts are pseudonymous, not anonymous. The team accepted this trade-off.
 - Do not claim "untraceable" anywhere in the app. The Terms say admins can see identities.
 
 ## Moderation
@@ -165,8 +165,9 @@ Speed and data security are the top priorities during development.
 
 **Settings (under Profile)**
 
-- Edit information (nickname, email).
-- Avatar picker with preset avatars. No real photo upload.
+- Edit information (nickname once every 30 days, email).
+- Avatar picker with preset icon and emoji avatars. No real photo upload.
+- Notification preferences: reactions, comments and replies can be switched off; moderation notices are always shown.
 - Dark and light mode. Dark uses the LyriaHub theme and light is its opposite.
 - Blocked users.
 - Logout.
@@ -187,6 +188,7 @@ Speed and data security are the top priorities during development.
 - expo-image for image display and caching.
 - Builds through EAS cloud for the test APK.
 - A web panel for admin and moderators (Next.js), mobile friendly, built after the app screens.
+- Account data: `user_settings` (notification switches, last nickname change) through `get_my_settings` and `set_notification_prefs`; `change_nickname` (30-day wait, flagged words refused); `delete_my_account` removes the sign-in and private data and keeps posts under a nameless profile marked by `user_flags.deleted_at`.
 
 ## Out of scope and open items
 

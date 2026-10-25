@@ -504,3 +504,25 @@
 - The brand accent on the card is indigo; the app's accent is amber (one constant to change).
 
 **Verified:** typecheck, lint and `test:share` pass. Device QA pending (including a check that Android captures are not blank).
+
+## Module 8: Account settings (8a database, 8b nickname keywords, 8c profile screens) (2026-10-26)
+
+**Migrations** (applied in the SQL editor): `20261026100000_account_settings.sql` (`user_settings`, `get_my_settings`, `set_notification_prefs`, `change_nickname` with a 30-day wait, `delete_my_account`, `user_flags.deleted_at`, `profiles_guard` locks deleted profiles, notification switches filter the list and badge) and `20261026110000_nickname_keywords.sql` (`nickname` keyword scope, `_nickname_flagged`, `nickname_flagged` from `_validate_nickname`, starter list). Types regenerated.
+
+**App (8c)**
+- Profile (members): header card with the 80 px avatar and a pencil badge (tap = avatar picker), nickname and email. Groups: Account (Nickname with "Next change on …" during the wait, My Posts, Notifications with the unread count, Blocked users, Notification preferences), About (Terms of Use, Privacy Policy, Open source notices), Appearance, Log out. Shared `SettingsGroup` / `SettingsRow`. Guests (and the moment before the profile loads) keep the old screen.
+- Avatars: one table in `lib/avatars.ts` (12 classic icon presets unchanged + 68 emoji avatars in Faces, Animals, Nature, Food, Travel, Fun; keys `em_<name>`), emoji on a soft theme-aware tint fixed per emoji; unknown keys look like `avatar_01`. Picker is a bottom sheet (shared `BottomSheet`, also used by `ActionSheet`) with category chips, 5 x 56 px cells, opens on the current avatar's category; applies at once (optimistic, rollback, toast).
+- Change nickname (`/change-nickname`): current name, rules line, the sign-up `NicknameField` with live check (own name: same = "already your nickname", capitals-only change allowed), confirm dialog, `change_nickname`; during the wait the field is disabled with the date. Errors mapped in `lib/errors.ts` (`nickname_flagged`, `nickname_unchanged`, `nickname_cooldown`, `account_deleted`; `nickname_locked` reworded); choose-nickname now shows the flagged message too.
+- Notification preferences (`/notification-preferences`): Reactions, Comments, Replies switches, optimistic with rollback and toast, skeleton, error + Retry, locked with a notice when a refresh fails.
+- A rename or a new avatar refetches every list that shows author names or avatars (shared `invalidateAuthoredLists`, also used by block / unblock; now includes My Posts).
+- Texts: "permanent nickname" removed from Profile, choose-nickname, the nickname field hint, `nickname_locked` and the Terms. PRD and CLAUDE.md updated (nickname changeable every 30 days, admins rename, flagged words, new DB objects).
+- 8c-fix: Terms eligibility no longer limits accounts to UNM students or staff: anyone can read; an account needs legal age where you live (or a parent's or guardian's permission), and the holder is responsible for it. No other legal or sign-up text named students as the only users.
+
+**Decisions:** persist buster not bumped (no persisted shape changed; the invalidated feed refetches, and a restored stale feed refetches on open). Notifications row kept on Profile (the PRD lists it there and the Profile tab dot points to it). Terms and Privacy rows added to About (in the PRD's Settings list; they were only reachable from sign-up before).
+
+**Known gaps**
+- Other devices of the same member see a new nickname or avatar only after their lists refetch.
+- A deleted author still reads as "member" / "Someone" in the app; the "Deleted user" label comes with account deletion in 8d.
+- Staff can still change a deleted account's status or role (harmless; noted in 8a).
+
+**Verified:** typecheck and lint pass. Device QA pending.

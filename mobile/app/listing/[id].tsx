@@ -10,8 +10,7 @@ import { ListingDetails } from '@/components/listings/ListingDetails';
 import { ContentMenu, type ContentMenuTarget } from '@/components/moderation/ContentMenu';
 import { MoreButton } from '@/components/myposts/MoreButton';
 import { OwnItemMenu } from '@/components/myposts/OwnItemMenu';
-import { ListingCardSkeleton } from '@/components/skeletons/ListingCardSkeleton';
-import { SkeletonList } from '@/components/skeletons/SkeletonList';
+import { ListingDetailSkeleton } from '@/components/skeletons/ListingDetailSkeleton';
 import { Button } from '@/components/ui/Button';
 import { useListing, useToggleListingClosed } from '@/hooks/useListing';
 import { useMyItem } from '@/hooks/useMyItem';
@@ -66,7 +65,7 @@ export default function ListingDetailScreen() {
         {listing.isError ? (
           <ErrorState message={getErrorMessage(listing.error)} onRetry={() => void refetch()} />
         ) : (
-          <SkeletonList item={ListingCardSkeleton} count={1} />
+          <ListingDetailSkeleton />
         )}
       </View>
     );

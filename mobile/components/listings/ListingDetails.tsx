@@ -34,7 +34,7 @@ type Props = {
   onToggleClosed?: (listing: ListingCardData) => void;
 };
 
-/** Everything above a listing's comments: photos, price or Lost & Found details, seller, notices. */
+/** Everything above a listing's comments: seller, photos, price or Lost & Found details, notices. */
 function ListingDetailsImpl({ listing, onToggleClosed }: Props) {
   const condition = CONDITIONS.find((c) => c === listing.condition);
   const sell = listing.kind === 'sell';
@@ -42,7 +42,12 @@ function ListingDetailsImpl({ listing, onToggleClosed }: Props) {
 
   return (
     <View className="gap-4">
-      <ListingGallery images={listing.images} kind={listing.kind} />
+      <View className="gap-3">
+        <View className="flex-row items-center">
+          <AuthorLine nickname={listing.nickname} avatarKey={listing.avatarKey} time={listing.time} editedAt={listing.editedAt} />
+        </View>
+        <ListingGallery images={listing.images} kind={listing.kind} />
+      </View>
 
       <View className="gap-2">
         <View className="flex-row flex-wrap items-center gap-2">
@@ -80,10 +85,6 @@ function ListingDetailsImpl({ listing, onToggleClosed }: Props) {
             {listing.description}
           </Text>
         ) : null}
-      </View>
-
-      <View className="flex-row items-center">
-        <AuthorLine nickname={listing.nickname} avatarKey={listing.avatarKey} time={listing.time} editedAt={listing.editedAt} />
       </View>
 
       {onToggleClosed ? (

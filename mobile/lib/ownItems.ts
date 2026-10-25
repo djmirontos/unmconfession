@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import type { Condition } from '@/lib/createSchemas';
+import { updateListedListings } from '@/lib/listings';
 import { logError, logInfo } from '@/lib/log';
 import { updateListedPost } from '@/lib/postLists';
 import type { MyItem } from '@/lib/myPosts';
@@ -110,6 +111,8 @@ function invalidateOwnItem(queryClient: QueryClient, source: MyItem['source'], i
     void queryClient.invalidateQueries({ queryKey: ['polls'] });
   } else {
     void queryClient.invalidateQueries({ queryKey: ['listing', id] });
+    // An edit can change the title (search matches) or hold it for review.
+    void queryClient.invalidateQueries({ queryKey: ['listings'] });
   }
 }
 
@@ -132,5 +135,6 @@ export function afterListingEdit(queryClient: QueryClient, id: string) {
 /** After a delete: drop it from the cached feed right away, then invalidate. */
 export function afterDelete(queryClient: QueryClient, source: MyItem['source'], id: string) {
   if (source === 'post') updateFeed(queryClient, id, () => null);
+  else updateListedListings(queryClient, (l) => (l.id === id ? null : l));
   invalidateOwnItem(queryClient, source, id);
 }

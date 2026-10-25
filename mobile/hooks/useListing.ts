@@ -6,6 +6,7 @@ import { getErrorMessage } from '@/lib/errors';
 import {
   closeActionLabel,
   fetchListing,
+  findListedListing,
   type ListingCardData,
   listingKey,
   patchListingClosed,
@@ -19,7 +20,7 @@ const STALE_MS = 60 * 1000;
 
 /**
  * One published listing (null = unavailable: gone, held, removed or by someone I blocked).
- * Paints from a cached My Posts card of mine while the row loads, then refetches.
+ * Paints from a cached Buy & Sell / Lost & Found card or My Posts card while the row loads, then refetches.
  */
 export function useListing(id: string) {
   const queryClient = useQueryClient();
@@ -30,6 +31,8 @@ export function useListing(id: string) {
     queryFn: () => fetchListing(id),
     staleTime: STALE_MS,
     placeholderData: () => {
+      const listed = findListedListing(queryClient, userId, id);
+      if (listed) return listed;
       const cached = queryClient.getQueryData<InfiniteData<MyPostsPage>>(['my-posts', userId ?? '']);
       for (const page of cached?.pages ?? []) {
         const hit = page.items.find((i) => i.source === 'listing' && i.id === id && i.status === 'published');

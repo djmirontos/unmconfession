@@ -81,6 +81,8 @@ export function useCreateSubmit() {
           void refreshFeedTop(queryClient, userId).catch((e: unknown) => logError('feed.refreshTop', e));
           router.push({ pathname: '/post/[id]', params: { id: created.id } });
         } else {
+          // The Buy & Sell / Lost & Found lists refetch, so it is on top when the user goes back.
+          void queryClient.invalidateQueries({ queryKey: ['listings'] });
           router.push('/my-posts');
         }
       } finally {

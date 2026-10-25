@@ -1526,8 +1526,11 @@ export type Database = {
         Args: {
           p_before_id?: string
           p_before_ts?: string
+          p_include_closed?: boolean
           p_kind: Database["public"]["Enums"]["listing_kind"]
           p_limit?: number
+          p_lost_found_type?: string
+          p_search?: string
         }
         Returns: {
           author_id: string | null

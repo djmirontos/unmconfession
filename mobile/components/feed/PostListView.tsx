@@ -1,7 +1,7 @@
 import { FlashList, type ListRenderItemInfo, type ViewToken } from '@shopify/flash-list';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { useFocusEffect, useIsFocused } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useIsFocused } from 'expo-router';
+import { useCallback, useRef, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 
 import { EmptyState, ErrorState, RefreshErrorBanner } from '@/components/feed/ListStates';
@@ -11,6 +11,7 @@ import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { useAppActive } from '@/hooks/useAppActive';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
 import { usePostListActions } from '@/hooks/usePostListActions';
+import { useRefetchWhenStale } from '@/hooks/useRefetchWhenStale';
 import { useTheme } from '@/hooks/useTheme';
 import { getErrorMessage } from '@/lib/errors';
 import type { FeedPost } from '@/lib/posts';
@@ -44,22 +45,8 @@ export function PostListView({ query, active, ranked = false, empty }: Props) {
   const visibleIds = useRef<string[]>([]);
   const { onAction, openPost, openComments, moreFor, menu } = usePostListActions();
 
-  const { refetch, isStale } = query;
-  const refreshIfStale = useCallback(() => {
-    if (isStale) void refetch();
-  }, [isStale, refetch]);
-  // Tab focus and segment switches.
-  useFocusEffect(
-    useCallback(() => {
-      if (active) refreshIfStale();
-    }, [active, refreshIfStale]),
-  );
-  // Back from the background.
-  const wasActive = useRef(appActive);
-  useEffect(() => {
-    if (appActive && !wasActive.current && active && isFocused) refreshIfStale();
-    wasActive.current = appActive;
-  }, [appActive, active, isFocused, refreshIfStale]);
+  const { refetch } = query;
+  useRefetchWhenStale(query, active);
 
   usePostCountsRefresh(() => visibleIds.current, appActive && isFocused && active);
 

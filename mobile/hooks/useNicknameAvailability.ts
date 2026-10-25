@@ -1,6 +1,5 @@
 import { skipToken, useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
-
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { supabase } from '@/lib/supabase';
 import { nicknameSchema } from '@/lib/validation';
 
@@ -16,15 +15,6 @@ export async function checkNicknameAvailable(nickname: string): Promise<boolean>
   const { data, error } = await supabase.rpc('is_nickname_available', { p_nickname: nickname });
   if (error) throw error;
   return data;
-}
-
-function useDebouncedValue<T>(value: T, delayMs: number): T {
-  const [debounced, setDebounced] = useState(value);
-  useEffect(() => {
-    const id = setTimeout(() => setDebounced(value), delayMs);
-    return () => clearTimeout(id);
-  }, [value, delayMs]);
-  return debounced;
 }
 
 /** Live feedback: local format check first, then a debounced server check. */

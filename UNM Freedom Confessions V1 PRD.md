@@ -171,7 +171,8 @@ Speed and data security are the top priorities during development.
 - Dark and light mode. Dark uses the LyriaHub theme and light is its opposite.
 - Blocked users.
 - Logout.
-- Terms and Privacy Policy.
+- About: Community rules, Terms of Use, Privacy Policy, Open source notices, Send feedback (email), Version.
+- Delete account (own danger group, at the bottom): the user types their nickname to confirm. Sign-in, email, nickname, avatar, blocks, settings and notifications are erased; posts, comments, reactions, votes and listings stay as "Deleted user" (a null nickname means a deleted account; `user_flags.deleted_at` is the permanent marker); open listings are closed; reports stay with moderators.
 
 **Branding and customization (web panel)**
 
@@ -209,6 +210,12 @@ Speed and data security are the top priorities during development.
 - Moderator tools: web panel, mobile friendly.
 - Announcements: admin and moderators only.
 - Retention: audit logs and rejected posts are kept for 1 month.
+
+**Before release / web panel TODOs**
+
+- `mod_set_user_status` and `admin_set_role` must refuse targets with `user_flags.deleted_at` set.
+- Google Play needs a public web page where people can request account deletion.
+- Replace the `FEEDBACK_EMAIL` placeholder in `mobile/lib/config.ts`.
 
 **Next steps after approval**
 

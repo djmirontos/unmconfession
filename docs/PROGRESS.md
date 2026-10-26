@@ -526,3 +526,21 @@
 - Staff can still change a deleted account's status or role (harmless; noted in 8a).
 
 **Verified:** typecheck and lint pass. Device QA pending.
+
+## Module 8d: About, Send feedback, Delete account, "Deleted user" (2026-10-26)
+
+**Migration** (applied): `20261026120000_delete_account_closes_listings.sql` (`delete_my_account` also closes the person's open listings; otherwise unchanged).
+
+**App**
+- Profile About group: Community rules (new `rules` legal document, 10 short points), Terms of Use, Privacy Policy, Open source notices, Send feedback (mailto to `FEEDBACK_EMAIL` in `lib/config.ts`, placeholder; body has only app version and OS; a sheet with the selectable address if no mail app opens), Version (expo-constants; build number shown when the build sets one). `SettingsRow` gained info rows (no press) and an explicit chevron.
+- Danger zone at the bottom: Delete account → `/delete-account`: warning card (erased / stays / also), type the nickname (trimmed, any case), final confirm, `delete_my_account`. On success (or `not_found` / `account_deleted`): `forgetDeletedAccount` in `lib/auth.ts` makes the app a guest first, then signs out locally (removes the stored session itself if that call fails offline), drops every query and local storage key for that user id (drafts, avatar tip), and goes to the Feed with "Your account was deleted." Other errors stay on the screen (`confirm_mismatch` on the field, `last_admin`, network); double taps ignored.
+- "Deleted user": one helper `lib/authorLabel.ts` replaces the "member" / "this member" / "Someone" fallbacks (author lines, comments, reply target, blocked users, block toasts, notifications); deleted authors get a grey silhouette avatar; Block is hidden for them (menu and hook), Report stays; a deleted author's closed listings read "Closed" (grid, Lost & Found card, detail, share card).
+- Legal: Privacy gains a "Deleting your account" paragraph; Terms one sentence pointing to Profile → Delete account.
+- PRD and CLAUDE.md: settings list, deletion rule, open TODOs (panel status/role refuse deleted accounts, Google Play deletion page, feedback address).
+
+**Known gaps**
+- 8d-fix: Privacy no longer says "ask an admin to delete your account and content"; it now says you can delete your own posts, comments and listings anytime and delete your account yourself in Profile → Delete account.
+- Replying to a deleted user's reply adds no "@name" prefix (there is no name to mention).
+- The no-connection text stays the app-wide one ("No connection. Check your internet and try again.").
+
+**Verified:** typecheck and lint pass. Device QA pending.

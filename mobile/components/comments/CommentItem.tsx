@@ -7,6 +7,7 @@ import { Avatar } from '@/components/profile/Avatar';
 import { ReactionButton } from '@/components/reactions/ReactionButton';
 import { TopReactions } from '@/components/reactions/TopReactions';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { authorLabel, isDeletedAuthor } from '@/lib/authorLabel';
 import type { ThreadComment } from '@/lib/comments';
 import { setCommentReaction } from '@/lib/commentReactionSync';
 import { formatRelative } from '@/lib/time';
@@ -25,10 +26,10 @@ type Props = {
 
 function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = false }: Props) {
   const sending = comment.state === 'sending';
-  const name = comment.nickname ?? 'member';
+  const name = authorLabel(comment.nickname);
   return (
     <View className={`flex-row gap-3 ${isReply ? 'py-2' : 'py-3'} ${sending ? 'opacity-60' : ''}`}>
-      <Avatar avatarKey={comment.avatarKey} size={isReply ? 24 : 32} />
+      <Avatar avatarKey={comment.avatarKey} size={isReply ? 24 : 32} deleted={isDeletedAuthor(comment.nickname)} />
       <View className="flex-1 gap-1">
         <View className="flex-row items-center gap-2">
           <Text numberOfLines={1} className="shrink text-sm font-bold text-text">

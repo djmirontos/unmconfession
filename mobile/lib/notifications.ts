@@ -1,6 +1,7 @@
 import type { InfiniteData, QueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
 
+import { authorLabel } from '@/lib/authorLabel';
 import { logError } from '@/lib/log';
 import { REACTION_TYPES, type ReactionType } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
@@ -119,7 +120,8 @@ export function targetWord(n: Pick<NotificationGroup, 'target_type' | 'target_ki
 
 /** The main line, e.g. "tester_two and 3 others reacted to your post". */
 export function describeNotification(n: NotificationGroup): string {
-  const actor = n.actor_nickname ?? 'Someone';
+  // Only reactions, comments and replies name an actor; a missing nickname there is a deleted account.
+  const actor = authorLabel(n.actor_nickname);
   const where = n.target_type === 'listing' ? 'listing' : 'post';
   const others = n.actor_count - 1;
   const andOthers = others > 0 ? ` and ${others} ${others === 1 ? 'other' : 'others'}` : '';

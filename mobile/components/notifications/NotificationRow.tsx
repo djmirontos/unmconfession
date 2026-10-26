@@ -6,6 +6,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Avatar } from '@/components/profile/Avatar';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useTheme } from '@/hooks/useTheme';
+import { isDeletedAuthor } from '@/lib/authorLabel';
 import { knownReason } from '@/lib/moderationReasons';
 import { describeNotification, type NotificationGroup } from '@/lib/notifications';
 import { REACTIONS } from '@/lib/reactions';
@@ -20,7 +21,7 @@ function Leading({ group }: { group: NotificationGroup }) {
     const reaction = isReaction && group.reaction_type ? REACTIONS[group.reaction_type] : null;
     return (
       <View style={{ width: AVATAR, height: AVATAR }}>
-        <Avatar avatarKey={group.actor_avatar_key} size={AVATAR} />
+        <Avatar avatarKey={group.actor_avatar_key} size={AVATAR} deleted={isDeletedAuthor(group.actor_nickname)} />
         {reaction ? (
           <View className="absolute -bottom-1 -right-1 rounded-full bg-surface1 p-0.5">
             <Image source={reaction.image} style={{ width: 20, height: 20 }} contentFit="contain" />

@@ -4,13 +4,31 @@ import { Text, View } from 'react-native';
 import { useTheme } from '@/hooks/useTheme';
 import { emojiTint, getAvatar } from '@/lib/avatars';
 
-type Props = { avatarKey: string | null | undefined; size?: number };
+type Props = {
+  avatarKey: string | null | undefined;
+  size?: number;
+  /** A deleted account: a neutral grey silhouette instead of any preset. */
+  deleted?: boolean;
+};
 
 /** A member's avatar from the one table in lib/avatars (unknown keys show the first preset). */
-export function Avatar({ avatarKey, size = 40 }: Props) {
-  const { scheme } = useTheme();
+export function Avatar({ avatarKey, size = 40, deleted = false }: Props) {
+  const { scheme, colors } = useTheme();
   const avatar = getAvatar(avatarKey);
   const circle = { width: size, height: size, borderRadius: size / 2 };
+
+  if (deleted) {
+    return (
+      <View
+        style={circle}
+        className="items-center justify-center bg-surface2"
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      >
+        <Ionicons name="person" size={size * 0.5} color={colors.textDim} />
+      </View>
+    );
+  }
 
   if (avatar.kind === 'emoji') {
     return (

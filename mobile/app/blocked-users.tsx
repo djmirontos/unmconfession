@@ -10,6 +10,7 @@ import { Avatar } from '@/components/profile/Avatar';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
+import { authorLabel, isDeletedAuthor } from '@/lib/authorLabel';
 import { atNickname, type BlockedUser } from '@/lib/blocks';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -46,9 +47,9 @@ function BlockedRow({ user, onUnblock }: { user: BlockedUser; onUnblock: (user: 
   const name = atNickname(user.nickname);
   return (
     <View className={CARD}>
-      <Avatar avatarKey={user.avatarKey} size={44} />
+      <Avatar avatarKey={user.avatarKey} size={44} deleted={isDeletedAuthor(user.nickname)} />
       <Text numberOfLines={1} className="min-w-0 flex-1 text-base font-bold text-text">
-        {user.nickname ?? 'member'}
+        {authorLabel(user.nickname)}
       </Text>
       <Pressable
         onPress={() => onUnblock(user)}

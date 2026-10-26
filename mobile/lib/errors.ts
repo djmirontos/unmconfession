@@ -12,6 +12,9 @@ const MESSAGES: Record<string, string> = {
   nickname_unchanged: 'That is already your nickname.',
   nickname_cooldown: 'You changed your nickname recently. Please try again later.',
   account_deleted: 'This account was deleted.',
+  // Delete account.
+  confirm_mismatch: 'That does not match your nickname.',
+  last_admin: 'You are the only admin. Make another admin before deleting your account.',
   banned: 'This account has been banned.',
   suspended: 'This account is suspended for now. Try again later.',
   rate_limited: 'You are doing that too often. Please wait a bit and try again.',

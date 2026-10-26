@@ -1,6 +1,7 @@
 import type { InfiniteData, QueryClient, QueryKey } from '@tanstack/react-query';
 import { z } from 'zod';
 
+import { isDeletedAuthor } from '@/lib/authorLabel';
 import type { Condition, LostFoundType } from '@/lib/createSchemas';
 import { LOST_FOUND_TYPES } from '@/lib/createSchemas';
 import { logError, logInfo } from '@/lib/log';
@@ -59,8 +60,12 @@ export function eventVerb(lostFoundType: LostFoundType | null): string {
   return lostFoundType === 'lost' ? 'Lost on' : lostFoundType === 'found' ? 'Found on' : 'On';
 }
 
-/** The badge of a closed listing: a lost item was found, a found item was claimed. */
-export function closedLabel(listing: Pick<ListingCardData, 'kind' | 'lostFoundType'>): string {
+/**
+ * The badge of a closed listing: a lost item was found, a found item was claimed.
+ * A deleted author's listings were closed by delete_my_account, so they just read "Closed".
+ */
+export function closedLabel(listing: Pick<ListingCardData, 'kind' | 'lostFoundType' | 'nickname'>): string {
+  if (isDeletedAuthor(listing.nickname)) return 'Closed';
   if (listing.kind === 'sell') return 'Sold';
   return listing.lostFoundType === 'lost' ? 'Found' : listing.lostFoundType === 'found' ? 'Claimed' : 'Closed';
 }

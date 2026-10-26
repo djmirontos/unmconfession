@@ -1,8 +1,10 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
 import { logError } from '@/lib/log';
+import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -102,4 +104,30 @@ export async function signOut() {
   const { error } = await supabase.auth.signOut({ scope: 'local' });
   if (error) throw authFail('signOut', error);
   applySession(null);
+}
+
+// Supabase keeps the session under sb-<project>-auth-token (and a PKCE verifier next to it).
+const SUPABASE_SESSION_KEY = /^sb-.+-auth-token/;
+
+/**
+ * After delete_my_account (or when the server says the account is already gone).
+ * The order matters: the app becomes a guest FIRST, so nothing sees a signed-in profile
+ * with no nickname (which would route to choose-nickname). Then the local session goes,
+ * and with it everything this account left on the phone.
+ */
+export async function forgetDeletedAccount(userId: string): Promise<void> {
+  applySession(null);
+  // The server user no longer exists. Supabase drops the local session on 401/403/404,
+  // but keeps it when the request fails (offline), so then the key is removed directly.
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
+  if (error) {
+    logError('auth.forgetDeletedAccount.signOut', error);
+    const keys = await AsyncStorage.getAllKeys();
+    await AsyncStorage.multiRemove(keys.filter((k) => SUPABASE_SESSION_KEY.test(k)));
+  }
+  // Every cache keyed by this user (profile, settings, My Posts, blocks, their feed copy…).
+  queryClient.removeQueries({ predicate: (query) => query.queryKey.includes(userId) });
+  // Drafts and the avatar tip are stored per user id.
+  const keys = await AsyncStorage.getAllKeys();
+  await AsyncStorage.multiRemove(keys.filter((k) => k.includes(userId)));
 }

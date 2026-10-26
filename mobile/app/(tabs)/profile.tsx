@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { type ReactNode, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Linking, Pressable, Text, View } from 'react-native';
 
 import { TabScreen } from '@/components/layout/TabScreen';
 import { CountBadge } from '@/components/notifications/NotificationBell';
@@ -9,6 +9,7 @@ import { Avatar } from '@/components/profile/Avatar';
 import { AvatarPicker } from '@/components/profile/AvatarPicker';
 import { SettingsGroup, SettingsRow } from '@/components/profile/SettingsRow';
 import { ThemeSwitch } from '@/components/profile/ThemeSwitch';
+import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { FormMessage } from '@/components/ui/FormMessage';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -19,6 +20,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { useUpdateAvatar } from '@/hooks/useUpdateAvatar';
 import { signOut } from '@/lib/auth';
+import { appVersion, FEEDBACK_EMAIL, feedbackMailto } from '@/lib/config';
 import { getErrorMessage } from '@/lib/errors';
 import { formatManilaDay } from '@/lib/manilaDate';
 import { inNicknameCooldown } from '@/lib/settings';
@@ -117,18 +119,45 @@ function AccountGroup({ nickname }: { nickname: string | null }) {
   );
 }
 
+/** Shown when no mail app opens: the address, selectable so it can be copied. */
+function FeedbackFallback({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  return (
+    <BottomSheet visible={visible} onClose={onClose} closeLabel="Close">
+      <View className="gap-3 px-2 pb-2">
+        <Text accessibilityRole="header" className="text-base font-bold text-text">
+          Send feedback
+        </Text>
+        <Text className="text-sm text-text-dim">No mail app opened. You can write to us at:</Text>
+        <Text selectable className="text-base font-bold text-text">
+          {FEEDBACK_EMAIL}
+        </Text>
+        <Button label="Close" variant="secondary" onPress={onClose} />
+      </View>
+    </BottomSheet>
+  );
+}
+
 function AboutGroup() {
   const router = useRouter();
+  const [mailFailed, setMailFailed] = useState(false);
+  const sendFeedback = () => {
+    Linking.openURL(feedbackMailto()).catch(() => setMailFailed(true));
+  };
   return (
     <SettingsGroup title="About">
-      <SettingsRow first icon="reader-outline" label="Terms of Use" onPress={() => router.push('/legal/terms')} />
+      <SettingsRow first icon="people-outline" label="Community rules" onPress={() => router.push('/legal/rules')} />
+      <SettingsRow icon="reader-outline" label="Terms of Use" onPress={() => router.push('/legal/terms')} />
       <SettingsRow icon="shield-checkmark-outline" label="Privacy Policy" onPress={() => router.push('/legal/privacy')} />
       <SettingsRow icon="code-slash-outline" label="Open source notices" onPress={() => router.push('/licenses')} />
+      <SettingsRow icon="mail-outline" label="Send feedback" onPress={sendFeedback} />
+      <SettingsRow icon="information-circle-outline" label="Version" value={appVersion()} />
+      <FeedbackFallback visible={mailFailed} onClose={() => setMailFailed(false)} />
     </SettingsGroup>
   );
 }
 
 function MemberProfile({ profile, email }: { profile: Profile; email: string | null }) {
+  const router = useRouter();
   const updateAvatar = useUpdateAvatar();
   const showToast = useToastStore((s) => s.show);
   const { showPrompt, markSeen } = useAvatarPrompt(profile.id);
@@ -183,6 +212,16 @@ function MemberProfile({ profile, email }: { profile: Profile; email: string | n
         />
       </SettingsGroup>
       <FormMessage tone="error" message={error} />
+      <SettingsGroup title="Danger zone">
+        <SettingsRow
+          first
+          destructive
+          chevron
+          icon="trash-outline"
+          label="Delete account"
+          onPress={() => router.push('/delete-account')}
+        />
+      </SettingsGroup>
       <AvatarPicker visible={pickerOpen} value={profile.avatar_key} onSelect={chooseAvatar} onClose={() => setPickerOpen(false)} />
     </View>
   );

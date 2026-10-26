@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 
 import { invalidateAuthoredLists } from '@/lib/authoredLists';
+import { DELETED_USER_LABEL } from '@/lib/authorLabel';
 import type { RepliesData, ThreadData } from '@/lib/commentCache';
 import { updateListedListings } from '@/lib/listings';
 import { logError, logInfo } from '@/lib/log';
@@ -9,8 +10,8 @@ import { supabase } from '@/lib/supabase';
 
 export type BlockedUser = { id: string; nickname: string | null; avatarKey: string | null; blockedAt: string };
 
-/** "@nickname" for menus, dialogs and toasts. */
-export const atNickname = (nickname: string | null) => (nickname ? `@${nickname}` : 'this member');
+/** "@nickname" for menus, dialogs and toasts ("Deleted user" for a deleted account). */
+export const atNickname = (nickname: string | null) => (nickname ? `@${nickname}` : DELETED_USER_LABEL);
 
 /** Private to the signed-in user; not in the persisted allowlist. */
 export const blockedUsersKey = (userId: string) => ['blocked-users', userId] as const;

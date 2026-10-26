@@ -26,6 +26,7 @@ import { useBackToTop } from '@/hooks/useBackToTop';
 import { type ThreadRow, useCommentThread } from '@/hooks/useCommentThread';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useTheme } from '@/hooks/useTheme';
+import { authorLabel } from '@/lib/authorLabel';
 import { canEditComment, type CommentTarget, type ThreadComment } from '@/lib/comments';
 import { getErrorMessage } from '@/lib/errors';
 
@@ -326,7 +327,7 @@ export function CommentThread({
         error={composerError}
         editing={editing !== null}
         onCancelEdit={resetComposer}
-        replyingTo={replyTo ? (replyTo.nickname ?? 'member') : null}
+        replyingTo={replyTo ? authorLabel(replyTo.nickname) : null}
         onCancelReply={resetComposer}
         autoFocus={focusComposer}
       />

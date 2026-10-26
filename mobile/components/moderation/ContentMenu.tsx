@@ -4,6 +4,7 @@ import { ReportSheet } from '@/components/moderation/ReportSheet';
 import { ActionSheet, type SheetAction } from '@/components/ui/ActionSheet';
 import { useBlockUser } from '@/hooks/useBlockUser';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { isDeletedAuthor } from '@/lib/authorLabel';
 import { atNickname } from '@/lib/blocks';
 import type { ReportTarget } from '@/lib/reports';
 
@@ -22,31 +23,33 @@ type Props = {
   onBlocked?: (authorId: string) => void;
 };
 
-/** "⋯" menu for other members' content: Report and Block. Guests get the sign-in sheet. */
+/** "⋯" menu for other members' content: Report and Block (no Block for a deleted author). Guests get the sign-in sheet. */
 export function ContentMenu({ target, onClose, onBlocked }: Props) {
   const requireAuth = useRequireAuth();
   const confirmBlock = useBlockUser();
   const [reporting, setReporting] = useState<{ type: ReportTarget; id: string } | null>(null);
 
-  const actions: SheetAction[] = target
-    ? [
-        {
-          label: 'Report',
-          icon: 'flag-outline',
-          onPress: () => {
-            if (requireAuth('report')) setReporting({ type: target.type, id: target.id });
-          },
+  const actions: SheetAction[] = [];
+  if (target) {
+    actions.push({
+      label: 'Report',
+      icon: 'flag-outline',
+      onPress: () => {
+        if (requireAuth('report')) setReporting({ type: target.type, id: target.id });
+      },
+    });
+    // A deleted account can no longer post, so there is nobody to block; Report stays.
+    if (!isDeletedAuthor(target.nickname)) {
+      actions.push({
+        label: `Block ${atNickname(target.nickname)}`,
+        icon: 'ban-outline',
+        destructive: true,
+        onPress: () => {
+          if (requireAuth('block')) confirmBlock({ id: target.authorId, nickname: target.nickname }, onBlocked);
         },
-        {
-          label: `Block ${atNickname(target.nickname)}`,
-          icon: 'ban-outline',
-          destructive: true,
-          onPress: () => {
-            if (requireAuth('block')) confirmBlock({ id: target.authorId, nickname: target.nickname }, onBlocked);
-          },
-        },
-      ]
-    : [];
+      });
+    }
+  }
 
   return (
     <>

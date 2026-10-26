@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
 
+import { isDeletedAuthor } from '@/lib/authorLabel';
 import { afterBlock, atNickname as handle, blockUser } from '@/lib/blocks';
 import { getErrorMessage } from '@/lib/errors';
 import { useAuthStore } from '@/stores/authStore';
@@ -42,6 +43,8 @@ export function useBlockUser() {
 
   return useCallback(
     (target: BlockTarget, onBlocked?: (authorId: string) => void) => {
+      // Deleted accounts cannot be blocked (the menus already hide it).
+      if (isDeletedAuthor(target.nickname)) return;
       const name = handle(target.nickname);
       Alert.alert(
         `Block ${name}?`,

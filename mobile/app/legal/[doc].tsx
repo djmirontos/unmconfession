@@ -4,7 +4,6 @@ import { Text, View } from 'react-native';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { Screen } from '@/components/ui/Screen';
 
-// DRAFT placeholder copy. Replace with the final, school-approved documents.
 const DOCS = {
   terms: {
     title: 'Terms of Use',
@@ -22,6 +21,7 @@ const DOCS = {
     title: 'Privacy Policy',
     sections: [
       'We collect your email address, nickname and the content you post. We do not collect your real name.',
+      'If you sign in with Google, Google shares your email address with us, and also your name and profile photo, which we do not use or show in the app. We keep only your email address for your account.',
       'Your email is never shown to other users. Only admins can view it, and each view is logged.',
       'Photo location data (EXIF) is removed before upload.',
       'Audit logs and rejected posts are kept for 30 days, then deleted.',
@@ -52,7 +52,7 @@ export default function LegalScreen() {
 
   return (
     <Screen>
-      <AuthHeader title={content.title} subtitle="Draft. Final wording pending school approval." />
+      <AuthHeader title={content.title} />
       <View className="gap-3">
         {content.sections.map((text) => (
           <Text key={text} className="text-base leading-6 text-text">

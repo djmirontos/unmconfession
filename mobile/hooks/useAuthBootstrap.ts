@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 
+import { logError } from '@/lib/log';
 import { queryClient } from '@/lib/queryClient';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -10,9 +11,13 @@ import { useAuthStore } from '@/stores/authStore';
  */
 export function useAuthBootstrap() {
   useEffect(() => {
-    const { setSession } = useAuthStore.getState();
+    const { setSession, markRestored } = useAuthStore.getState();
 
-    void supabase.auth.getSession().then(({ data }) => setSession(data.session));
+    supabase.auth
+      .getSession()
+      .then(({ data }) => setSession(data.session))
+      .catch((error: unknown) => logError('auth.restore', error))
+      .finally(markRestored);
 
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       setSession(session);

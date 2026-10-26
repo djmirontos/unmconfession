@@ -5,8 +5,8 @@ import { Pressable, Text, View } from 'react-native';
 import { AuthHeader } from '@/components/auth/AuthHeader';
 import { GoogleButton } from '@/components/auth/GoogleButton';
 import { NicknameField } from '@/components/auth/NicknameField';
+import { TermsCheckbox } from '@/components/auth/TermsCheckbox';
 import { Button } from '@/components/ui/Button';
-import { Checkbox } from '@/components/ui/Checkbox';
 import { Divider } from '@/components/ui/Divider';
 import { FormMessage } from '@/components/ui/FormMessage';
 import { PasswordField } from '@/components/ui/PasswordField';
@@ -99,32 +99,11 @@ export default function SignUpScreen() {
           hint="At least 8 characters, with a letter and a number."
           editable={!loading}
         />
-        <Checkbox
+        <TermsCheckbox
           checked={values.acceptedTerms}
           onChange={set('acceptedTerms')}
-          accessibilityLabel="I accept the Terms and Privacy Policy"
           error={fieldErrors.acceptedTerms}
-        >
-          <Text className="text-sm leading-5 text-text-dim">
-            I accept the{' '}
-            <Text
-              accessibilityRole="link"
-              onPress={() => router.push('/legal/terms')}
-              className="font-bold text-text underline"
-            >
-              Terms
-            </Text>{' '}
-            and{' '}
-            <Text
-              accessibilityRole="link"
-              onPress={() => router.push('/legal/privacy')}
-              className="font-bold text-text underline"
-            >
-              Privacy Policy
-            </Text>
-            , including that admins can see the email behind a nickname and every such lookup is logged.
-          </Text>
-        </Checkbox>
+        />
       </View>
       <Button label="Create account" onPress={handleSubmit} loading={loading} />
       <Divider />

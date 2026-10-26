@@ -43,14 +43,15 @@ export function Button({ label, onPress, variant = 'primary', loading, disabled,
       accessibilityLabel={label}
       accessibilityHint={accessibilityHint}
       accessibilityState={{ disabled: !!inactive, busy: !!loading }}
-      className={`h-12 flex-row items-center justify-center rounded-xl px-5 active:opacity-80 ${CONTAINER[variant]} ${inactive ? 'opacity-60' : ''}`}
+      className={`min-h-12 flex-row items-center justify-center rounded-xl px-5 py-3 active:opacity-80 ${CONTAINER[variant]} ${inactive ? 'opacity-60' : ''}`}
     >
       {loading ? (
         <ActivityIndicator color={contentColor} />
       ) : (
-        <View className="flex-row items-center gap-2">
+        // shrink: a long label (or large system font) wraps and the button grows instead of clipping.
+        <View className="shrink flex-row items-center gap-2">
           {icon ? <Ionicons name={icon} size={18} color={contentColor} /> : null}
-          <Text className={`text-base font-bold tracking-wide ${LABEL[variant]}`}>{label}</Text>
+          <Text className={`shrink text-center text-base font-bold tracking-wide ${LABEL[variant]}`}>{label}</Text>
         </View>
       )}
     </Pressable>

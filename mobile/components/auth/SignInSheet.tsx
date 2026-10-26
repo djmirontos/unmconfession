@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { type ComponentProps, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GoogleButton } from '@/components/auth/GoogleButton';
 import { Button } from '@/components/ui/Button';
 import { FormMessage } from '@/components/ui/FormMessage';
+import { useBottomInset } from '@/hooks/useBottomInset';
 import { useTheme } from '@/hooks/useTheme';
 import { type ParticipationAction, useSignInSheetStore } from '@/stores/signInSheetStore';
 
@@ -27,7 +27,7 @@ const COPY: Record<ParticipationAction, { icon: IconName; title: string }> = {
 /** Mounted once at the root; opened by useRequireAuth() when a guest tries to participate. */
 export function SignInSheet() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
   const { colors } = useTheme();
   const { isOpen, action, close } = useSignInSheetStore();
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +49,7 @@ export function SignInSheet() {
         />
         <View
           className="gap-5 rounded-t-3xl border-t border-hairline bg-surface1 px-6 pt-3"
-          style={{ paddingBottom: insets.bottom + 24 }}
+          style={{ paddingBottom: bottomInset + 24 }}
           accessibilityViewIsModal
         >
           <View className="h-1 w-10 self-center rounded-full bg-hairline" />

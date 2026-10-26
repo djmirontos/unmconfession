@@ -30,13 +30,13 @@ export function ActionSheet({ visible, title, actions, onClose }: Props) {
           }}
           accessibilityRole="button"
           accessibilityLabel={action.label}
-          className="h-12 flex-row items-center gap-3 rounded-xl px-2 active:bg-surface2"
+          className="min-h-12 flex-row items-center gap-3 rounded-xl px-2 py-2 active:bg-surface2"
         >
           <Ionicons name={action.icon} size={20} color={action.destructive ? colors.danger : colors.text} />
-          <Text className={`text-base font-bold ${action.destructive ? 'text-danger' : 'text-text'}`}>{action.label}</Text>
+          <Text className={`shrink text-base font-bold ${action.destructive ? 'text-danger' : 'text-text'}`}>{action.label}</Text>
         </Pressable>
       ))}
-      <Pressable onPress={onClose} accessibilityRole="button" className="h-12 flex-row items-center gap-3 rounded-xl px-2 active:bg-surface2">
+      <Pressable onPress={onClose} accessibilityRole="button" className="min-h-12 flex-row items-center gap-3 rounded-xl px-2 py-2 active:bg-surface2">
         <Ionicons name="close" size={20} color={colors.textDim} />
         <Text className="text-base text-text-dim">Cancel</Text>
       </Pressable>

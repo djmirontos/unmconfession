@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { type ReactNode, useState } from 'react';
 import { Linking, Pressable, Text, View } from 'react-native';
 
+import { AccountLoadError } from '@/components/auth/AccountLoadError';
 import { TabScreen } from '@/components/layout/TabScreen';
 import { CountBadge } from '@/components/notifications/NotificationBell';
 import { Avatar } from '@/components/profile/Avatar';
@@ -240,7 +241,8 @@ function ProfileSkeleton() {
 }
 
 /** Guests and the moment before the profile loads: the screen as it was before 8c. */
-function GuestOrLoading({ loading }: { loading: boolean }) {
+/** `onRetry` is set when the profile failed to load (signed in, nothing cached). */
+function GuestOrLoading({ loading, onRetry }: { loading: boolean; onRetry?: () => void }) {
   const router = useRouter();
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -259,7 +261,7 @@ function GuestOrLoading({ loading }: { loading: boolean }) {
 
   return (
     <>
-      {loading ? <ProfileSkeleton /> : <GuestProfile />}
+      {onRetry ? <AccountLoadError onRetry={onRetry} /> : loading ? <ProfileSkeleton /> : <GuestProfile />}
       <Section title="Appearance">
         <ThemeSwitch />
       </Section>
@@ -282,14 +284,14 @@ function GuestOrLoading({ loading }: { loading: boolean }) {
 }
 
 export default function ProfileScreen() {
-  const { status, profile, session } = useMembership();
+  const { status, profile, session, retry } = useMembership();
 
   return (
     <TabScreen title="Profile">
       {status === 'member' && profile ? (
         <MemberProfile profile={profile} email={session?.user.email ?? null} />
       ) : (
-        <GuestOrLoading loading={status !== 'guest'} />
+        <GuestOrLoading loading={status !== 'guest'} onRetry={status === 'error' ? retry : undefined} />
       )}
     </TabScreen>
   );

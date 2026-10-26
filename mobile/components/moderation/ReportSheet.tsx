@@ -2,11 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { FormMessage } from '@/components/ui/FormMessage';
 import { TextField } from '@/components/ui/TextField';
+import { useBottomInset } from '@/hooks/useBottomInset';
 import { useTheme } from '@/hooks/useTheme';
 import { getReportErrorMessage } from '@/lib/errors';
 import { REPORT_NOTE_MAX, REPORT_REASONS, type ReportReason, type ReportTarget, reportContent } from '@/lib/reports';
@@ -26,7 +26,7 @@ type Props = {
 /** Bottom sheet: pick a reason, add an optional note, submit through report_content. */
 export function ReportSheet({ target, onClose }: Props) {
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
   const reduceMotion = useReducedMotion();
   const showToast = useToastStore((s) => s.show);
   const [reason, setReason] = useState<ReportReason | null>(null);
@@ -76,7 +76,7 @@ export function ReportSheet({ target, onClose }: Props) {
         <Pressable className="absolute inset-0 bg-black/50" onPress={close} accessibilityRole="button" accessibilityLabel="Close report" />
         <View
           className="max-h-[90%] rounded-t-3xl border-t border-hairline bg-surface1 px-4 pt-3"
-          style={{ paddingBottom: insets.bottom + 12 }}
+          style={{ paddingBottom: bottomInset + 12 }}
           accessibilityViewIsModal
         >
           <View className="mb-2 h-1 w-10 self-center rounded-full bg-hairline" />
@@ -94,14 +94,14 @@ export function ReportSheet({ target, onClose }: Props) {
                     accessibilityRole="radio"
                     accessibilityState={{ selected }}
                     accessibilityLabel={r.label}
-                    className={`h-12 flex-row items-center gap-3 rounded-xl border px-3 active:bg-surface2 ${selected ? 'border-accent bg-accent-dim' : 'border-transparent'}`}
+                    className={`min-h-12 flex-row items-center gap-3 rounded-xl border px-3 py-2 active:bg-surface2 ${selected ? 'border-accent bg-accent-dim' : 'border-transparent'}`}
                   >
                     <Ionicons
                       name={selected ? 'radio-button-on' : 'radio-button-off'}
                       size={20}
                       color={selected ? colors.accent : colors.textDim}
                     />
-                    <Text className={`text-base text-text ${selected ? 'font-bold' : ''}`}>{r.label}</Text>
+                    <Text className={`shrink text-base text-text ${selected ? 'font-bold' : ''}`}>{r.label}</Text>
                   </Pressable>
                 );
               })}

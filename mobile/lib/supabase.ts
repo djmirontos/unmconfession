@@ -1,9 +1,9 @@
 import 'react-native-url-polyfill/auto';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
 
+import { encryptedSessionStorage } from '@/lib/sessionStorage';
 import type { Database } from '@/types/database';
 
 const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL;
@@ -17,11 +17,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: AsyncStorage,
+    storage: encryptedSessionStorage,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,
-    // PKCE: the OAuth redirect carries a one-time code, not the tokens themselves.
+    // No redirect flows today (Google uses a native ID token); PKCE stays the safe default.
     flowType: 'pkce',
   },
 });

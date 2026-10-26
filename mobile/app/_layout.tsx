@@ -2,6 +2,8 @@ import '@/global.css';
 
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { Stack } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SignInSheet } from '@/components/auth/SignInSheet';
@@ -12,11 +14,14 @@ import { Toast } from '@/components/ui/Toast';
 import { ImageViewer } from '@/components/viewer/ImageViewer';
 import { useAuthBootstrap } from '@/hooks/useAuthBootstrap';
 import { useNotificationsRealtime } from '@/hooks/useNotificationsRealtime';
-import { useMembership } from '@/hooks/useProfile';
+import { type MembershipStatus, useMembership } from '@/hooks/useProfile';
+import { loadGoogleSignIn } from '@/lib/googleSignIn';
 import { persistOptions, queryClient } from '@/lib/queryClient';
+import { useAuthStore } from '@/stores/authStore';
 
 export default function RootLayout() {
   useAuthBootstrap();
+  useEffect(() => void loadGoogleSignIn(), []);
 
   // The query client wraps the whole app, outside any auth gate, so cached
   // data survives sign-in/out and guests get the persisted cache too.
@@ -37,12 +42,45 @@ export default function RootLayout() {
   );
 }
 
+// The startup cover never stays longer than this (an offline token refresh can take ~30 s).
+const STARTUP_COVER_MAX_MS = 2500;
+
+/**
+ * Cold start only: covers the app until the stored session is read and, if there is one,
+ * the membership is known, so the tabs do not flash before choose-nickname. Guests clear it
+ * as soon as storage is read (no session means no keychain read). Later sign-ins never show it.
+ */
+function useStartupCover(status: MembershipStatus): boolean {
+  const restored = useAuthStore((s) => s.restored);
+  const [done, setDone] = useState(false);
+  const known = restored && status !== 'loading';
+  // Latched during render (React's "adjust state while rendering" pattern): once known, never again.
+  if (known && !done) setDone(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDone(true), STARTUP_COVER_MAX_MS);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return !done && !known;
+}
+
 function RootNavigator() {
   const { status } = useMembership();
   // Members only (the hook checks): live badge and list for the whole session.
   useNotificationsRealtime();
   const needsNickname = status === 'needs-nickname';
+  const covered = useStartupCover(status);
 
+  return (
+    <>
+      <AppStack needsNickname={needsNickname} />
+      {covered ? <View className="absolute inset-0 bg-bg" accessibilityLabel="Loading" /> : null}
+    </>
+  );
+}
+
+function AppStack({ needsNickname }: { needsNickname: boolean }) {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       {/* Signed in without a nickname (e.g. first Google sign-in): only this screen is reachable. */}
@@ -69,7 +107,6 @@ function RootNavigator() {
       </Stack.Protected>
       <Stack.Screen name="legal/[doc]" options={{ presentation: 'modal' }} />
       <Stack.Screen name="licenses" />
-      <Stack.Screen name="oauth-callback" />
     </Stack>
   );
 }

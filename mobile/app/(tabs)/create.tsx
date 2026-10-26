@@ -10,6 +10,7 @@ import { TabHeader } from '@/components/layout/TabHeader';
 import { Button } from '@/components/ui/Button';
 import { ChipGroup } from '@/components/ui/ChipGroup';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { AccountLoadError } from '@/components/auth/AccountLoadError';
 import { useMembership } from '@/hooks/useProfile';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 
@@ -59,7 +60,7 @@ function GuestPrompt() {
 
 export default function CreateScreen() {
   const insets = useSafeAreaInsets();
-  const { status, session } = useMembership();
+  const { status, session, retry } = useMembership();
   const [kind, setKind] = useState<FormKind>('confession');
   const userId = session?.user.id ?? null;
 
@@ -75,6 +76,8 @@ export default function CreateScreen() {
             </>
           ) : status === 'guest' ? (
             <GuestPrompt />
+          ) : status === 'error' ? (
+            <AccountLoadError onRetry={retry} />
           ) : (
             <View className="gap-3">
               <Skeleton height={36} className="rounded-full" />

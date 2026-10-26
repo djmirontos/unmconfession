@@ -1,20 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
-import * as Linking from 'expo-linking';
-import * as WebBrowser from 'expo-web-browser';
 
+import { getErrorMessage } from '@/lib/errors';
+import { getGoogleIdToken, signOutOfGoogle } from '@/lib/googleSignIn';
 import { logError } from '@/lib/log';
 import { queryClient } from '@/lib/queryClient';
+import { encryptedSessionStorage, SUPABASE_SESSION_KEY } from '@/lib/sessionStorage';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
-
-WebBrowser.maybeCompleteAuthSession();
-
-/**
- * unmconfessions://oauth-callback in a build, exp://<host>/--/oauth-callback in Expo Go.
- * Both must be in Supabase Auth > URL Configuration > Redirect URLs.
- */
-export const OAUTH_REDIRECT_URL = Linking.createURL('oauth-callback');
 
 /** Logs the real Auth error (dev only, redacted) and returns it for rethrowing. */
 function authFail(scope: string, error: unknown): unknown {
@@ -76,27 +69,26 @@ export async function updatePassword(password: string) {
   if (error) throw authFail('updatePassword', error);
 }
 
-/** Returns false if the user closed the browser; throws on real failures. */
-export async function signInWithGoogle(): Promise<boolean> {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo: OAUTH_REDIRECT_URL, skipBrowserRedirect: true },
-  });
-  if (error) throw authFail('googleOAuth', error);
+export type GoogleSignInOutcome =
+  | { status: 'success' }
+  | { status: 'cancelled' }
+  | { status: 'failed'; message: string };
 
-  const result = await WebBrowser.openAuthSessionAsync(data.url, OAUTH_REDIRECT_URL);
-  if (result.type !== 'success') return false;
-
-  const { queryParams } = Linking.parse(result.url);
-  const oauthError = queryParams?.error_description ?? queryParams?.error;
-  if (typeof oauthError === 'string') throw new Error(oauthError);
-  const code = queryParams?.code;
-  if (typeof code !== 'string') throw new Error('Google sign-in did not return a code.');
-
-  const exchange = await supabase.auth.exchangeCodeForSession(code);
-  if (exchange.error) throw authFail('googleExchange', exchange.error);
-  applySession(exchange.data.session);
-  return true;
+/**
+ * Native Google account picker, then its ID token is exchanged for a Supabase session.
+ * Never throws. A new account has no nickname yet, so the root layout shows choose-nickname.
+ */
+export async function signInWithGoogle(): Promise<GoogleSignInOutcome> {
+  try {
+    const result = await getGoogleIdToken();
+    if (result.type === 'cancelled') return { status: 'cancelled' };
+    const { data, error } = await supabase.auth.signInWithIdToken({ provider: 'google', token: result.idToken });
+    if (error) throw authFail('googleIdToken', error);
+    applySession(data.session);
+    return { status: 'success' };
+  } catch (error) {
+    return { status: 'failed', message: getErrorMessage(error) };
+  }
 }
 
 export async function signOut() {
@@ -104,10 +96,13 @@ export async function signOut() {
   const { error } = await supabase.auth.signOut({ scope: 'local' });
   if (error) throw authFail('signOut', error);
   applySession(null);
+  void signOutOfGoogle();
 }
 
-// Supabase keeps the session under sb-<project>-auth-token (and a PKCE verifier next to it).
-const SUPABASE_SESSION_KEY = /^sb-.+-auth-token/;
+async function removeStoredSession(): Promise<void> {
+  const keys = await AsyncStorage.getAllKeys();
+  await Promise.all(keys.filter((k) => SUPABASE_SESSION_KEY.test(k)).map(encryptedSessionStorage.removeItem));
+}
 
 /**
  * After delete_my_account (or when the server says the account is already gone).
@@ -122,9 +117,9 @@ export async function forgetDeletedAccount(userId: string): Promise<void> {
   const { error } = await supabase.auth.signOut({ scope: 'local' });
   if (error) {
     logError('auth.forgetDeletedAccount.signOut', error);
-    const keys = await AsyncStorage.getAllKeys();
-    await AsyncStorage.multiRemove(keys.filter((k) => SUPABASE_SESSION_KEY.test(k)));
+    await removeStoredSession();
   }
+  void signOutOfGoogle();
   // Every cache keyed by this user (profile, settings, My Posts, blocks, their feed copy…).
   queryClient.removeQueries({ predicate: (query) => query.queryKey.includes(userId) });
   // Drafts and the avatar tip are stored per user id.

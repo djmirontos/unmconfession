@@ -1,10 +1,10 @@
 import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Modal, Platform, Pressable, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
 import { ChipGroup } from '@/components/ui/ChipGroup';
+import { useBottomInset } from '@/hooks/useBottomInset';
 import { useTheme } from '@/hooks/useTheme';
 import { addDays, formatShortDate, localDateToYmd, lostFoundDateRange, ymdToLocalNoon } from '@/lib/manilaDate';
 
@@ -17,7 +17,7 @@ type Props = { value: string; onChange: (date: string) => void; disabled?: boole
 /** Today, Yesterday and the two days before (Manila time), plus "Pick another date" for older ones. */
 export function RecentDateChips({ value, onChange, disabled }: Props) {
   const { scheme } = useTheme();
-  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
   const [iosDraft, setIosDraft] = useState<Date | null>(null);
 
   // Recomputed each render so the chips roll over at Manila midnight.
@@ -68,7 +68,7 @@ export function RecentDateChips({ value, onChange, disabled }: Props) {
               accessibilityRole="button"
               accessibilityLabel="Close date picker"
             />
-            <View className="gap-3 rounded-t-3xl bg-surface1 px-4 pt-3" style={{ paddingBottom: insets.bottom + 16 }}>
+            <View className="gap-3 rounded-t-3xl bg-surface1 px-4 pt-3" style={{ paddingBottom: bottomInset + 16 }}>
               <DateTimePicker
                 value={iosDraft ?? initial}
                 mode="date"

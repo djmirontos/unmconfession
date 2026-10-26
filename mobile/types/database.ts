@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          admin_id: string | null
+          created_at: string
+          detail: string | null
+          id: string
+          subject_user_id: string | null
+        }
+        Insert: {
+          action: string
+          admin_id?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          subject_user_id?: string | null
+        }
+        Update: {
+          action?: string
+          admin_id?: string | null
+          created_at?: string
+          detail?: string | null
+          id?: string
+          subject_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "admin_audit_log_admin_id_fkey"
+            columns: ["admin_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "admin_audit_log_subject_user_id_fkey"
+            columns: ["subject_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       announcements: {
         Row: {
           body: string
@@ -972,6 +1014,7 @@ export type Database = {
           status: Database["public"]["Enums"]["account_status"]
           status_reason: string | null
           suspended_until: string | null
+          terms_accepted_at: string | null
           updated_at: string
           user_id: string
         }
@@ -981,6 +1024,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["account_status"]
           status_reason?: string | null
           suspended_until?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id: string
         }
@@ -990,6 +1034,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["account_status"]
           status_reason?: string | null
           suspended_until?: string | null
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -1203,6 +1248,44 @@ export type Database = {
       _nickname_flagged: { Args: { p: string }; Returns: string }
       _re_escape: { Args: { p: string }; Returns: string }
       _validate_nickname: { Args: { p: string }; Returns: undefined }
+      admin_delete_account: {
+        Args: { p_reason: string; p_user: string }
+        Returns: undefined
+      }
+      admin_find_user_by_email: {
+        Args: { p_email: string }
+        Returns: {
+          nickname: string
+          user_id: string
+        }[]
+      }
+      admin_get_audit: {
+        Args: { p_after_id?: string; p_after_ts?: string; p_limit?: number }
+        Returns: {
+          action: string
+          admin_id: string
+          admin_nickname: string
+          created_at: string
+          detail: string
+          id: string
+          subject_nickname: string
+          subject_user_id: string
+          target_id: string
+          target_type: string
+        }[]
+      }
+      admin_get_user_identity: {
+        Args: { p_user: string }
+        Returns: {
+          email: string
+          email_confirmed: boolean
+          joined_at: string
+          last_sign_in_at: string
+          nickname: string
+          providers: string[]
+          user_id: string
+        }[]
+      }
       admin_set_nickname: {
         Args: { p_nickname: string; p_user: string }
         Returns: undefined
@@ -1701,6 +1784,23 @@ export type Database = {
         Args: { p_keys?: string[] }
         Returns: undefined
       }
+      mod_dashboard: {
+        Args: never
+        Returns: {
+          banned_users: number
+          comments_24h: number
+          deleted_accounts: number
+          listings_24h: number
+          new_users_24h: number
+          open_reports: number
+          pending_comments: number
+          pending_listings: number
+          pending_posts: number
+          posts_24h: number
+          reported_items: number
+          suspended_users: number
+        }[]
+      }
       mod_edit_content: {
         Args: {
           p_id: string
@@ -1709,6 +1809,64 @@ export type Database = {
           p_type: Database["public"]["Enums"]["content_type"]
         }
         Returns: undefined
+      }
+      mod_get_actions: {
+        Args: {
+          p_actor?: string
+          p_after_id?: string
+          p_after_ts?: string
+          p_limit?: number
+          p_subject_user?: string
+          p_target_id?: string
+          p_target_type?: string
+        }
+        Returns: {
+          action: string
+          actor_id: string
+          actor_nickname: string
+          created_at: string
+          id: string
+          note: string
+          original_body: string
+          reason_code: string
+          target_id: string
+          target_type: string
+        }[]
+      }
+      mod_get_content: {
+        Args: {
+          p_id: string
+          p_type: Database["public"]["Enums"]["content_type"]
+        }
+        Returns: {
+          author_deleted: boolean
+          author_id: string
+          author_status: Database["public"]["Enums"]["account_status"]
+          body: string
+          comment_count: number
+          created_at: string
+          deleted_at: string
+          edited_at: string
+          extra: Json
+          hold_reason: string
+          images: Json
+          kind: string
+          listing_id: string
+          matched_term: string
+          moderated_at: string
+          moderated_by_nickname: string
+          nickname: string
+          open_report_count: number
+          post_id: string
+          post_number: number
+          published_at: string
+          reaction_count: number
+          reject_reason: string
+          status: Database["public"]["Enums"]["content_status"]
+          target_id: string
+          target_type: Database["public"]["Enums"]["content_type"]
+          title: string
+        }[]
       }
       mod_get_queue: {
         Args: { p_after_ts?: string; p_limit?: number }
@@ -1720,6 +1878,63 @@ export type Database = {
           images: Json
           matched_term: string
           nickname: string
+          target_id: string
+          target_type: Database["public"]["Enums"]["content_type"]
+          title: string
+        }[]
+      }
+      mod_get_report_details: {
+        Args: {
+          p_id: string
+          p_type: Database["public"]["Enums"]["content_type"]
+        }
+        Returns: {
+          created_at: string
+          handled_at: string
+          handled_by_nickname: string
+          note: string
+          reason: string
+          report_id: string
+          reporter_id: string
+          reporter_nickname: string
+          status: string
+        }[]
+      }
+      mod_get_reports: {
+        Args: { p_after_id?: string; p_after_ts?: string; p_limit?: number }
+        Returns: {
+          author_id: string
+          body: string
+          content_status: Database["public"]["Enums"]["content_status"]
+          first_reported_at: string
+          images: Json
+          last_reported_at: string
+          nickname: string
+          reasons: string[]
+          report_count: number
+          target_id: string
+          target_type: Database["public"]["Enums"]["content_type"]
+          title: string
+        }[]
+      }
+      mod_list_content: {
+        Args: {
+          p_after_id?: string
+          p_after_ts?: string
+          p_limit?: number
+          p_search?: string
+          p_status?: Database["public"]["Enums"]["content_status"]
+          p_type?: Database["public"]["Enums"]["content_type"]
+        }
+        Returns: {
+          author_id: string
+          body: string
+          created_at: string
+          deleted_at: string
+          images: Json
+          nickname: string
+          post_number: number
+          status: Database["public"]["Enums"]["content_status"]
           target_id: string
           target_type: Database["public"]["Enums"]["content_type"]
           title: string
@@ -1738,6 +1953,34 @@ export type Database = {
           p_type: Database["public"]["Enums"]["content_type"]
         }
         Returns: undefined
+      }
+      mod_search_users: {
+        Args: {
+          p_after_id?: string
+          p_after_ts?: string
+          p_include_deleted?: boolean
+          p_limit?: number
+          p_role?: Database["public"]["Enums"]["app_role"]
+          p_search?: string
+          p_status?: Database["public"]["Enums"]["account_status"]
+          p_user?: string
+        }
+        Returns: {
+          avatar_key: string
+          comment_count: number
+          deleted: boolean
+          joined_at: string
+          listing_count: number
+          nickname: string
+          open_reports_against: number
+          post_count: number
+          role: Database["public"]["Enums"]["app_role"]
+          status: Database["public"]["Enums"]["account_status"]
+          status_reason: string
+          suspended_until: string
+          terms_accepted_at: string
+          user_id: string
+        }[]
       }
       mod_set_user_status: {
         Args: {
@@ -1770,7 +2013,10 @@ export type Database = {
         Args: { p_closed: boolean; p_listing_id: string }
         Returns: undefined
       }
-      set_nickname: { Args: { p_nickname: string }; Returns: undefined }
+      set_nickname: {
+        Args: { p_accept_terms?: boolean; p_nickname: string }
+        Returns: undefined
+      }
       set_notification_prefs: {
         Args: {
           p_comments?: boolean

@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import type { Ref } from 'react';
 import { ActivityIndicator, Platform, Pressable, Text, TextInput, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
+import { useBottomInset } from '@/hooks/useBottomInset';
+import { useKeyboardWillShow } from '@/hooks/useKeyboardWillShow';
 import { useMembership } from '@/hooks/useProfile';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useTheme } from '@/hooks/useTheme';
@@ -49,7 +50,8 @@ export function CommentComposer({
 }: Props) {
   const replying = replyingTo !== null && !editing;
   const { colors } = useTheme();
-  const insets = useSafeAreaInsets();
+  const bottomInset = useBottomInset();
+  const keyboardShown = useKeyboardWillShow();
   const requireAuth = useRequireAuth();
   const { status } = useMembership();
   const trimmed = value.trim();
@@ -57,7 +59,8 @@ export function CommentComposer({
   const canSend = trimmed.length > 0 && !tooLong && !busy;
 
   const container = 'gap-2 border-t border-hairline bg-surface1 px-3 pt-2';
-  const padding = { paddingBottom: Math.max(insets.bottom, 10) };
+  // With the keyboard up the composer sits right on it, so the safe-area space is dropped.
+  const padding = { paddingBottom: (keyboardShown ? 0 : bottomInset) + 8 };
 
   if (status === 'guest') {
     return (

@@ -1,5 +1,7 @@
 import { isAuthError, isAuthRetryableFetchError } from '@supabase/supabase-js';
 
+const JOINED_WITH_GOOGLE = 'Joined with Google? Use Continue with Google.';
+
 // Codes raised by the DB (`raise exception '<code>'`) and by Supabase Auth (`AuthError.code`).
 const MESSAGES: Record<string, string> = {
   // Database / RPC
@@ -12,8 +14,10 @@ const MESSAGES: Record<string, string> = {
   nickname_unchanged: 'That is already your nickname.',
   nickname_cooldown: 'You changed your nickname recently. Please try again later.',
   account_deleted: 'This account was deleted.',
+  terms_required: 'Please accept the Terms to continue.',
   // Delete account.
   confirm_mismatch: 'That does not match your nickname.',
+  account_restricted: 'Your account is restricted, so it cannot be deleted. Please contact the moderators.',
   last_admin: 'You are the only admin. Make another admin before deleting your account.',
   banned: 'This account has been banned.',
   suspended: 'This account is suspended for now. Try again later.',
@@ -48,10 +52,10 @@ const MESSAGES: Record<string, string> = {
   network_error: 'No connection. Check your internet and try again.',
 
   // Supabase Auth
-  invalid_credentials: 'Wrong email or password.',
+  invalid_credentials: `Wrong email or password.\n${JOINED_WITH_GOOGLE}`,
   email_not_confirmed: 'Please verify your email first.',
-  user_already_exists: 'An account with this email already exists. Try signing in.',
-  email_exists: 'An account with this email already exists. Try signing in.',
+  user_already_exists: `An account with this email already exists. Try signing in.\n${JOINED_WITH_GOOGLE}`,
+  email_exists: `An account with this email already exists. Try signing in.\n${JOINED_WITH_GOOGLE}`,
   email_address_invalid: 'That email address is not valid.',
   weak_password: 'That password is too weak. Use at least 8 characters with letters and numbers.',
   same_password: 'Your new password must be different from the old one.',
@@ -62,6 +66,14 @@ const MESSAGES: Record<string, string> = {
   user_banned: 'This account has been banned.',
   // Supabase Auth hides handle_new_user()'s exception behind this generic code.
   unexpected_failure: 'We could not create your account with that nickname. Please choose another one.',
+  provider_disabled: 'Google sign-in is turned off right now. Use your email and password.',
+
+  // Google Sign-In (thrown by lib/googleSignIn.ts)
+  google_unavailable: 'Google sign-in needs the installed app (development build).',
+  google_play_services: 'Google sign-in needs Google Play services. Install or update it and try again.',
+  google_no_id_token: 'Google did not confirm your account. Please try again.',
+  google_config: 'Google sign-in is not set up for this version of the app yet.',
+  google_failed: 'Google sign-in failed. Please try again.',
 };
 
 const FALLBACK = 'Something went wrong. Please try again.';

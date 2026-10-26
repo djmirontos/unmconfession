@@ -25,9 +25,9 @@ export async function DashboardStats() {
   return (
     <div className="space-y-10">
       <Section title="Pending review">
-        <StatTile label="Posts" value={d.pending_posts} href="/review?type=post" highlight />
-        <StatTile label="Comments" value={d.pending_comments} href="/review?type=comment" highlight />
-        <StatTile label="Listings" value={d.pending_listings} href="/review?type=listing" highlight />
+        <StatTile label="Posts" value={d.pending_posts} href="/review?filter=post" highlight />
+        <StatTile label="Comments" value={d.pending_comments} href="/review?filter=comment" highlight />
+        <StatTile label="Listings" value={d.pending_listings} href="/review?filter=listing" highlight />
       </Section>
       <Section title="Open reports">
         <StatTile label="Reported items" value={d.reported_items} href="/reports" highlight />

@@ -21,6 +21,12 @@ const MESSAGES: Record<string, string> = {
   reason_too_long: 'The reason is too long (300 characters at most).',
   invalid_email: 'Enter a valid email address.',
   last_admin: 'At least one active admin must remain.',
+  // Review queue
+  invalid_transition: 'Someone else already handled this item.',
+  invalid_body: 'The text must not be empty and must fit the limit (2000 characters for posts, 1000 for comments).',
+  invalid_target: 'Only posts and comments can be edited.',
+  invalid_action: 'That action is not available.',
+  approve_failed_after_edit: 'The edit was saved, but approving failed. Try approving again.',
   // Fallbacks
   invalid_input: 'Check the form and try again.',
   network: 'Could not reach the server. Check your connection and try again.',

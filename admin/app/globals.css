@@ -1,0 +1,145 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Light and dark follow the system setting; no theme switcher, no theme script. */
+@custom-variant dark (@media (prefers-color-scheme: dark));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-public-sans);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-heading: var(--font-public-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-gold: var(--gold);
+  --color-gold-foreground: var(--gold-foreground);
+  --color-navy: var(--navy);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/*
+ * Brand: navy #03224B (primary), gold #C39940 (accent, never small text on white:
+ * gold on white is below AA, so gold is used for fills with navy text and for borders).
+ */
+:root {
+  --navy: #03224b;
+  --gold: #c39940;
+  --gold-foreground: #03224b;
+
+  --background: #f5f6f8;
+  --foreground: #101828;
+  --card: #ffffff;
+  --card-foreground: #101828;
+  --popover: #ffffff;
+  --popover-foreground: #101828;
+  --primary: #03224b;
+  --primary-foreground: #ffffff;
+  --secondary: #e9edf3;
+  --secondary-foreground: #03224b;
+  --muted: #eef1f5;
+  --muted-foreground: #4a5568;
+  --accent: #eef1f5;
+  --accent-foreground: #03224b;
+  --destructive: #b42318;
+  --border: #d9dee6;
+  --input: #c9d0db;
+  --ring: #1f4f8f;
+  --chart-1: #03224b;
+  --chart-2: #c39940;
+  --chart-3: #1f4f8f;
+  --chart-4: #6b7a90;
+  --chart-5: #9aa6b8;
+  --radius: 0.5rem;
+
+  --sidebar: #03224b;
+  --sidebar-foreground: #e8edf5;
+  --sidebar-primary: #c39940;
+  --sidebar-primary-foreground: #03224b;
+  --sidebar-accent: rgb(255 255 255 / 0.1);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgb(255 255 255 / 0.12);
+  --sidebar-ring: #c39940;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --gold: #d1aa5c;
+    --gold-foreground: #03224b;
+
+    --background: #0b1220;
+    --foreground: #e8edf5;
+    --card: #111a2c;
+    --card-foreground: #e8edf5;
+    --popover: #111a2c;
+    --popover-foreground: #e8edf5;
+    --primary: #d1aa5c;
+    --primary-foreground: #03224b;
+    --secondary: #1b2740;
+    --secondary-foreground: #e8edf5;
+    --muted: #1b2740;
+    --muted-foreground: #a3b0c4;
+    --accent: #1b2740;
+    --accent-foreground: #e8edf5;
+    --destructive: #f97066;
+    --border: #253250;
+    --input: #2e3c5c;
+    --ring: #d1aa5c;
+    --chart-1: #8fb3e8;
+    --chart-2: #d1aa5c;
+
+    --sidebar: #061a38;
+    --sidebar-foreground: #dfe6f1;
+    --sidebar-border: rgb(255 255 255 / 0.08);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled), [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    @apply font-sans;
+    color-scheme: light dark;
+  }
+}

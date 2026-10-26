@@ -670,3 +670,26 @@
 **Tests (100):** a source-scan guard (no `getSession()`, no `session.user`, no `data.session.user`, no no-argument `getAuthenticatorAssuranceLevel()` in app/lib/components/proxy). Page tests render the real `/security/enroll` and `/login/verify` and run `requireStaff()` against a fake Supabase client that throws like tokens-only (enroll renders; the redirects for factor / aal2 / signed out / over 12 hours; aal1 refused; non-staff → /403). The fake client also proves the old call throws.
 
 **Console `Unexpected end of JSON input`:** not from panel code (no client `fetch` or `JSON.parse`; actions use React's own protocol). Most likely Next's dev error overlay reacting to the server error above, or a browser extension.
+
+## Module 7c: review queue (2026-10-27)
+
+**Pages:**
+- `/review`: `mod_get_queue`, oldest first, pages of 50 with Load more (the cursor is the last `created_at`, passed back unchanged so microseconds are kept). Filter chips All / Posts / Comments / Listings (`?filter=`, applied to the loaded rows; the dashboard tiles link to them). Each row shows the type, kind, author ("Deleted user" for a null nickname), relative time with the exact Manila time on hover, a 200-character preview, the image count, and the hold (matched keyword in a gold badge, or pre-moderation). Empty state "The queue is clear".
+- `/review/[type]/[id]`: `mod_get_content`, with the full body as plain text (line breaks kept, the keyword marked case-insensitively), images in a click-to-zoom dialog, author status, post number, the parent post number for comments (one extra `mod_get_content`), shoutout target, poll end, listing fields, hold reason, created time and open reports (link to /reports). An item that is no longer pending shows its current status and who handled it, with a link back. Bad ids or missing items show not-found.
+- `/review/next`: the server picks the next pending item after the current one, wrapping to the oldest and keeping the filter, or goes back to the list with "No more items" when nothing is left.
+
+**Actions** (`app/(panel)/review/actions.ts`; every one calls `requireStaff()` and validates with zod):
+- Approve.
+- Reject: dialog with a required reason (6 labels; the label goes to `p_reason`) and an optional note (500 → `p_note`).
+- Edit and approve (posts 2000 / comments 1000, trimmed, required reason ≤ 200): `mod_edit_content`, then `mod_review` approve. If the edit is saved but the approval fails, the result is `approve_failed_after_edit`; the page then shows "The edit was saved, but approving failed" with Retry approval (approve only).
+- `invalid_transition` shows "Someone else already handled this item" and moves on to the next item.
+- Buttons are disabled while a request runs (`useTransition` plus a ref guard against double submits). `revalidatePath('/')` and `revalidatePath('/review')` keep the dashboard counts current.
+- Shortcuts: A, R, E, ← and →, ignored in inputs, textareas, dialogs and with modifier keys; a legend sits under the buttons. Previous / next come from the head of the queue (100 items) plus an exact "after" query.
+
+**Images:** plain `<img>` from the public `post-images` bucket on the project's Supabase origin (already allowed by the CSP `img-src`), with `referrerpolicy=no-referrer`, the stored width and height (no layout shift), lazy loading, and a Radix dialog lightbox with arrow keys. Paths outside `<folder>/<file>` are dropped.
+
+**Tests (143):** reject reason labels; highlight (regex escaping, case, no overlaps, empty term, Unicode and emoji, line breaks); action schemas; the new error codes; next-item selection (middle, last → wrap, empty, item already gone, filters); previous / next; preview; image and extra parsing; shortcuts; and each review page and action calling `requireStaff()`.
+
+**Verified:** typecheck, lint, tests and `next build` pass with no warnings. Not tested against live data.
+
+**Limits:** `mod_get_queue` pages by `created_at` only, so two items with the same microsecond at a page boundary could be skipped (very unlikely). For regex keywords (phone numbers), `matched_term` is the pattern, so nothing is highlighted. Filters apply to loaded pages, so a filtered view may need Load more to reach older items of that type.

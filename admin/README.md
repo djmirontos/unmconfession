@@ -24,4 +24,17 @@ Types: `npm run gen:types` (same CLI command as mobile; keep `mobile/types/datab
 9. Headers: nonce CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy: same-origin`, Permissions-Policy, COOP, plus noindex (header, meta tag and robots.txt). Use `same-origin`, not `no-referrer`: `no-referrer` makes browsers send `Origin: null` on form posts, and Next.js then rejects every Server Action.
 10. Verifying an authenticator signs the person out of their other sessions (including the mobile app) once; that is Supabase's behaviour.
 
+## Pages
+
+| Route | Access | What it does |
+|---|---|---|
+| `/login`, `/login/verify`, `/security/enroll` | sign-in steps | Password, then the authenticator code (or setting one up) |
+| `/` | staff | Dashboard (`mod_dashboard`) |
+| `/review` | staff | Pending posts, comments and listings, oldest first; filter by type; Load more |
+| `/review/[type]/[id]` | staff | One item: full text with the held keyword marked, images (click to zoom), author status, approve / reject / edit and approve, previous / next, shortcuts A R E ← → |
+| `/review/next` | staff | Redirects to the next pending item after an action (wraps to the oldest; back to the list when empty) |
+| `/reports`, `/content`, `/users`, `/keywords`, `/log` | staff | Placeholders (modules 7d–7f) |
+| `/audit` | admin | Placeholder |
+| `/403` | anyone | No access |
+
 Deployment: see `docs/ADMIN_DEPLOY.md`.

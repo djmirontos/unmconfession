@@ -45,6 +45,8 @@ The app is open to read and needs an account only to take part, Yipster style. T
 
 **Terms and Privacy Policy** are accepted at sign-up. They state that admins can see the identity behind a post and that identity lookups are logged.
 
+**Sign-in methods.** Email sign-up uses a password and a 6-digit code to verify the email. Google sign-in is native (Google's ID token is exchanged for a Supabase session); a new Google account chooses its nickname and accepts the Terms, including the legal-age confirmation, on the nickname screen. Acceptance is stored in `user_flags.terms_accepted_at`. The session on the phone is stored encrypted.
+
 ## App structure
 
 Five bottom tabs. The feed is one list for everything, with no categories.
@@ -120,6 +122,9 @@ The default mode is post-moderation: posts appear right away and moderators revi
 - Reports inbox for posts reported by users.
 - Mute, suspend and ban for users.
 - Keyword list management by admin and moderators, starting from a preset list built into the app.
+- The web panel requires two-step sign-in: password plus a code from an authenticator app (TOTP). Panel sessions end after 30 minutes without activity and after 12 hours in total.
+- Admins can find a user by email and view a user's email and sign-in details. Each lookup is written to the audit log (the searched address itself is not stored).
+- Admins can delete a banned or suspended account. The result is the same as the user deleting it themselves, the reason is required, and the deletion is written to the audit log.
 
 **Buy & Sell rules.** A prohibited-items list (for example alcohol, cigarettes, medicine) is part of the keyword filter. The app does not process payments, and every listing shows a disclaimer.
 
@@ -172,7 +177,7 @@ Speed and data security are the top priorities during development.
 - Blocked users.
 - Logout.
 - About: Community rules, Terms of Use, Privacy Policy, Open source notices, Send feedback (email), Version.
-- Delete account (own danger group, at the bottom): the user types their nickname to confirm. Sign-in, email, nickname, avatar, blocks, settings and notifications are erased; posts, comments, reactions, votes and listings stay as "Deleted user" (a null nickname means a deleted account; `user_flags.deleted_at` is the permanent marker); open listings are closed; reports stay with moderators.
+- Delete account (own danger group, at the bottom): the user types their nickname to confirm. Sign-in, email, nickname, avatar, blocks, settings and notifications are erased; posts, comments, reactions, votes and listings stay as "Deleted user" (a null nickname means a deleted account; `user_flags.deleted_at` is the permanent marker); open listings are closed; reports stay with moderators. A banned or currently suspended account cannot delete itself.
 
 **Branding and customization (web panel)**
 
@@ -213,7 +218,8 @@ Speed and data security are the top priorities during development.
 
 **Before release / web panel TODOs**
 
-- `mod_set_user_status` and `admin_set_role` must refuse targets with `user_flags.deleted_at` set.
+- Done (Module 7a): `mod_set_user_status` and `admin_set_role` refuse targets with `user_flags.deleted_at` set.
+- The retention purge must also clear `admin_audit_log` after 1 month.
 - Google Play needs a public web page where people can request account deletion.
 - Replace the `FEEDBACK_EMAIL` placeholder in `mobile/lib/config.ts`.
 

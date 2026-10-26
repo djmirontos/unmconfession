@@ -544,3 +544,129 @@
 - The no-connection text stays the app-wide one ("No connection. Check your internet and try again.").
 
 **Verified:** typecheck and lint pass. Device QA pending.
+
+## Module 9b: native Google Sign-In, Terms and age checkbox, encrypted session, auth fixes (2026-10-26)
+
+**Migration** (9a, applied): `20261026130000_terms_acceptance.sql` (`user_flags.terms_accepted_at`, `set_nickname(p_nickname, p_accept_terms)`, `set_nickname` and `delete_my_account` refuse restricted accounts). Types regenerated.
+
+**Packages:** `@react-native-google-signin/google-signin` 16.1.5 (free "Original" API; supports Expo 52.0.40–57, RN 0.76–0.87, old and new architecture; not in Expo Go), `expo-secure-store` ~57.0.4 (in Expo Go), `aes-js` 3.1.2 + `@types/aes-js` 3.1.4. Removed `expo-web-browser` (no users left). `expo-linking` kept (expo-router depends on it).
+
+**App**
+- Google: `lib/googleSignIn.ts` loads the library lazily (importing it without the native module throws), configures it once at startup with `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID`, and `isGoogleSignInAvailable()` is the one feature check. `signInWithGoogle()` in `lib/auth.ts`: Play services check, account picker, ID token, `signInWithIdToken`; returns success / cancelled (silent) / failed (message from `lib/errors.ts`: Play services, no connection, no ID token, setup error, provider off). No nonce: the free API has none. Sign-out and account deletion also sign out of Google (best effort). Old browser OAuth code, `OAUTH_REDIRECT_URL` and `app/oauth-callback.tsx` removed. The button stays visible but disabled, with a helper line, in Expo Go or without the client id.
+- Terms: shared `TermsCheckbox` (legal age or guardian permission, Terms of Use, Privacy Policy) on sign-up and, when `terms_accepted_at` is null, on choose-nickname (`useTermsAccepted`); the Save button waits for a valid nickname and the box. `terms_required` shows on the box.
+- Errors: `terms_required`, `account_restricted`, Google codes, `provider_disabled`; wrong password and "account already exists" add "Joined with Google? Use Continue with Google."
+- Membership: new `error` state (profile failed, nothing cached) with `retry`. `useRequireAuth` shows "Checking your account…" while loading and a tappable "Could not load your account. Tap to retry." on error (the toast gained an optional tap action). Create and Profile show a "Try again" card instead of an endless skeleton.
+- Cold start: a plain cover hides the app until the stored session is read and, when there is one, the membership is known (at most 2.5 s), so the tabs no longer flash before choose-nickname. Not shown on later sign-ins, so a Google sign-in from the sheet leaves the user where they were.
+- Session: `lib/sessionStorage.ts` (Supabase "LargeSecureStore" pattern): a fresh 256-bit key per write (expo-crypto) in SecureStore, AES-CTR ciphertext in AsyncStorage. Unreadable values (no key, restored backup, Keystore error, the old plain-text session) are removed and the app continues as a guest. The value is URI-encoded before encryption because aes-js 3.1.2 corrupts 4-byte UTF-8 (emoji). `forgetDeletedAccount` removes the session through the same storage.
+- Privacy Policy: two sentences on what Google shares and what is kept. PRD and CLAUDE.md: sign-in methods, Terms storage, restricted accounts, encrypted session.
+
+**Decisions not in the brief:** Google plugin entry kept without options (no-op on Android without `google-services.json`; iOS will need `iosUrlScheme`). A fresh AES key on every write (Supabase's pattern) instead of one long-lived key. Startup cover capped at 2.5 s. The sign-up checkbox no longer mentions admin email lookups (the Terms and Privacy Policy still do). A paused profile query counts as an error.
+
+**Left / setup:** Google Cloud OAuth clients (Web client id in `.env`; Android client with the debug and release SHA-1), Supabase Google provider (web client id as the first client id). Native Google Sign-In cannot be tested in Expo Go; it is tested after the development build (Module 9c). If Supabase rejects the token over a nonce, turn on "Skip nonce checks".
+
+**Verified:** typecheck and lint pass; `expo-doctor` 21/21; AES round trip, wrong-key rejection and emoji tested in Node. Device QA pending.
+
+## Module 9c-1: project ready for one development build (2026-10-26)
+
+**Native dependencies:** added `expo-dev-client` ~57.0.20, `expo-updates` ~57.0.26, `expo-splash-screen` ~57.0.10 (all via `npx expo install`); `sharp` (dev, for branding). No missing native module found in the source. `expo-build-properties` not needed.
+
+**Branding:** `npm run branding` (`scripts/make-branding.mjs`) makes `assets/branding/` from `public/unmlogo.png` (untracked, unchanged): `icon.png` (1024, opaque, seal at 84% on navy `#03224B`), `adaptive-icon-foreground.png` (seal 640 px, inside the 66% safe circle), `splash-icon.png` (1024, transparent), `favicon.png` (48). Palette PNGs; files over 250 KB fall back to 16 colours without dithering (the seal is flat colour). No monochrome icon: the seal is a full disc with ring text, so a one-colour silhouette is a plain circle with noise. Splash background white `#FFFFFF`, dark `#0A0A0B` (the app's dark background).
+
+**app.json:** icon, adaptive icon (navy background), `versionCode` 1, splash plugin (image width 200, light and dark), `blockedPermissions` SYSTEM_ALERT_WINDOW and VIBRATE (RECORD_AUDIO already removed by the image picker plugin). Kept: INTERNET, CAMERA, ACCESS_NETWORK_STATE, READ/WRITE_EXTERNAL_STORAGE (max SDK 32; the photo picker asks for both on Android 12 and older). No `updates.url`, `runtimeVersion` or `extra.eas.projectId` by hand: `eas init` and `eas update:configure` add them.
+
+**eas.json:** CLI >= 22.2.0, remote app versions; development (dev client, internal APK, channel development), preview (internal APK, channel preview), production (AAB, auto increment, channel production).
+
+**EAS environment variables:** preview and production builds need `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_ANON_KEY` and `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` created as EAS environment variables (`eas env:create`), because EAS builds do not read the local `.env`. The development build gets them from Metro (local `.env`) when it loads the JS.
+
+**From now on:** the app runs only in the development build (Expo Go cannot load it). Rebuild only when a native dependency or native config changes.
+
+**Verified:** typecheck, lint, `expo-doctor` 21/21. `expo prebuild --platform android --no-install --clean`: manifest (permissions above, scheme `unmconfessions`, label "UNM Freedom Confessions"), `applicationId` com.unmfreedom.confessions, `versionCode` 1, adaptive icon with `#03224B`, splash colours, Google Sign-In and all Expo modules autolinked. `android/` and `ios/` deleted again (both gitignored); prebuild's rewrite of the `android`/`ios` npm scripts to `expo run:*` was reverted.
+
+**Device QA (after 9c-1):** the first development build is installed on an Android phone, and Google sign-in passed device QA.
+
+## Module 9d: bottom-edge spacing and legal wording (2026-10-26)
+
+**Found on the first development build (Android, edge-to-edge):** the guest "Sign in to comment" bar sat almost on the bottom edge with its label looking clipped, and bottom sheets ended too close to the system navigation/gesture area.
+
+**Audit:** every bottom-pinned element except the comment composer already added `insets.bottom`, but with no minimum (a phone that reports 0 left only the 12–24 px padding). The composer used `max(insets.bottom, 10)` with no padding of its own. Buttons, action-sheet rows and report reasons had a fixed `h-12`, so a larger system font could clip the label. The tab bar (React Navigation) and the scrolling screens (`insets.bottom + 16/24`) were fine.
+
+**Changes (JS only, no rebuild):**
+- `hooks/useBottomInset.ts`: `max(insets.bottom, 12)`, the one source for bottom-edge spacing. Used by `BottomSheet` (+12, so ActionSheet, avatar picker, profile sheet, own-item and Report/Block menus), `SignInSheet` (+24), `ReportSheet` (+12), the iOS date sheet in `RecentDateChips` (+16) and `CommentComposer` (+8, guest and member, post and listing detail).
+- Composer with the keyboard open: on iOS (`hooks/useKeyboardWillShow.ts`, "will" events only fire there) the safe-area part is dropped, so the composer sits right on the keyboard. On Android the window pans, and the padding below the input stays hidden under the keyboard (unchanged `KEYBOARD_GAP` behaviour).
+- `Button`: `min-h-12 py-3` instead of `h-12`, and the label shrinks and wraps, so the button grows instead of clipping. Same for `ActionSheet` rows and `ReportSheet` reasons (`min-h-12 py-2`). The normal height is unchanged (48).
+- Legal: Draft wording removed after school approval (the "Draft. Final wording pending school approval." subtitle and the draft comment in `app/legal/[doc].tsx`). No other legal text changed.
+- CLAUDE.md: OTA rule (`runtimeVersion` policy `appVersion`: native changes need a `version` bump and a new build; JS-only changes ship as an EAS Update on the matching channel) and the bottom-inset rule.
+
+**Verified:** typecheck, lint and `expo-doctor` pass. Spacing and keyboard behaviour need a device check.
+
+## Module 9d-2: guest comment button opens the sign-in sheet (2026-10-26)
+
+- A guest tapping the comment button on a card in Feed or Trending now gets the sign-in sheet ("Sign in to comment") in place, through `useRequireAuth('comment')` in `usePostListActions().openComments`, the one handler both lists share. The rest of the card still opens the post so guests can read the comments. Members are unchanged (post opens with the composer focused). Loading, error and choose-nickname-pending accounts still open the post as before; banned and suspended accounts are members, so their handling is unchanged too.
+- My Posts and Buy & Sell listing cards only show read-only counts (no comment button). The post detail screen (its card button and its "Sign in to comment" bar) is unchanged.
+- Not done: opening the post automatically after a sign-in started from this sheet. Sign-in finishes in three places (Google in the sheet, the email sign-in screen, choose-nickname), so carrying the target post through all three is more than a few lines.
+
+**Verified:** typecheck, lint, `expo-doctor`. Device QA pending.
+
+## Module 7a: admin panel data layer (2026-10-27)
+
+**Migration** `20261027100000_admin_panel.sql` (applied): `admin_audit_log` (admin-only read), staff read RPCs (`mod_get_reports`, `mod_get_report_details`, `mod_get_content`, `mod_list_content`, `mod_search_users`, `mod_get_actions`, `mod_dashboard`), admin-only `admin_get_user_identity`, `admin_find_user_by_email` (audited; the searched address is not stored), `admin_get_audit`, `admin_delete_account` (banned or suspended accounts only, reason required, audited). `mod_set_user_status` and `admin_set_role` now refuse deleted accounts, and `admin_set_role` is audited. Types regenerated for mobile and admin (additions only; mobile typecheck passes).
+
+**Left:** the retention purge does not clear `admin_audit_log` yet (needs a migration).
+
+## Module 7b: admin panel scaffold, sign-in with TOTP, dashboard (2026-10-27)
+
+**Stack (`admin/`):** Next.js 16.4.3 (App Router, Turbopack, `proxy.ts`), React 19.3.1, TypeScript ~6.0.3, Tailwind 4.3.3, shadcn 4.22.1 (Radix base, nova preset; `cn` from shadcn replaces clsx + tailwind-merge), `@supabase/ssr` 0.12.7, `@supabase/supabase-js` 2.118.0, zod 4.6.7, vitest 5.0.5, ESLint 9 with `eslint-config-next` 16.4.3. TypeScript 7 and ESLint 10 are newer, but typescript-eslint needs TypeScript below 6.1 and the React, import and jsx-a11y ESLint plugins do not support ESLint 10 yet.
+
+**Security:**
+- Server-only Supabase: no browser client. `SUPABASE_URL` / `SUPABASE_ANON_KEY` are read on the server only. Cookies are httpOnly, `sameSite=lax`, and `secure` in production.
+- `requireStaff()` / `requireAdmin()` (React `cache`) run on every page and action: `getUser()` validated by Supabase Auth, the assurance level from that token (`aal2` required), the 12-hour limit from the token's `amr` password timestamp, then `is_staff` / `is_admin` → `/403`.
+- TOTP: after the password, non-staff accounts are signed out ("no panel access"). No verified factor means `/security/enroll` (old unverified factors are removed first, then `mfa.enroll`, a QR data URL and the secret, then `mfa.challengeAndVerify`). With a factor, `/login/verify` uses `mfa.challengeAndVerify` with the factor taken from the validated user, never from the form.
+- Proxy: `getClaims()` session refresh, the activity cookie (30 minutes idle, 12 hours absolute; a future timestamp counts as tampering) with `signOut({ scope: 'local' })`, redirect to `/login` for signed-out visitors, and a fresh CSP nonce. A session past 12 hours found by a page goes to `/auth/expired`, which signs out.
+- Headers: nonce + `strict-dynamic` CSP, HSTS, `X-Frame-Options: DENY`, `nosniff`, `no-referrer`, Permissions-Policy, COOP, `X-Robots-Tag: noindex`, plus robots.txt disallow-all and the noindex meta tag. `cacheComponents` / partial prefetching are off (partial prerendering does not work with a nonce CSP), and the root layout awaits `connection()`.
+- Login errors are generic; inputs are validated with zod; `ActionResult` results; codes become text only in `lib/errors.ts`.
+
+**UI:** navy sidebar with a gold active marker, a top bar with nickname, role badge and Sign out, the sidebar as a sheet on mobile, and light/dark following the system (CSS media query, no theme script). Font: Public Sans, self-hosted by next/font. Dashboard: `mod_dashboard` in 4 groups of linked tiles, with a skeleton and an error boundary with retry. Review, Reports, Content, Users, Keywords, Moderation log and Audit log (admin) are "Coming in the next step" placeholders behind the real guards. Root not-found, error and global-error pages.
+
+**Tests:** 54 vitest tests: error mapping, the route access table (plus a check that every page calls the right guard), the idle and absolute timeout logic, the CSP builder, and the service-role scan (`npm run check:secrets`).
+
+**Verified:** `npm run typecheck` (with `next typegen`), lint, tests and `next build` (dummy env values inline) all pass with no warnings. A smoke run of the build: signed-out `/` and `/audit` redirect (307) to `/login`; every header is present; each response has a fresh nonce and all Next.js scripts carry it; robots.txt disallows everything.
+
+**Deviations:** CSP `style-src 'unsafe-inline'` (Radix and Sonner set inline styles, and style attributes cannot carry a nonce). Enrolling TOTP signs the person out of their other sessions, including the mobile app, once (Supabase behaviour). The idle cookie is not signed (no extra secret allowed); tampering only extends the person's own idle window, and the 12-hour limit comes from the validated token.
+
+**Left (7c–7f):** review queue, reports, content, users, keywords, logs. A real sign-in on a running panel needs `admin/.env.local` and a moderator account with TOTP.
+
+## Module 7b-fix: local sign-in blocked (2026-10-27)
+
+**Causes found on a real local run:**
+- Server Actions were rejected ("origin `null` does not match x-forwarded-host"). `Referrer-Policy: no-referrer`, from both the header and the `<meta name="referrer">` that the root layout metadata emitted, makes browsers send `Origin: null` on same-origin form POSTs, and Next.js's CSRF check rejects them.
+- That rejection is also why `POST /login` was followed by `GET /login`: the password action never ran, so no session and no redirect. Reading the flow end to end found no other lost state: the session written during the action is visible to the `is_staff` check in the same request, the activity cookie is set before the redirect, and the proxy leaves signed-out requests to /login alone.
+- HTTP 431: by default `@supabase/ssr` stores the whole user object (identities, metadata, factors) in the session cookie. Measured with the library's own encoder: 3,469 B for a typical moderator and 8,774 B (3 chunks) in the worst case (254-character email, Google-linked). Cookies from other localhost dev servers share Node's 16 KB request-header limit.
+
+**Fixes:**
+- `Referrer-Policy: same-origin` (header in the new `lib/security-headers.ts`, and the metadata). The Server Actions origin check is unchanged and no allowedOrigins were added.
+- The session cookie stores only the tokens (`encode: 'tokens-only'` in both server clients; the user object stays in per-request memory, and the panel never reads `session.user`). Now 1,557 B typical and 3,168 B worst case, in one cookie, including the 40 B activity cookie. Old `.0/.1/.2` chunks are removed by `@supabase/ssr` on the next write.
+- `lib/auth-flow.ts`: one `redirectFor(state, page)` used by `requireStaff()`, the three sign-in pages and the actions. A session past 12 hours on /login now goes through `/auth/expired` (sign-out) instead of showing the form over a stale session.
+- `allowedDevOrigins: ['127.0.0.1']` in development only.
+- In development, the proxy logs the Cookie header size and cookie names (never values) when the header is over 3 KB.
+- `vitest.config.ts` renamed to `.mts` (removes Vite's ESM warning).
+
+**Redirect sequences:**
+- (a) No authenticator: `POST /login` (action) → `/security/enroll` → set up → `/`.
+- (b) Authenticator set up: `POST /login` → `/login/verify` → code → `/`.
+- (c) Already at aal2: `/login`, `/login/verify` and `/security/enroll` all → `/`.
+
+**Verified:** typecheck, lint, 84 tests (cookie budget under 4 KB; the redirect table with a no-loop check; headers) and `next build`, all with no warnings. The built app sends `Referrer-Policy: same-origin` and `<meta name="referrer" content="same-origin">`. A real sign-in is still to be retested by the user.
+
+## Module 7b-fix2: /security/enroll crashed after the tokens-only change (2026-10-27)
+
+**Root cause:** `getAuthState()` called `mfa.getAuthenticatorAssuranceLevel()` with no token. That auth-js path reads `session.user.factors` from `getSession()` to compute `nextLevel` (GoTrueClient.js, the only `session.user.factors` read in auth-js). With tokens-only cookies the session's `user` is a placeholder that throws on access, so every sign-in page and `requireStaff()` failed once a password session existed. Our own code never read the session's user; the sign-in action used `data.user` from the `signInWithPassword` response.
+
+**Changes:**
+- `lib/auth.ts`: `getValidatedUser()` (React `cache`, one `getUser()` per request) is the only source of user fields. `getAuthState()` takes `aal` and `amr` from `getClaims()` (signature checked, or confirmed with Supabase Auth) and also checks that `claims.sub` matches the user's id. The decision is the pure `deriveAuthState()` in `lib/auth-flow.ts` (now also `verifiedTotpFactorId()`).
+- `app/(auth)/actions.ts`: `signIn` reads factors from a fresh `getUser()` after the password, not from the sign-in response. The enrol and verify actions keep using factors from the validated user (never from the form).
+- `proxy.ts`: the matcher skips Next's dev-only `/__nextjs_*` endpoints.
+- Checked in auth-js: `getClaims`, `getUser`, `mfa.challengeAndVerify`, `mfa.enroll`, `mfa.unenroll`, `signOut` and the session refresh use only the session's tokens, not its user.
+
+**Tests (100):** a source-scan guard (no `getSession()`, no `session.user`, no `data.session.user`, no no-argument `getAuthenticatorAssuranceLevel()` in app/lib/components/proxy). Page tests render the real `/security/enroll` and `/login/verify` and run `requireStaff()` against a fake Supabase client that throws like tokens-only (enroll renders; the redirects for factor / aal2 / signed out / over 12 hours; aal1 refused; non-staff → /403). The fake client also proves the old call throws.
+
+**Console `Unexpected end of JSON input`:** not from panel code (no client `fetch` or `JSON.parse`; actions use React's own protocol). Most likely Next's dev error overlay reacting to the server error above, or a browser extension.

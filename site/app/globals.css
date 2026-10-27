@@ -1,0 +1,27 @@
+@import 'tailwindcss';
+
+/* Light theme only. Gold is used for accents, never for text (it is below AA on white). */
+@theme {
+  --color-navy: #03224b;
+  --color-gold: #c39940;
+  --color-ink: #1b2533;
+  --color-muted: #4b5563;
+  --color-line: #e3e6eb;
+  --color-paper: #f7f8fa;
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: #ffffff;
+  color: var(--color-ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-navy);
+  outline-offset: 2px;
+  border-radius: 4px;
+}

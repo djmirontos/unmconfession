@@ -17,3 +17,7 @@ Adding, editing and deleting keywords is not logged anywhere today: staff write 
 ## Optional: nickname rules for admin renames
 
 `admin_set_nickname` does not apply the reserved and flagged-word rules (keywords with the `nickname` scope) that `set_nickname` and `change_nickname` enforce. Decide whether an admin rename should be refused, or only warned about, in the same way.
+
+## Remember closed announcements per account
+
+Remember closed announcements per account (sync across devices) instead of per device. In V1 the app keeps the closed ids in AsyncStorage on the phone (guests included, kept after sign-out), so a member who closes an announcement on one phone still sees it on another.

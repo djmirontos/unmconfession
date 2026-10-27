@@ -947,3 +947,45 @@ The URLs come from `PLAY_STORE_URL` and `APK_RELEASES_URL` in `site/lib/site.ts`
 **JS only:** no native module, no new dependency, app.json `version` unchanged. These changes must be in the first APK build so that build can be forced to update later. An OTA update cannot add the gate to a build that shipped without it.
 
 **Left:** test the screen on a device (high minimum, then back to `'0.0.0'`). CLAUDE.md still lists the `FEEDBACK_EMAIL` placeholder under open TODOs.
+
+## Module 10a: announcements in the admin panel (2026-10-27)
+
+**No database changes.** The page uses `public.announcements` directly through the session client; RLS (`announcements_staff_write`, `announcements_read`) limits writes and the full list to staff.
+
+**Page `/announcements`** (moderators and admins; `requireStaff()` on the page and as the first line of every action; in the sidebar and the phone menu with a megaphone icon):
+- Cards, newest first, at most 100 (a note shows when more exist). Each shows a status chip (Scheduled, Live, Ended), the title, the body as plain text with line breaks (clamped to 4 lines with "Show more"), start and end in Manila time, and the author.
+- The author comes from the same query, through the `created_by` foreign key (`author:profiles!announcements_created_by_fkey(nickname)`; profiles are readable by everyone). A null author shows "Deleted user".
+- Status filter (All, Live, Scheduled, Ended) in the URL, validated with zod (a bad value means All); inline from md, in the Filters sheet on phones. Each status is the same time rule as the read policy.
+- A note under the title: announcements appear at the top of the feed for everyone, including guests, until closed or ended.
+- Loading skeleton, a load-error state and two empty states (none yet, none for the filter).
+
+**Create and edit** (one dialog, full screen on phones): title and message with live 100 / 1000 counters, Start ("Publish now", "Schedule" with a Manila date-time, and when editing "Keep the current start"), End ("No end date" by default, or a Manila date-time), and a preview of the app card (bold title, body, close icon). Manila input converts to UTC at a fixed +08:00. One shared check (`checkAnnouncement` in `lib/announcements/schemas.ts`) runs in the dialog and in the actions: trimmed non-empty text within the limits, valid dates, end strictly after start, start at most 1 year ahead. "Keep the current start" is checked against the stored start, which the server reads itself.
+
+**Actions:** Edit (updates in place, so the id stays and people who closed a live announcement do not see it again), "End now" (Live only, with a confirm step; sets `ends_at` to now and only matches a row that is still live), Delete (any status, confirm step). Each revalidates the page and shows a toast. `created_by` comes from `requireStaff()` (`getUser()`), never from the form; updates never write it.
+
+**Errors:** `announcementErrorCode` in `lib/errors.ts`: check violations → "Check the dates and the text limits."; permission and RLS errors keep the existing forbidden message; form codes for the title, message, dates, the 1-year limit, end before start, and "not live any more" for End now.
+
+**Tests:** `tests/announcements.test.ts` (25): the form checks, Manila to UTC and back (00:00 and 23:59 edges, nonexistent days), status at the boundaries, the filter to query steps, End now only for Live, created_by never from the form, every action checking staff first, error mapping. The access test now covers the new page. `tests/back-nav.test.ts` pins the sidebar list, so its expected list gained `/announcements`.
+
+**Verified:** typecheck, lint, 353 tests (16 files) and `next build` pass; `check:secrets` finds no service-role reference. Not checked in a browser or against live data.
+
+
+## Module 10b: announcement card shows only the text, with a close button (2026-10-27)
+
+**No database changes, JS only** (no native module or dependency, app.json version unchanged).
+
+**App:**
+- `AnnouncementCard` shows only the body: plain text, line breaks kept, nothing parsed, links not clickable. The "Announcement" label and the card's colours stay; the title line is gone. A close button (X) sits in the top-right corner with a 44 x 44 tap area ("Close announcement"), positioned so the card keeps its height. Closing removes the card with no animation.
+- Closed ids are remembered per device in AsyncStorage (`unm-closed-announcements`, a JSON array, newest last, at most 200), for guests and members alike; signing out keeps them. `stores/closedAnnouncementsStore.ts` hides the card at once and writes in the background, so a storage failure still closes it for the session. The card waits until the stored list has been read, so a closed announcement never flashes.
+- `lib/announcementPick.ts` (pure): `pickAnnouncement` (the newest live one not closed, by starts_at then created_at, live checked on the device too), `addClosedId` (no duplicates, 200 cap), `parseClosedIds` (missing or malformed data is an empty list). After a close, the next newest live one appears.
+- `hooks/useAnnouncement.ts` now fetches up to 20 live rows, ordered by starts_at then created_at, without the title. The device's live check uses the shared minute clock (`useMinuteClock`), so one that ends while the feed is open goes away within a minute without a network call.
+- Refresh: pull to refresh on the Feed now also refetches the announcement, and `useRefetchWhenStale` refetches it on tab focus and return to the foreground when older than 5 minutes (the same rule as the other lists). Before this, it refetched only when the Feed mounted with stale data. No polling.
+- The persisted cache buster went from 3 to 4 (the announcement rows changed shape), so every phone starts with an empty cache once after updating.
+
+**Panel:** the title field is "Internal title (only staff see this)" with a short note; the 1 to 100 limit is unchanged. The preview shows only the body with the close icon. The list keeps the title as each card's heading, with a note that headings are internal titles. The page note is now "Users see only the text, at the top of the feed, until they close it or it ends." No admin test asserted the old wording, so no test changed.
+
+**Tests:** `tests/announcements.test.mjs` (9, `npm run test:announcements`).
+
+**Verified:** typecheck and lint pass in `mobile/` and `admin/`; mobile tests 5 (redact) + 11 (share) + 8 (version) + 9 (announcements) pass; admin 353 tests (16 files) and `next build` pass. Not checked on a device.
+
+**V2 backlog:** remember closed announcements per account instead of per device.

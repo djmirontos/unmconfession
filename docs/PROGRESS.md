@@ -272,7 +272,7 @@
 
 **Lessons**
 - A cached empty thread showed "No comments yet" next to a count of 1.
-- Staff accounts (moderator / admin) bypass the keyword filter by design. Test keyword holds with a non-admin account (second test account `djmirontos+tester@gmail.com`, nickname `tester_two`).
+- Staff accounts (moderator / admin) bypass the keyword filter by design. Test keyword holds with a non-admin account (second test account `tester@example.invalid`, nickname `tester_two`).
 
 **Still open**
 - Branding: `mobile/public/unmlogo.png` is still untracked.
@@ -926,3 +926,24 @@ The URLs come from `PLAY_STORE_URL` and `APK_RELEASES_URL` in `site/lib/site.ts`
 **Docs:** a "Download links" section in `site/README.md` and `docs/SITE_DEPLOY.md`.
 
 **Verified:** typecheck, lint and `next build` pass, and the legal text is still identical to the app. A local `next start` gives 200 for `/`, `/delete-account` and the badge. The home page shows two "Coming soon" captions and no github.com or play.google.com links, and the headers are unchanged. With test URLs set temporarily (then reverted and rebuilt), both buttons became new-tab links with `noopener noreferrer`, the captions disappeared and the install note appeared.
+
+## Module 8b-2 / 8a: force update in the app, feedback email (2026-10-27)
+
+**Database (8b-1, applied live):** migration `20261027150000_min_app_version.sql` adds `min_app_version`, `update_url` and `update_message` to `app_settings`, with checks; the guard makes them admin-only; and `get_app_requirements()` is readable by guests. Types regenerated with the Supabase CLI; `mobile/` and `admin/` copies identical.
+
+**App (8b-2):**
+- `lib/versionGate.ts` (pure): `parseVersion`, `isUpdateRequired` (numeric, fails open), row and cache parsing, `resolveRequirement` (fresh value, else cached, else do not block), `safeUpdateUrl` (https:// only).
+- `lib/appRequirements.ts`: the RPC with an 8 s abort; never throws. The last good answer goes to AsyncStorage (`unm-app-requirements`).
+- `hooks/useAppRequirements.ts`: `useAppRequirementsSync()` (root layout) applies the cached value at once, then fetches after the session is restored, at launch and on each return to the foreground, at most once per 5 minutes per attempt. `useForceUpdate()` reads `stores/appRequirementStore.ts`.
+- `components/layout/ForceUpdateGate.tsx`: a full-screen Modal mounted last in the root layout (above tabs and sheets). Logo, "Update required", message or default text, installed and required versions, "Update now" only for an https:// link. Back is blocked and there is no close control. It follows the theme and safe area, and disappears when a later check is satisfied.
+- `lib/config.ts`: `installedVersion()` (app.json `version` via expo-constants); `appVersion()` uses it.
+
+**Feedback email (8a):** `FEEDBACK_EMAIL` is `support@klasmeyt.com` (TODO removed); the Profile fallback sheet shows it. The email field placeholders on the sign-in, sign-up and forgot-password screens are unchanged.
+
+**Docs:** `docs/FORCE_UPDATE.md` (how it works, the SQL to turn it on and off, versions and OTA, testing, the lock-out warning).
+
+**Verified:** typecheck and lint pass in `mobile/` and `admin/`; mobile tests 5 (redact) + 11 (share) + 8 (version) pass; admin 327 tests pass. Not checked on a device.
+
+**JS only:** no native module, no new dependency, app.json `version` unchanged. These changes must be in the first APK build so that build can be forced to update later. An OTA update cannot add the gate to a build that shipped without it.
+
+**Left:** test the screen on a device (high minimum, then back to `'0.0.0'`). CLAUDE.md still lists the `FEEDBACK_EMAIL` placeholder under open TODOs.

@@ -745,3 +745,55 @@
 **Verified:** typecheck, lint, tests and check:secrets pass. Not tested against live data.
 
 **Left (from the 7d suggestions):** `admin_set_nickname` still does not apply the reserved / flagged-word rules, and the replies a top-level comment removal cascaded still cannot be restored. The other 7d suggestions are unchanged.
+
+## Module 7e.1: keywords page (2026-10-27)
+
+**No migrations.** Moderators and admins manage `public.keywords` directly with the session client (RLS `keywords_staff`); the database still checks the constraints, the unique `(lower(term), match_type)` index and `keywords_validate` (invalid regex).
+
+**Panel:**
+- `/keywords` (sidebar entry already existed; `requireStaff` on the page and every action): table of term, match type, category, scope chips, active switch, added date, Edit and Delete (confirm). Sorted by category, then term; loads in one go (up to 1000 rows). URL filters: category, scope (`applies_to` contains), match type, active / inactive, term search (LIKE wildcards escaped). Loading skeleton, "No keywords yet" / "Nothing matches these filters", inline error.
+- Add / edit dialog: term, match type, category, scope (at least one), active. One zod schema (`lib/keywords/schemas.ts`) for the form and the Server Actions; created_by is set from `requireStaff()` (validated `getUser()`) on create and never written on update.
+- Self-protection (`lib/keywords/safety.ts`, enforced in the actions, including when a keyword is switched on): a regex that matches the empty string or all of "hello", "the", "a", "123", "test post" is refused. Warnings only: a single-character plain term, a whole-word term that starts or ends with a non-word character (it can never match), and patterns the browser cannot check (PostgreSQL-only syntax, or not compilable in JavaScript).
+- "Preview (mirrors the database rules)": a sample text for content or a nickname. Content mirrors `_moderation_decision` (word = `\m` + escaped term + `\M`, contains = `strpos(lower, lower)`, regex = `~*`); nicknames mirror `_nickname_flagged` (leet digits, `_` / `.` splitting, broken patterns skipped). Not mirrored exactly, and labelled as such in the UI: PostgreSQL-only regex syntax (`\m`, `\y`, `\b`, `[[:class:]]`, embedded options, `***`) is reported as "cannot preview"; `\w` / `\d` / `\s` may differ for non-English letters; a pattern JavaScript cannot compile is reported, not guessed.
+- Categories (7e.1d, after migration `20261027130000_keyword_categories.sql`): added Adult content, Violence, Hate speech and Gambling; the list and labels live only in `lib/keywords/schemas.ts` (types unchanged: `category` is a text column).
+- Errors: `keywords_term_key` unique violation → "That term already exists for this match type."; `invalid_regex` → "This regular expression is not valid."; check violations → "Invalid keyword settings."; plus `keyword_matches_everything` and `keyword_term_invalid`.
+
+**Keyword changes are not audited yet** (no log entry for add, edit, switch or delete; needs a migration).
+
+**Tests (254, 37 new in `tests/keywords.test.ts`):** the schema (valid, empty, too long, scope rules), created_by never from the form, the self-protection rules, the preview for every match type in both contexts, the error mapping, the filters → query builder, and the access checks.
+
+**Verified:** typecheck, lint, tests and check:secrets pass. Not tested against live data.
+
+## Module 7e.1b: keywords page on phones (2026-10-27)
+
+**Keywords below md (target 390 px; laid out for 360–430):**
+- Stacked cards instead of the table: the term in bold mono, wrapped with `break-all`, then chips for match type, category and scope, the active switch, the date, Edit and Delete. The desktop table is unchanged.
+- Filters: the search stays visible; category, scope, match type and state move into a bottom `Sheet` behind a "Filters" button with a count badge, "Clear" (keeps the search) and "Done". From md up the filters sit inline as before. Helpers `activeFilterCount` / `clearSheetFilters` in `lib/keywords/query.ts`.
+- Add / edit dialog: full screen on phones (`FULLSCREEN_BELOW_MD`), with a header, a scrolling body (the form and the "Try it" preview), and Cancel / Save in a footer outside the scroll area, clear of the home indicator.
+- Delete confirm: a bottom sheet (`ConfirmDialog sheetOnMobile`, opt-in, so the other pages keep the centred dialog).
+- Tap targets ≥ 44 px on phones: the switch (44 × 44 tap area, same track), Edit / Delete, Add, Filters, the scope checkboxes and Active, the selects and inputs, and the dialog footer buttons.
+
+**Shared changes:**
+- `components/moderation/mobile-dialog.ts`: the small-screen DialogContent class sets.
+- `ConfirmDialog` gains an opt-in `sheetOnMobile`.
+- `SelectFilter` and `SearchBox`: 44 px tall with 16 px text below md (no iOS zoom on focus), unchanged from md up. `SearchBox` takes an optional `className`.
+- Root viewport: `width=device-width, initial-scale=1, interactive-widget=resizes-content` (the Android keyboard shrinks the layout, so dialog footers stay above it). Zoom stays allowed.
+
+**Navigation:** unchanged. It already works on phones: below lg the top bar has a menu button that opens the sidebar as a slide-in sheet (closes on navigation), and Sign out is always in the top bar.
+
+**Forms:** already right. The authenticator code (`/login/verify`, `/security/enroll`, shared `CodeField`) has `inputMode="numeric"`, `autocomplete="one-time-code"`, a 6-digit pattern and text-lg. `/login` has `type="email"` + `autocomplete="username"` and `autocomplete="current-password"`. `Input` / `Textarea` are 16 px below md.
+
+**Audit at 390 px (other pages, not fixed).** Based on reading the components: the panel needs a staff session with TOTP, so it could not be opened in a headless browser here, and no screenshots were taken.
+- All pages: default buttons are 32 px tall and `size="lg"` 36 px, below 44 px. The top bar's menu button is 36 px and Sign out 32 px. The "Back" links on detail pages are `size="sm"` (28 px).
+- All pages with dialogs (review reject / edit, report remove, content remove / edit / restore, user suspend / ban / role / rename / delete): the shared `DialogContent` is centred with no max height or scrolling. Tall dialogs (Suspend: presets, custom time and a reason; Reject: 6 reasons and a note) can run past the screen, especially with the keyboard open, and the footer buttons become unreachable. They are not bottom sheets.
+- Dashboard: tiles are one column on phones (fine); no other issues found.
+- Review queue: type filter chips are about 32 px tall. List rows are full-width links (fine).
+- Review detail: Approve / Reject / Edit and Previous / Next share one wrapping row, so Previous / Next can drop to a second line on their own. The keyboard-shortcut hint is shown on phones (no keyboard). "Retry approval" is 28 px.
+- Reports list: fine (wrapping rows). Report detail: the remove / resolve buttons are 32–36 px; "Retry" is 28 px. The pending-item banner link is text-sized.
+- Content list: filters now 44 px (shared fix). Content detail: Remove / Edit / Restore are 36 px; the details aside moves under the text (fine).
+- Users list: rows wrap; the counts `dl` does not wrap but is short (fine at 390, tight at 360). Status and role selects now 44 px.
+- Users detail: action buttons 32 px; the radio options in Suspend / Change role are about 36 px; Find by email (admins) wraps correctly. Horizontal scroll: none expected anywhere (no tables outside Keywords; long text uses `break-words`).
+
+**Tests (257, 3 new):** `activeFilterCount` and `clearSheetFilters`.
+
+**Verified:** typecheck, lint, tests and check:secrets pass. `next build` and a real-device check were not run. On iOS Safari the keyboard does not resize the dynamic viewport, so the dialog footer may sit under the keyboard there (scrolling the body still works).

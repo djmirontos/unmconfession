@@ -864,3 +864,21 @@ Layout and dialog behaviour below `md` only (target 390 px, laid out for 360–4
 **Tests (327, 17 new in `tests/back-nav.test.ts`):** main destinations, the fallback for every detail route, the "next" routes and unknown paths, the tracker (direct open, push, replace, back, forward, a push that truncates history, the floor at zero), and source checks for the wiring and the hidden desktop links.
 
 **Verified:** typecheck, lint, tests and `next build` pass. Not checked in a browser: the panel needs a staff session with TOTP.
+
+## Module 7f.1: UNM logo in the admin panel (2026-10-27)
+
+**No migrations, no behaviour change.** Branding only.
+
+**Source:** `mobile/assets/branding/splash-icon.png`, the tracked, transparent 1024 px seal that `mobile/scripts/make-branding.mjs` generates. The original `mobile/public/unmlogo.png` stays untracked, so the panel builds from the tracked copy and anyone can regenerate it.
+
+**Generated** by `admin/scripts/make-branding.mjs` (`cd admin && npm run branding`, using the sharp that comes with Next.js; no new dependency):
+- `admin/components/brand/unm-mark.png`: 108 px, the UI mark, shown at 36 px.
+- `admin/app/icon.png`: 512 px, transparent.
+- `admin/app/apple-icon.png`: 180 px, the seal on opaque navy `#03224B`.
+- `admin/app/favicon.ico`: PNG-in-ICO, 16/32/48 px.
+
+Next's file conventions add the `<link>` tags. The old `app/icon.svg` (a placeholder "U" mark) is removed.
+
+**UI:** `BrandMark` (login, authenticator code and enrolment pages, 403, sidebar, phone menu sheet) shows the seal instead of the placeholder SVG. Its size is unchanged (36 px), the image has width and height set, and it is `aria-hidden` because the name text sits next to it. A faint white ring keeps the seal's navy edge visible on the navy sidebar and in dark mode. The phone top bar has no logo today and is unchanged. The `themeColor` viewport entry already existed and is unchanged.
+
+**Verified:** typecheck, lint, 327 tests and `next build` pass; the build emits `/icon.png`, `/apple-icon.png` and `/favicon.ico`. `next start` serves all three with status 200, and the login page head links them. No new tests (no helper logic).

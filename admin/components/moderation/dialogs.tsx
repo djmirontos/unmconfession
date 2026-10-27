@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SHEET_BELOW_MD, TAP_BELOW_MD } from '@/components/moderation/mobile-dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { REJECT_REASONS, type RejectReason } from '@/lib/review/reasons';
 import { EDIT_REASON_MAX, NOTE_MAX } from '@/lib/review/schemas';
@@ -22,10 +23,10 @@ import { EDIT_REASON_MAX, NOTE_MAX } from '@/lib/review/schemas';
 
 type Base = { open: boolean; onOpenChange: (open: boolean) => void; pending: boolean };
 
-function CancelButton() {
+function CancelButton({ className }: { className?: string }) {
   return (
     <DialogClose asChild>
-      <Button type="button" variant="outline">
+      <Button type="button" variant="outline" className={className}>
         Cancel
       </Button>
     </DialogClose>
@@ -198,6 +199,7 @@ export function ConfirmDialog({
   canConfirm = true,
   onConfirm,
   children,
+  sheetOnMobile = false,
 }: Base & {
   title: string;
   description: ReactNode;
@@ -207,10 +209,13 @@ export function ConfirmDialog({
   canConfirm?: boolean;
   onConfirm: () => void;
   children?: ReactNode;
+  /** Below md: a bottom sheet with 44 px buttons (opt-in; other pages keep the centred dialog). */
+  sheetOnMobile?: boolean;
 }) {
+  const tap = sheetOnMobile ? TAP_BELOW_MD : undefined;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className={sheetOnMobile ? SHEET_BELOW_MD : undefined}>
         <form
           className="space-y-5"
           onSubmit={(e) => {
@@ -226,8 +231,8 @@ export function ConfirmDialog({
           </DialogHeader>
           {children}
           <DialogFooter>
-            <CancelButton />
-            <Button type="submit" variant={destructive ? 'destructive' : 'default'} disabled={!canConfirm || pending}>
+            <CancelButton className={tap} />
+            <Button type="submit" variant={destructive ? 'destructive' : 'default'} disabled={!canConfirm || pending} className={tap}>
               {pending ? pendingLabel : confirmLabel}
             </Button>
           </DialogFooter>

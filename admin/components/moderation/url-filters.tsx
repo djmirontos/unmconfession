@@ -6,6 +6,7 @@ import { useEffect, useId, useState, useTransition } from 'react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 // Filters live in the URL so the list is rendered on the server and links can be shared.
 // No personal data goes in the URL (nickname or text search only, never an email).
@@ -26,7 +27,18 @@ function useSetParam() {
 }
 
 /** Text search, applied 350 ms after typing stops. */
-export function SearchBox({ name = 'q', label, placeholder }: { name?: string; label: string; placeholder: string }) {
+export function SearchBox({
+  name = 'q',
+  label,
+  placeholder,
+  className,
+}: {
+  name?: string;
+  label: string;
+  placeholder: string;
+  /** Extra classes for the wrapper (e.g. a narrower minimum width next to a button). */
+  className?: string;
+}) {
   const { value, set, pending } = useSetParam();
   const [text, setText] = useState(value(name));
   const id = useId();
@@ -39,7 +51,7 @@ export function SearchBox({ name = 'q', label, placeholder }: { name?: string; l
   });
 
   return (
-    <div className="min-w-56 flex-1 space-y-1.5">
+    <div className={cn('min-w-56 flex-1 space-y-1.5', className)}>
       <Label htmlFor={id}>{label}</Label>
       <div className="relative">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
@@ -50,7 +62,7 @@ export function SearchBox({ name = 'q', label, placeholder }: { name?: string; l
           maxLength={100}
           onChange={(e) => setText(e.target.value)}
           placeholder={placeholder}
-          className="pl-8"
+          className="pl-8 max-md:h-11"
           aria-busy={pending}
         />
       </div>
@@ -76,7 +88,8 @@ export function SelectFilter({
         id={id}
         value={value(name)}
         onChange={(e) => set(name, e.target.value || null)}
-        className="h-8 w-full rounded-lg border border-input bg-card px-2.5 text-sm focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        // Phones: 44 px tall and 16 px text (smaller text makes iOS zoom in on focus).
+        className="h-11 w-full rounded-lg border border-input bg-card px-2.5 text-base focus-visible:border-ring focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 md:h-8 md:text-sm"
       >
         <option value="">All</option>
         {options.map((o) => (

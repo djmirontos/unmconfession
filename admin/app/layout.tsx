@@ -18,6 +18,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  // The on-screen keyboard shrinks the layout (Android), so sticky dialog footers stay above it.
+  // Zoom stays allowed; inputs use 16 px text on phones so iOS does not zoom on focus.
+  interactiveWidget: 'resizes-content',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#03224b' },
     { media: '(prefers-color-scheme: dark)', color: '#061a38' },

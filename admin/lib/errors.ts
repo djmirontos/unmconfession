@@ -37,6 +37,12 @@ const MESSAGES: Record<string, string> = {
   no_user_with_email: 'No user with that email.',
   confirm_mismatch: 'Type the nickname exactly as shown to confirm.',
   identity_unavailable: 'This account has no sign-in record (it may have been deleted).',
+  // Keywords
+  invalid_regex: 'This regular expression is not valid.',
+  keyword_exists: 'That term already exists for this match type.',
+  keyword_invalid: 'Invalid keyword settings.',
+  keyword_term_invalid: 'Enter a term of 1 to 200 characters.',
+  keyword_matches_everything: 'This pattern would match almost everything and hold all content.',
   // Fallbacks
   invalid_input: 'Check the form and try again.',
   network: 'Could not reach the server. Check your connection and try again.',
@@ -61,6 +67,18 @@ const AUTH_CODES: Record<string, string> = {
   session_expired: 'session_missing',
   refresh_token_not_found: 'session_missing',
 };
+
+/**
+ * Writes to public.keywords: the unique index on (lower(term), match_type) and the table's check
+ * constraints get keyword wording; invalid_regex (keywords_validate) and the rest map as usual.
+ */
+export function keywordErrorCode(error: unknown): string {
+  const pgCode = field(error, 'code');
+  const message = field(error, 'message') ?? '';
+  if (pgCode === '23505' && /keywords_term_key/.test(message)) return 'keyword_exists';
+  if (pgCode === '23514') return 'keyword_invalid';
+  return codeFromError(error);
+}
 
 /** Rename-specific wording: a deleted account explains that its nickname cannot change. */
 export function renameErrorCode(code: string): string {

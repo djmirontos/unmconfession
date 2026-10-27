@@ -1921,6 +1921,7 @@ export type Database = {
         Args: {
           p_after_id?: string
           p_after_ts?: string
+          p_author?: string
           p_limit?: number
           p_search?: string
           p_status?: Database["public"]["Enums"]["content_status"]

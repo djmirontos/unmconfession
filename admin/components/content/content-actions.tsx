@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { editPublished, removePublished, restoreRemoved } from '@/app/(panel)/content/actions';
 import { ConfirmDialog, EditDialog, ReasonDialog } from '@/components/moderation/dialogs';
 import { Button } from '@/components/ui/button';
+import { contentActions } from '@/lib/moderation/availability';
 import type { ActionResult } from '@/lib/result';
 import { BODY_MAX, type ContentType } from '@/lib/review/schemas';
 
@@ -26,9 +27,7 @@ export function ContentActions({ type, id, body, status, deletedByAuthor, cascad
   const [pending, startTransition] = useTransition();
   const busy = useRef(false);
   const [dialog, setDialog] = useState<'remove' | 'restore' | 'edit' | null>(null);
-  const published = status === 'published';
-  const restorable = (status === 'removed' || status === 'rejected') && !deletedByAuthor;
-  const editable = published && (type === 'post' || type === 'comment');
+  const { remove: published, edit: editable, restore: restorable, deletedNote } = contentActions({ type, status, deletedByAuthor });
 
   const run = <T,>(call: () => Promise<ActionResult<T>>, message: (data: T) => string) => {
     if (busy.current) return;
@@ -50,9 +49,7 @@ export function ContentActions({ type, id, body, status, deletedByAuthor, cascad
   };
 
   if (!published && !restorable) {
-    return deletedByAuthor ? (
-      <p className="text-sm text-muted-foreground">The author deleted this item, so it cannot be restored.</p>
-    ) : null;
+    return deletedNote ? <p className="text-sm text-muted-foreground">Deleted by author</p> : null;
   }
 
   return (

@@ -29,6 +29,9 @@ const MESSAGES: Record<string, string> = {
   approve_failed_after_edit: 'The edit was saved, but approving failed. Try approving again.',
   // Reports, content, users
   cannot_restore_deleted: 'The author deleted this item, so it cannot be restored.',
+  deleted_by_author: 'The author deleted this themselves, so it cannot be restored.',
+  // admin_set_nickname raises account_deleted; renameUser turns it into this, so other actions keep the generic text.
+  nickname_account_deleted: 'This account was deleted, so its nickname cannot be changed.',
   nickname_invalid: 'Use 3 to 20 letters, digits, underscores or dots.',
   nickname_taken: 'That nickname is already taken.',
   no_user_with_email: 'No user with that email.',
@@ -58,6 +61,11 @@ const AUTH_CODES: Record<string, string> = {
   session_expired: 'session_missing',
   refresh_token_not_found: 'session_missing',
 };
+
+/** Rename-specific wording: a deleted account explains that its nickname cannot change. */
+export function renameErrorCode(code: string): string {
+  return code === 'account_deleted' ? 'nickname_account_deleted' : code;
+}
 
 export function messageFor(code: string): string {
   return MESSAGES[code] ?? MESSAGES.unknown;

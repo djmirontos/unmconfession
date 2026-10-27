@@ -29,6 +29,8 @@ export const contentFiltersSchema = z.object({
   type: contentTypeSchema.optional().catch(undefined),
   status: z.enum(CONTENT_STATUSES).optional().catch(undefined),
   q: z.string().trim().max(100).optional().catch(undefined),
+  /** One user's content (the user page); an id only, never an email. */
+  author: z.uuid().optional().catch(undefined),
 });
 
 export const userFiltersSchema = z.object({

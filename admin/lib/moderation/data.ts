@@ -2,6 +2,7 @@ import 'server-only';
 
 import { codeFromError } from '@/lib/errors';
 import { formatAgo, formatExact } from '@/lib/format';
+import { type ContentFilters, contentListArgs } from '@/lib/moderation/content-args';
 import { moderationActionLabel, reportReasonLabel } from '@/lib/moderation/labels';
 import type { KeysetCursor } from '@/lib/moderation/schemas';
 import { imageCount } from '@/lib/review/content';
@@ -147,17 +148,11 @@ export type ContentListRow = {
   images: number;
 };
 
-export type ContentFilters = { type?: ContentType; status?: Enums['content_status']; q?: string };
+export type { ContentFilters };
 
 export async function fetchContentPage(filters: ContentFilters, cursor?: KeysetCursor): Promise<Page<ContentListRow>> {
   const supabase = await createClient();
-  const { data, error } = await supabase.rpc('mod_list_content', {
-    p_limit: PAGE,
-    ...(filters.type ? { p_type: filters.type } : {}),
-    ...(filters.status ? { p_status: filters.status } : {}),
-    ...(filters.q ? { p_search: filters.q } : {}),
-    ...after(cursor),
-  });
+  const { data, error } = await supabase.rpc('mod_list_content', contentListArgs(filters, PAGE, cursor));
   if (error) fail(error);
   return page(
     data ?? [],

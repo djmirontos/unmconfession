@@ -3,8 +3,9 @@ import { fileURLToPath } from 'node:url';
 
 import { describe, expect, it, vi } from 'vitest';
 
-import { codeFromError, messageFor } from '@/lib/errors';
-import { isActivelySuspended, type TargetUser, userActions, type Viewer } from '@/lib/moderation/availability';
+import { codeFromError, messageFor, renameErrorCode } from '@/lib/errors';
+import { contentActions, isActivelySuspended, type TargetUser, userActions, type Viewer } from '@/lib/moderation/availability';
+import { contentListArgs } from '@/lib/moderation/content-args';
 import { moderationActionLabel, reportReasonLabel } from '@/lib/moderation/labels';
 import { describeRemoveFlow, describeResolve, removeThenResolve, resolveEach } from '@/lib/moderation/resolve';
 import {
@@ -326,6 +327,66 @@ describe('error mapping for the moderation RPCs', () => {
     expect(reportReasonLabel('prohibited_item')).toBe('Prohibited item');
     expect(reportReasonLabel('weird')).toBe('weird');
     expect(moderationActionLabel('restore_user')).toBe('Account restored');
+  });
+});
+
+// ------------------------------------------------------------ Module 7d.3
+
+describe('content by author (mod_list_content p_author)', () => {
+  it('passes the author through with the other filters and the cursor', () => {
+    const cursor = { ts: '2026-10-27T08:00:00+00:00', id: U2 };
+    expect(contentListArgs({ author: U1, type: 'comment', status: 'removed' }, 30, cursor)).toEqual({
+      p_limit: 30,
+      p_type: 'comment',
+      p_status: 'removed',
+      p_author: U1,
+      p_after_ts: cursor.ts,
+      p_after_id: U2,
+    });
+  });
+  it('leaves p_author out when no author is set (the Content page)', () => {
+    expect(contentListArgs({ q: '#12' }, 30)).toEqual({ p_limit: 30, p_search: '#12' });
+  });
+  it('the filter schema keeps a valid author id and drops anything else', () => {
+    expect(contentFiltersSchema.parse({ author: U1 }).author).toBe(U1);
+    expect(contentFiltersSchema.parse({ author: 'someone@example.invalid' }).author).toBeUndefined();
+  });
+});
+
+describe('7d.2 error codes', () => {
+  it('deleted_by_author (mod_review restore) has its own message', () => {
+    expect(codeFromError({ code: 'P0001', message: 'deleted_by_author' })).toBe('deleted_by_author');
+    expect(messageFor('deleted_by_author')).toBe('The author deleted this themselves, so it cannot be restored.');
+  });
+  it('account_deleted from admin_set_nickname gets the nickname wording; elsewhere it stays generic', () => {
+    expect(renameErrorCode(codeFromError({ code: 'P0001', message: 'account_deleted' }))).toBe('nickname_account_deleted');
+    expect(messageFor('nickname_account_deleted')).toBe('This account was deleted, so its nickname cannot be changed.');
+    expect(messageFor('account_deleted')).toBe('This account has been deleted.');
+    expect(renameErrorCode('nickname_taken')).toBe('nickname_taken');
+  });
+});
+
+describe('content actions availability', () => {
+  it('offers Restore for a removed or rejected item the author did not delete', () => {
+    expect(contentActions({ type: 'post', status: 'removed', deletedByAuthor: false })).toMatchObject({ restore: true, deletedNote: false });
+    expect(contentActions({ type: 'listing', status: 'rejected', deletedByAuthor: false })).toMatchObject({ restore: true });
+  });
+  it('hides Restore and shows "Deleted by author" when deleted_at is set', () => {
+    expect(contentActions({ type: 'comment', status: 'removed', deletedByAuthor: true })).toEqual({
+      remove: false,
+      edit: false,
+      restore: false,
+      deletedNote: true,
+    });
+  });
+  it('published items: Remove, and Edit for posts and comments only', () => {
+    expect(contentActions({ type: 'post', status: 'published', deletedByAuthor: false })).toMatchObject({ remove: true, edit: true, restore: false });
+    expect(contentActions({ type: 'listing', status: 'published', deletedByAuthor: false })).toMatchObject({ remove: true, edit: false });
+  });
+  it('the nickname control is hidden for a deleted account', () => {
+    const deleted: TargetUser = { id: 'gone', role: 'user', status: 'active', suspendedUntil: null, deleted: true };
+    expect(userActions({ id: 'admin-1', isAdmin: true }, deleted, NOW).rename).toBe(false);
+    expect(userActions({ id: 'admin-1', isAdmin: true }, { ...deleted, deleted: false }, NOW).rename).toBe(true);
   });
 });
 

@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { requireAdmin, requireStaff } from '@/lib/auth';
-import { codeFromError } from '@/lib/errors';
+import { codeFromError, renameErrorCode } from '@/lib/errors';
 import { formatExact } from '@/lib/format';
 import { fetchUser, fetchUsersPage, type Page, type UserRow } from '@/lib/moderation/data';
 import { refreshPanel } from '@/lib/moderation/mutations';
@@ -101,13 +101,13 @@ export async function renameUser(input: unknown): Promise<ActionResult> {
   await requireAdmin();
   const parsed = nicknameSchema.safeParse(input);
   if (!parsed.success) return fail('nickname_invalid');
-  // admin_set_nickname does not check deleted accounts itself.
+  // Checked here for a clear message before the call; admin_set_nickname refuses deleted accounts too.
   const target = await fetchUser(parsed.data.user).catch(() => null);
   if (!target) return fail('not_found');
-  if (target.deleted) return fail('account_deleted');
+  if (target.deleted) return fail(renameErrorCode('account_deleted'));
   const supabase = await createClient();
   const { error } = await supabase.rpc('admin_set_nickname', { p_user: parsed.data.user, p_nickname: parsed.data.nickname });
-  if (error) return fail(codeFromError(error));
+  if (error) return fail(renameErrorCode(codeFromError(error)));
   refreshPanel();
   return ok(undefined);
 }

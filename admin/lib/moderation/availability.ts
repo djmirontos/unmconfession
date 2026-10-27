@@ -31,6 +31,28 @@ const NONE: UserActions = {
   deleteAccount: false,
 };
 
+export type ContentActionState = { type: 'post' | 'comment' | 'listing'; status: string; deletedByAuthor: boolean };
+
+export type ContentActionSet = {
+  remove: boolean;
+  edit: boolean;
+  restore: boolean;
+  /** Show "Deleted by author" where Restore would be (mod_review refuses with deleted_by_author). */
+  deletedNote: boolean;
+};
+
+/** Which content buttons the panel offers. Mirrors mod_review / mod_edit_content; the database still decides. */
+export function contentActions({ type, status, deletedByAuthor }: ContentActionState): ContentActionSet {
+  const published = status === 'published';
+  const closed = status === 'removed' || status === 'rejected';
+  return {
+    remove: published,
+    edit: published && (type === 'post' || type === 'comment'),
+    restore: closed && !deletedByAuthor,
+    deletedNote: deletedByAuthor && !published,
+  };
+}
+
 /** A suspension still in force (no end date counts as in force). */
 export function isActivelySuspended(status: TargetUser['status'], until: string | null, now: number): boolean {
   return status === 'suspended' && (until === null || new Date(until).getTime() > now);

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
 
 import { HistoryList } from '@/components/moderation/history-list';
 import { AccountStatusBadge } from '@/components/moderation/status-badges';
@@ -10,10 +11,11 @@ import { RoleBadge } from '@/components/panel/role-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UserActions } from '@/components/users/user-actions';
+import { UserContent, UserContentFilters, UserContentSkeleton } from '@/components/users/user-content';
 import { requireStaff } from '@/lib/auth';
 import { userActions } from '@/lib/moderation/availability';
 import { fetchHistory, fetchUser, type HistoryQuery } from '@/lib/moderation/data';
-import { userIdSchema } from '@/lib/moderation/schemas';
+import { contentFiltersSchema, userIdSchema } from '@/lib/moderation/schemas';
 import { suspensionLabel } from '@/lib/moderation/suspension';
 import { requestNow } from '@/lib/request-time';
 
@@ -28,10 +30,16 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-export default async function UserPage({ params }: PageProps<'/users/[id]'>) {
+const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+
+export default async function UserPage({ params, searchParams }: PageProps<'/users/[id]'>) {
   const staff = await requireStaff();
   const id = userIdSchema.safeParse((await params).id);
   if (!id.success) notFound();
+  const search = await searchParams;
+  // Type and status from the URL; the author is always this user.
+  const { type, status } = contentFiltersSchema.parse({ type: one(search.type), status: one(search.status) });
+  const contentFilters = { type, status, author: id.data };
 
   const query: HistoryQuery = { kind: 'user', user: id.data };
   const [user, history] = await Promise.all([fetchUser(id.data), fetchHistory(query)]);
@@ -99,6 +107,20 @@ export default async function UserPage({ params }: PageProps<'/users/[id]'>) {
                   available={available}
                 />
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>
+                <h2 className="text-base">Content by this user</h2>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <UserContentFilters />
+              <Suspense key={JSON.stringify(contentFilters)} fallback={<UserContentSkeleton />}>
+                <UserContent filters={contentFilters} />
+              </Suspense>
             </CardContent>
           </Card>
         </div>

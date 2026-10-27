@@ -989,3 +989,7 @@ The URLs come from `PLAY_STORE_URL` and `APK_RELEASES_URL` in `site/lib/site.ts`
 **Verified:** typecheck and lint pass in `mobile/` and `admin/`; mobile tests 5 (redact) + 11 (share) + 8 (version) + 9 (announcements) pass; admin 353 tests (16 files) and `next build` pass. Not checked on a device.
 
 **V2 backlog:** remember closed announcements per account instead of per device.
+
+## Module 8b-4: the UNM seal is the default app logo (2026-10-27)
+
+`AppLogo` (Feed header) showed a chat-bubble icon whenever no logo was uploaded in the panel (`app_settings.logo_path` null). It now shows the bundled seal (`assets/branding/splash-icon.png`) on a white disc with a hairline ring, through a new shared `components/brand/Seal.tsx` that `ForceUpdateGate` also uses (same 104 px look as before). An uploaded logo still takes priority; the seal stays underneath while it loads and comes back if it fails, so there is no gap and no swap when nothing is uploaded. Size, layout and the header's accessibility label are unchanged; the seal is decorative there because the app name sits next to it. The other chat-bubble icons in the app are functional (comment buttons, comment counts, empty states, the comment notification badge) and stay. JS only, no new tests (no pure helper). Verified: typecheck, lint and all mobile tests (5 + 11 + 8 + 9) pass. Not checked on a device.

@@ -33,7 +33,14 @@ Types: `npm run gen:types` (same CLI command as mobile; keep `mobile/types/datab
 | `/review` | staff | Pending posts, comments and listings, oldest first; filter by type; Load more |
 | `/review/[type]/[id]` | staff | One item: full text with the held keyword marked, images (click to zoom), author status, approve / reject / edit and approve, previous / next, shortcuts A R E ← → |
 | `/review/next` | staff | Redirects to the next pending item after an action (wraps to the oldest; back to the list when empty) |
-| `/reports`, `/content`, `/users`, `/keywords`, `/log` | staff | Placeholders (modules 7d–7f) |
+| `/reports` | staff | Reported items grouped per item, oldest first report first; type chips; Load more |
+| `/reports/[type]/[id]` | staff | The item, every report on it, and Remove content / Mark handled / Dismiss reports / Edit content |
+| `/reports/next` | staff | Redirects to the next reported item after one is handled |
+| `/content` | staff | Browse and search all content (type, status, text or `#number`); Load more |
+| `/content/[type]/[id]` | staff | The item, its moderation history (original text of edits), Remove / Edit / Restore |
+| `/users` | staff | Search by nickname, status and role filters, deleted toggle; admins also find by email (audited) |
+| `/users/[id]` | staff | Account details and history; suspend / ban / restore; admins: role, rename, reveal email (audited), delete restricted account |
+| `/keywords`, `/log` | staff | Placeholders (modules 7e–7f) |
 | `/audit` | admin | Placeholder |
 | `/403` | anyone | No access |
 

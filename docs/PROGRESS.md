@@ -693,3 +693,34 @@
 **Verified:** typecheck, lint, tests and `next build` pass with no warnings. Not tested against live data.
 
 **Limits:** `mod_get_queue` pages by `created_at` only, so two items with the same microsecond at a page boundary could be skipped (very unlikely). For regex keywords (phone numbers), `matched_term` is the pattern, so nothing is highlighted. Filters apply to loaded pages, so a filtered view may need Load more to reach older items of that type.
+
+## Module 7d: reports, content and users (2026-10-27)
+
+**Database facts the UI relies on (read from the migrations):**
+- `mod_review('remove'|'reject')` itself marks every open report on the item `actioned`, writes `moderation_actions`, and notifies the author (`content_removed` / `content_rejected` with the reason). `remove` needs status published. `restore` needs removed or rejected, publishes again (the stamp trigger sets `published_at` and a post number if missing), clears `reject_reason`, and sends the author `content_approved`. It does not check `deleted_at`.
+- `comments_cascade_children`: removing or rejecting a top-level comment sets its published and pending replies to removed (and drops their holds), with no log entry or notification for those replies. Nothing reverses this on restore.
+- `mod_resolve_report` resolves one open report and raises `not_found` when the report is already resolved.
+- `admin_set_nickname` does not check `deleted_at` or reserved/flagged words. `admin_set_role` allows changing another admin.
+
+**Pages:**
+- `/reports`: list (type chips, Load more by `(first_reported_at, id)`).
+- `/reports/[type]/[id]`: content view, all reports, and Remove content (reason list + note → `mod_review remove`, then resolve the reports still open), Mark handled, Dismiss reports, Edit (reports stay open). A pending item shows a banner to the review page; removed or rejected items keep only the resolve actions. Reports whose content was purged still show and can be resolved. Then `/reports/next` picks the next item (same tested pick function as the review queue), or "No more reports".
+- `/content`: type, status and debounced text search in the URL, rendered on the server, Load more by `(created_at, id)`.
+- `/content/[type]/[id]`: content view, moderation history (original text of edits in a disclosure), Remove / Edit / Restore by status. No Restore for author-deleted items. Warning on restoring a top-level comment: its cascaded replies stay removed.
+- `/users`: nickname search, status and role filters, "Show deleted accounts", initial avatar. Admins get Find by email (form POST, never in the URL; audited; zero rows → "No user with that email"; success → the user page).
+- `/users/[id]`: details, history (`p_subject_user`), Suspend (1 / 3 / 7 / 30 days or a custom Manila time → UTC, future only, reason 3–300), Ban (reason), Restore. Admins: Change role (with one-line role help), Rename, Reveal email and sign-in details (audited; kept only in the page state, Hide button), Delete account (banned or actively suspended, not admin, not self; reason ≤ 300 plus the typed nickname, checked again on the server). Deleted accounts show "Deleted user", the stored reason and no actions.
+- Sidebar: count badges for Review queue and Reports from `mod_dashboard` (cached per request, shared with the dashboard, hidden at zero or on error).
+
+**Refactor:** shared `ContentView`, `ReasonDialog` / `EditDialog` / `ConfirmDialog`, status badges, history list, URL filters, keyset hook and skeletons; the review detail page now uses them. The 7c behaviour is unchanged.
+
+**Tests (208):** the multi-step flows (remove then resolve, already removed, partial, reports already handled), next-report pick, suspension dates (presets, Manila → UTC, past rejected, "Suspension ended"), the availability matrix, every new schema, the new error codes (plus the nickname unique-index race), labels, and that every 7d page and action calls the right guard.
+
+**Verified:** typecheck, lint, tests, check:secrets and `next build` pass with no warnings. Not tested against live data.
+
+**Suggested database additions (not built):**
+- An author filter on `mod_list_content` (a user's own posts, comments and listings on their page).
+- `mod_review('restore')` refusing items with `deleted_at` (the panel already hides Restore for them).
+- `admin_set_nickname` refusing deleted accounts and applying the reserved/flagged-word rules.
+- A way to restore the replies a top-level comment removal cascaded, or log them in `moderation_actions`.
+- A "mute" status (the PRD lists mute; the schema has active, suspended and banned only).
+- A last-admin guard on `admin_set_role` (two admins can demote each other).

@@ -882,3 +882,47 @@ Next's file conventions add the `<link>` tags. The old `app/icon.svg` (a placeho
 **UI:** `BrandMark` (login, authenticator code and enrolment pages, 403, sidebar, phone menu sheet) shows the seal instead of the placeholder SVG. Its size is unchanged (36 px), the image has width and height set, and it is `aria-hidden` because the name text sits next to it. A faint white ring keeps the seal's navy edge visible on the navy sidebar and in dark mode. The phone top bar has no logo today and is unchanged. The `themeColor` viewport entry already existed and is unchanged.
 
 **Verified:** typecheck, lint, 327 tests and `next build` pass; the build emits `/icon.png`, `/apple-icon.png` and `/favicon.ico`. `next start` serves all three with status 200, and the login page head links them. No new tests (no helper logic).
+
+## Module 7g.1: public website, unm.klasmeyt.com (2026-10-27)
+
+**New app `site/`:** a static Next.js site, separate install like `admin/`, on the same Next 16.4.3, React 19.3.1, TypeScript 6 and Tailwind 4.3.3 versions. It adds no dependency that `admin/` does not already use. It has no database, Supabase, sign-in, cookies, analytics, environment variables or external requests, and every page is prerendered.
+
+**Pages:**
+- `/`: description from the PRD, and "coming soon to Google Play" with no store link.
+- `/privacy`, `/terms`, `/rules`: the app's `DOCS` text word for word, in `site/content/legal.ts`. A check confirms it is identical; see `site/README.md`.
+- `/delete-account`: the in-app steps (Profile tab → Delete account → type the nickname → Delete my account → Delete), what is erased and what stays (checked against `delete_my_account`), and an email request to support@klasmeyt.com with a prefilled subject.
+- A not-found page, and a footer on every page.
+
+**SEO:** `metadataBase` `https://unm.klasmeyt.com`; a title, description, canonical URL and Open Graph tags (with the seal) per page; `robots.txt` allows all; `sitemap.xml` lists the five pages. The icons are copies of the admin panel's; theme-color is navy.
+
+**Headers:** CSP (self only, `frame-ancestors 'none'`), nosniff, `strict-origin-when-cross-origin`, `X-Frame-Options: DENY`, and a Permissions-Policy denying the camera, microphone and geolocation. `poweredByHeader` is off. The CSP's `script-src` allows `'unsafe-inline'`: static pages cannot carry a per-request nonce, and Next.js's hydration scripts are inline.
+
+**Docs:** `site/README.md` (running, editing the legal text, keeping it in sync with the app) and `docs/SITE_DEPLOY.md` (Vercel with Root Directory `site`, the GoDaddy CNAME `unm`, how to verify and how to roll back).
+
+**Verified:** typecheck, lint and `next build` pass in `site/` (all routes static). A local `next start` returns 200 for the five pages, `robots.txt`, `sitemap.xml` and the icons, and 404 for a missing page. It sends the headers above, no cookies and no `X-Powered-By`. Not checked in a browser at 360 px.
+
+**Left:**
+- Deploy the site and enter `/delete-account` in Play Console.
+- Decide a response time for email deletion requests (none is stated anywhere; the page says "as soon as we can").
+- The legal texts have no date, so "Last updated: 27 October 2026" is the site's first publication date.
+- Replace the app's `FEEDBACK_EMAIL` placeholder.
+
+**Wording (7g.2):** the home page text and its meta and Open Graph descriptions say "members" instead of "UNM students". The legal text is unchanged and still identical to the app.
+
+## Module 7g.3: "members" wording (2026-10-27)
+
+Updated wording: three in-app texts no longer mention the campus (the Buy & Sell notice, the poll question placeholder and the empty Lost & Found message), and the CLAUDE.md and PRD overviews say "members" instead of "UNM students". The legal text is unchanged. The in-app changes are JS only: they reach users with an EAS Update on the matching channel or with the next build.
+
+## Module 7g.5: "Get the app" buttons and the deletion response time (2026-10-27)
+
+**Download buttons:** the home page shows two:
+- **Google Play:** Google's official badge, `site/public/badges/google-play-badge.svg`, unmodified. The file was renamed from `.svg.svg`; its contents are unchanged.
+- **GitHub:** "Download APK on GitHub" with the official Octicon `mark-github` path, inline in `components/brand/github-mark.tsx`. The path was copied from `@primer/octicons` 19.42.0, and the package was uninstalled again, so there is no new dependency.
+
+The URLs come from `PLAY_STORE_URL` and `APK_RELEASES_URL` in `site/lib/site.ts`. Both are `null` for now. While null, a button is dimmed, is not a link, is `aria-disabled` and has the caption "Coming soon". When set, it becomes a link that opens in a new tab, and the GitHub install note appears. The buttons stack on phones and sit side by side from `sm`. The badge is 56 px tall at its own aspect ratio.
+
+**Deletion response time:** `/delete-account` now says "We process deletion requests within 30 days, usually much sooner."
+
+**Docs:** a "Download links" section in `site/README.md` and `docs/SITE_DEPLOY.md`.
+
+**Verified:** typecheck, lint and `next build` pass, and the legal text is still identical to the app. A local `next start` gives 200 for `/`, `/delete-account` and the badge. The home page shows two "Coming soon" captions and no github.com or play.google.com links, and the headers are unchanged. With test URLs set temporarily (then reverted and rebuilt), both buttons became new-tab links with `noopener noreferrer`, the captions disappeared and the install note appeared.

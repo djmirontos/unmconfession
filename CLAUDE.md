@@ -1,6 +1,6 @@
 # UNM Freedom Confessions
 
-A guest-first mobile app (Expo / React Native, Android first) for UNM students that replaces the school's Facebook confessions group. Anyone can read the feed; signed-in members post confessions, shoutouts and polls under a unique public nickname, react, comment, vote, and trade in Buy & Sell / Lost & Found. Moderators and admins keep it safe through a keyword hold, a moderation queue, reports and audit-logged identity lookups. Backend is Supabase (Postgres + RLS, RPCs, Realtime, Storage).
+A guest-first mobile app (Expo / React Native, Android first) for its members that replaces the school's Facebook confessions group. Anyone can read the feed; signed-in members post confessions, shoutouts and polls under a unique public nickname, react, comment, vote, and trade in Buy & Sell / Lost & Found. Moderators and admins keep it safe through a keyword hold, a moderation queue, reports and audit-logged identity lookups. Backend is Supabase (Postgres + RLS, RPCs, Realtime, Storage).
 
 ## Source of truth
 

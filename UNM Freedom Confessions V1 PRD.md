@@ -4,7 +4,7 @@ Oct 21, 2026 · @Daryl John
 
 ## Overview
 
-UNM Freedom Confessions becomes a mobile app so UNM students can post under a nickname, react, comment, run polls and trade items, with moderators keeping it safe. V1 is for one school (UNM) and replaces the slow, hard-to-moderate Facebook group workflow.
+UNM Freedom Confessions becomes a mobile app so members can post under a nickname, react, comment, run polls and trade items, with moderators keeping it safe. V1 serves one school's community (UNM) and replaces the slow, hard-to-moderate Facebook group workflow.
 
 **Problems with the Facebook group today**
 

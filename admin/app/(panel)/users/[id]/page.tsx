@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 
 import { HistoryList } from '@/components/moderation/history-list';
+import { TAP_LINK_BELOW_MD } from '@/components/moderation/mobile-dialog';
 import { AccountStatusBadge } from '@/components/moderation/status-badges';
 import { UserAvatar } from '@/components/moderation/user-avatar';
 import { RoleBadge } from '@/components/panel/role-badge';
@@ -130,6 +131,12 @@ export default async function UserPage({ params, searchParams }: PageProps<'/use
             <CardTitle>
               <h2 className="text-base">Moderation history</h2>
             </CardTitle>
+            <Link
+              href={`/log?subject=${user.id}`}
+              className={`text-sm font-medium text-primary underline-offset-4 hover:underline ${TAP_LINK_BELOW_MD}`}
+            >
+              Open in the moderation log
+            </Link>
           </CardHeader>
           <CardContent>
             <HistoryList query={query} initial={history} showTarget />

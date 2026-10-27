@@ -1,6 +1,7 @@
 // Pure builders for the keywords table: the filters → query steps, and the rows written.
 
 import type { KeywordFilters, KeywordInput } from '@/lib/keywords/schemas';
+import { withoutParams } from '@/lib/url-params';
 
 /** The subset of the Supabase query builder the list uses (so tests can record the calls). */
 export interface KeywordQuery<Q> {
@@ -19,9 +20,7 @@ export function activeFilterCount(filters: KeywordFilters): number {
 
 /** The URL query after "Clear": every sheet filter removed, the search (and anything else) kept. */
 export function clearSheetFilters(query: string): string {
-  const params = new URLSearchParams(query);
-  for (const name of SHEET_FILTERS) params.delete(name);
-  return params.toString();
+  return withoutParams(query, SHEET_FILTERS);
 }
 
 /** "%term%" with LIKE wildcards escaped, so a search for "50%" means the text "50%". */

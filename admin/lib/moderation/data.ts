@@ -1,9 +1,12 @@
 import 'server-only';
 
+import { requireAdmin, requireStaff } from '@/lib/auth';
 import { codeFromError } from '@/lib/errors';
 import { formatAgo, formatExact } from '@/lib/format';
 import { type ContentFilters, contentListArgs } from '@/lib/moderation/content-args';
+import { afterArgs, keysetPage, type Page } from '@/lib/moderation/keyset';
 import { moderationActionLabel, reportReasonLabel } from '@/lib/moderation/labels';
+import { auditActionLabel, auditArgs, auditDetail, LOG_PAGE, type LogFilters, logActionArgs, targetHref, targetTypeLabel, userHref } from '@/lib/moderation/log';
 import type { KeysetCursor } from '@/lib/moderation/schemas';
 import { imageCount } from '@/lib/review/content';
 import { keyOf, pickNextAfterAction, preview, type QueueEntry } from '@/lib/review/queue';
@@ -11,23 +14,20 @@ import type { ContentType } from '@/lib/review/schemas';
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
 
+export type { Page };
+
 type Fn = Database['public']['Functions'];
 type Enums = Database['public']['Enums'];
 
 export const PAGE = 30;
 const WINDOW = 100;
 
-export type Page<Row> = { rows: Row[]; nextCursor: KeysetCursor | null };
-
 function fail(error: unknown): never {
   throw new Error(codeFromError(error));
 }
 
-function page<R, Row>(data: R[], toRow: (r: R) => Row, cursorOf: (r: R) => KeysetCursor, limit: number): Page<Row> {
-  return { rows: data.map(toRow), nextCursor: data.length === limit ? cursorOf(data[data.length - 1]) : null };
-}
-
-const after = (cursor?: KeysetCursor) => (cursor ? { p_after_ts: cursor.ts, p_after_id: cursor.id } : {});
+const page = keysetPage;
+const after = afterArgs;
 
 // ---------------------------------------------------------------- reports
 
@@ -282,4 +282,106 @@ export async function fetchHistory(query: HistoryQuery, cursor?: KeysetCursor): 
     (r) => ({ ts: r.created_at, id: r.id }),
     PAGE,
   );
+}
+
+// ---------------------------------------------------------------- moderation log (/log)
+
+export type LogRow = {
+  id: string;
+  ago: string;
+  exact: string;
+  createdAt: string;
+  actor: string | null;
+  actorHref: string | null;
+  action: string;
+  targetLabel: string;
+  targetHref: string | null;
+  reason: string | null;
+  note: string | null;
+  originalBody: string | null;
+};
+
+/** Every moderation action, newest first. Checks the staff role itself (and the RPC again). */
+export async function fetchLog(filters: LogFilters, cursor?: KeysetCursor): Promise<Page<LogRow>> {
+  await requireStaff();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('mod_get_actions', logActionArgs(filters, cursor));
+  if (error) fail(error);
+  return page(
+    data ?? [],
+    (r) => ({
+      id: r.id,
+      ago: formatAgo(r.created_at),
+      exact: formatExact(r.created_at),
+      createdAt: r.created_at,
+      actor: r.actor_nickname,
+      actorHref: userHref(r.actor_id),
+      action: moderationActionLabel(r.action),
+      targetLabel: targetTypeLabel(r.target_type),
+      targetHref: targetHref(r.target_type, r.target_id),
+      reason: r.reason_code,
+      note: r.note,
+      originalBody: r.original_body,
+    }),
+    (r) => ({ ts: r.created_at, id: r.id }),
+    LOG_PAGE,
+  );
+}
+
+// ---------------------------------------------------------------- audit log (/audit)
+
+export type AuditRow = {
+  id: string;
+  ago: string;
+  exact: string;
+  createdAt: string;
+  admin: string | null;
+  adminHref: string | null;
+  action: string;
+  /** The account the entry is about; null when there is none (an email lookup with no match). */
+  subjectId: string | null;
+  subject: string | null;
+  subjectHref: string | null;
+  targetLabel: string | null;
+  targetHref: string | null;
+  detail: string | null;
+};
+
+/** Admin-only actions and identity lookups, newest first. Admins only (checked here and in the RPC). */
+export async function fetchAudit(cursor?: KeysetCursor): Promise<Page<AuditRow>> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('admin_get_audit', auditArgs(cursor));
+  if (error) fail(error);
+  return page(
+    data ?? [],
+    (r) => ({
+      id: r.id,
+      ago: formatAgo(r.created_at),
+      exact: formatExact(r.created_at),
+      createdAt: r.created_at,
+      admin: r.admin_nickname,
+      adminHref: userHref(r.admin_id),
+      action: auditActionLabel(r.action),
+      subjectId: r.subject_user_id,
+      subject: r.subject_nickname,
+      subjectHref: userHref(r.subject_user_id),
+      targetLabel: r.target_type ? targetTypeLabel(r.target_type) : null,
+      targetHref: targetHref(r.target_type, r.target_id),
+      detail: auditDetail(r.action, r.detail),
+    }),
+    (r) => ({ ts: r.created_at, id: r.id }),
+    LOG_PAGE,
+  );
+}
+
+/** Moderators and admins for the actor filter (up to 30 of each, newest first). */
+export async function fetchStaffOptions(): Promise<{ id: string; nickname: string }[]> {
+  const [mods, admins] = await Promise.all([
+    fetchUsersPage({ role: 'moderator', deleted: false }),
+    fetchUsersPage({ role: 'admin', deleted: false }),
+  ]);
+  return [...admins.rows, ...mods.rows]
+    .flatMap((u) => (u.nickname ? [{ id: u.id, nickname: u.nickname }] : []))
+    .sort((a, b) => a.nickname.localeCompare(b.nickname));
 }

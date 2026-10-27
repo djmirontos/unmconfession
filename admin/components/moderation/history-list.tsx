@@ -26,16 +26,21 @@ export function HistoryList({ query, initial, showTarget = false }: { query: His
             </p>
             {row.reason ? <p>Reason: {row.reason}</p> : null}
             {row.note ? <p className="whitespace-pre-wrap break-words text-muted-foreground">Note: {row.note}</p> : null}
-            {row.originalBody ? (
-              <details className="rounded-md bg-muted px-2 py-1.5">
-                <summary className="cursor-pointer text-xs font-medium">Original text before the edit</summary>
-                <p className="mt-1.5 whitespace-pre-wrap break-words text-xs">{row.originalBody}</p>
-              </details>
-            ) : null}
+            {row.originalBody ? <OriginalBody text={row.originalBody} /> : null}
           </li>
         ))}
       </ol>
       <LoadMore hasMore={hasMore} pending={pending} onClick={loadMore} />
     </div>
+  );
+}
+
+/** The text an edit replaced, collapsed by default (moderation history and the moderation log). */
+export function OriginalBody({ text }: { text: string }) {
+  return (
+    <details className="rounded-md bg-muted px-2 py-1.5">
+      <summary className="cursor-pointer text-xs font-medium">Original text before the edit</summary>
+      <p className="mt-1.5 whitespace-pre-wrap break-words text-xs">{text}</p>
+    </details>
   );
 }

@@ -1,5 +1,6 @@
 import { StatTile, StatTileSkeleton } from '@/components/dashboard/stat-tile';
 import { getDashboard } from '@/lib/dashboard';
+import { DASHBOARD_LINKS as L } from '@/lib/dashboard-links';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -20,24 +21,24 @@ export async function DashboardStats() {
   return (
     <div className="space-y-10">
       <Section title="Pending review">
-        <StatTile label="Posts" value={d.pending_posts} href="/review?filter=post" highlight />
-        <StatTile label="Comments" value={d.pending_comments} href="/review?filter=comment" highlight />
-        <StatTile label="Listings" value={d.pending_listings} href="/review?filter=listing" highlight />
+        <StatTile label="Posts" value={d.pending_posts} href={L.pending_posts} highlight />
+        <StatTile label="Comments" value={d.pending_comments} href={L.pending_comments} highlight />
+        <StatTile label="Listings" value={d.pending_listings} href={L.pending_listings} highlight />
       </Section>
       <Section title="Open reports">
-        <StatTile label="Reported items" value={d.reported_items} href="/reports" highlight />
-        <StatTile label="Reports in total" value={d.open_reports} href="/reports" />
+        <StatTile label="Reported items" value={d.reported_items} href={L.reported_items} highlight />
+        <StatTile label="Reports in total" value={d.open_reports} href={L.open_reports} />
       </Section>
       <Section title="Last 24 hours">
-        <StatTile label="New posts" value={d.posts_24h} href="/content?type=post" />
-        <StatTile label="New comments" value={d.comments_24h} href="/content?type=comment" />
-        <StatTile label="New listings" value={d.listings_24h} href="/content?type=listing" />
-        <StatTile label="New accounts" value={d.new_users_24h} href="/users" />
+        <StatTile label="New posts" value={d.posts_24h} href={L.posts_24h} />
+        <StatTile label="New comments" value={d.comments_24h} href={L.comments_24h} />
+        <StatTile label="New listings" value={d.listings_24h} href={L.listings_24h} />
+        <StatTile label="New accounts" value={d.new_users_24h} href={L.new_users_24h} />
       </Section>
       <Section title="Accounts">
-        <StatTile label="Suspended" value={d.suspended_users} href="/users?status=suspended" />
-        <StatTile label="Banned" value={d.banned_users} href="/users?status=banned" />
-        <StatTile label="Deleted" value={d.deleted_accounts} href="/users?deleted=1" />
+        <StatTile label="Suspended" value={d.suspended_users} href={L.suspended_users} />
+        <StatTile label="Banned" value={d.banned_users} href={L.banned_users} />
+        <StatTile label="Deleted" value={d.deleted_accounts} href={L.deleted_accounts} />
       </Section>
     </div>
   );

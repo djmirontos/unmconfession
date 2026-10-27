@@ -18,6 +18,7 @@ import { useFeed } from '@/hooks/useFeed';
 import { useNewPosts } from '@/hooks/useNewPosts';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
 import { usePostListActions } from '@/hooks/usePostListActions';
+import { useRefetchWhenStale } from '@/hooks/useRefetchWhenStale';
 import { useTheme } from '@/hooks/useTheme';
 import { getErrorMessage } from '@/lib/errors';
 import { logError } from '@/lib/log';
@@ -39,7 +40,9 @@ export function FeedList() {
   const appActive = useAppActive();
   const isFocused = useIsFocused();
   const { query, posts, refreshTop } = useFeed();
-  const announcement = useAnnouncement();
+  const { announcement, close: closeAnnouncement, query: announcementQuery } = useAnnouncement();
+  // Same rule as the lists: refetch on tab focus or return to the foreground, only when stale.
+  useRefetchWhenStale(announcementQuery, true);
   // The reaction picker owns the touch while open; the list must not scroll under it.
   const pickerOpen = usePickerOpen();
   const listRef = useRef<FlashListRef<FeedPost>>(null);
@@ -120,9 +123,10 @@ export function FeedList() {
   const onRefresh = useCallback(async () => {
     setPulling(true);
     clear();
-    await runTopRefresh();
+    // Pull to refresh also reloads the announcement (its failure is silent; the card keeps the last value).
+    await Promise.all([runTopRefresh(), announcementQuery.refetch()]);
     setPulling(false);
-  }, [clear, runTopRefresh]);
+  }, [clear, runTopRefresh, announcementQuery]);
 
   const onPillPress = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: !reduceMotion });
@@ -135,10 +139,10 @@ export function FeedList() {
     () => (
       <View className="gap-3 pb-3">
         {refreshFailed ? <RefreshErrorBanner onRetry={() => void runTopRefresh()} /> : null}
-        {announcement ? <AnnouncementCard announcement={announcement} /> : null}
+        {announcement ? <AnnouncementCard announcement={announcement} onClose={() => closeAnnouncement(announcement.id)} /> : null}
       </View>
     ),
-    [refreshFailed, announcement, runTopRefresh],
+    [refreshFailed, announcement, closeAnnouncement, runTopRefresh],
   );
 
   // First load only: skeletons. Afterwards cached posts stay on screen.

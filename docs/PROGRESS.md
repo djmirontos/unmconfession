@@ -797,3 +797,30 @@
 **Tests (257, 3 new):** `activeFilterCount` and `clearSheetFilters`.
 
 **Verified:** typecheck, lint, tests and check:secrets pass. `next build` and a real-device check were not run. On iOS Safari the keyboard does not resize the dynamic viewport, so the dialog footer may sit under the keyboard there (scrolling the body still works).
+
+## Module 7e.m: mobile pass over the panel pages (2026-10-27)
+
+Layout and dialog behaviour below `md` only (target 390 px, laid out for 360–430 px). No database, action or permission changes. From `md` up the panel looks and behaves as before.
+
+**Shared:**
+- `components/ui/button.tsx`: every size is at least 44 px tall below md (`max-md:min-h-11`), icon sizes 44 x 44 (`max-md:min-w-11`). This covers the top bar (menu, Sign out), "Back" links (`size="sm"`), "Retry" / "Retry approval", Load more, the dialog and sheet close buttons, and the dashboard and auth pages too.
+- `components/ui/alert.tsx`: below md the alert action (Retry buttons) sits under the text at full width instead of over it.
+- `components/moderation/dialogs.tsx`: `ReasonDialog`, `EditDialog` and `ConfirmDialog` share one `DialogForm` frame. Below md it is a bottom sheet: at most 90dvh, the title on top, a scrolling body (description and fields), the buttons in a footer that stays on screen with safe-area padding (stacked full width below sm, side by side from sm). Radix still handles focus, Escape and the close button; the confirm texts are unchanged. This covers Reject / Edit and approve (review), Remove / Edit / Mark handled / Dismiss (reports), Remove / Edit / Restore (content), Suspend / Ban / Restore / Change role / Rename / Delete account (users) and the keyword delete. The opt-in `sheetOnMobile` prop from 7e.1b is gone (every dialog is a sheet now). Reason radio rows are 44 px tall; textareas were already 16 px.
+- `components/moderation/mobile-dialog.ts`: the sheet class sets (`SHEET_*`), `TAP_LINK_BELOW_MD`, `ACTION_GRID` (a wrapping set of buttons that fill their row on phones), `ACTION_BAR_BELOW_MD` (actions pinned to the bottom edge) and the matching page padding (`ACTION_BAR_SPACE_ONE_ROW` / `_TWO_ROWS`). The sheet width is `!important` so a dialog's own `sm:max-w-*` cannot narrow it between 640 and 767 px.
+- Mobile nav sheet links: 44 px tall.
+
+**Per page:**
+- Dashboard: nothing needed beyond the shared button rule.
+- Review queue: the type filter chips are 44 px tall. Previews break long words.
+- Review detail: Approve, Reject and Edit form a bar pinned to the bottom edge (top border, blurred card background, above the safe area); Edit is labelled "Edit…" there. It is the same set of buttons (from md they are inline again via `md:contents`), so there are no duplicate ids and no double submit. Previous / Next get their own full-width row. The keyboard-shortcut hint is hidden below md and on touch screens (`pointer-coarse`). The page has bottom padding for the bar.
+- Reports list: previews break long words. Report detail: Remove, Mark handled, Dismiss and Edit form the pinned bar (two per row); no bar is rendered when there is no action. The pending-item banner link is a 44 px tap target. Both page states have bottom padding for the bar.
+- Content list: previews break long words. Content detail: Remove / Edit / Restore wrap and fill their rows at 44 px; the "Deleted by author" note is unchanged. The banner link, the author link and the open-reports link are 44 px tap targets.
+- Users list: the counts row wraps (fits at 360 px).
+- User detail: the action buttons (both groups) wrap and fill their rows at 44 px; the Suspend preset and Change role radio rows are 44 px tall.
+- Overflow: `ContentView` and the user page grid use `grid-cols-1` (`minmax(0, 1fr)`) so long content cannot widen the column; listing titles and detail values break long words. Images already had `max-w-full` / `w-full`.
+
+**Known limits:** on iOS Safari the keyboard does not resize the dynamic viewport, so a sheet's footer or the pinned bar may sit under the keyboard; this needs a real-device check after deploy. Left under 44 px: the "Original text before the edit" disclosure in the moderation history (a text-sized `<summary>`); the native radio and checkbox circles themselves (their whole row is the 44 px target).
+
+**Tests (286, 26 new in `tests/mobile.test.ts`):** the phone-only helpers contain only `max-md:` classes (plus the desktop spacing they keep), every Button size is 44 px below md with unchanged desktop heights, the review and report actions are a single set of buttons with the bar and page padding, the shortcut hint is hidden on touch screens, and all three moderation dialogs use the shared sheet frame. No existing assertion changed.
+
+**Verified:** typecheck, lint, tests, check:secrets and `next build` pass; the built CSS contains the new classes (`pointer-coarse:hidden`, `md:contents`, `max-md:max-w-none!`, the 90dvh sheet). Not checked in a browser: the panel needs a staff session with TOTP.

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { ContentView } from '@/components/moderation/content-view';
+import { ACTION_BAR_SPACE_ONE_ROW } from '@/components/moderation/mobile-dialog';
 import { contentStatusLabel } from '@/components/moderation/status-badges';
 import { HoldBadge, kindLabel, TypeBadge } from '@/components/review/hold-badge';
 import { ReviewActions } from '@/components/review/review-actions';
@@ -61,7 +62,7 @@ export default async function ReviewItemPage({ params, searchParams }: PageProps
   }).toString()}`;
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${ACTION_BAR_SPACE_ONE_ROW}`}>
       <div className="flex flex-wrap items-center gap-3">
         <Button asChild variant="ghost" size="sm">
           <Link href={back}>

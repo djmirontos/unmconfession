@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { ContentView } from '@/components/moderation/content-view';
+import { ACTION_BAR_SPACE_TWO_ROWS, TAP_LINK_BELOW_MD } from '@/components/moderation/mobile-dialog';
 import { contentStatusLabel } from '@/components/moderation/status-badges';
 import { ReportActions } from '@/components/reports/report-actions';
 import { ReportHistory } from '@/components/reports/report-history';
@@ -41,7 +42,7 @@ export default async function ReportItemPage({ params, searchParams }: PageProps
   // Reports can outlive their content (removed items are purged after the retention period).
   if (!loaded) {
     return (
-      <div className="space-y-6">
+      <div className={`space-y-6 ${ACTION_BAR_SPACE_TWO_ROWS}`}>
         <Button asChild variant="ghost" size="sm">
           <Link href={back}>
             <ArrowLeft aria-hidden="true" /> Reports
@@ -59,7 +60,7 @@ export default async function ReportItemPage({ params, searchParams }: PageProps
   const { item } = loaded;
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${ACTION_BAR_SPACE_TWO_ROWS}`}>
       <div className="flex flex-wrap items-center gap-3">
         <Button asChild variant="ghost" size="sm">
           <Link href={back}>
@@ -78,7 +79,7 @@ export default async function ReportItemPage({ params, searchParams }: PageProps
           <Info />
           <AlertDescription>
             This item is waiting for review.{' '}
-            <Link href={`/review/${type}/${id}`} className="font-medium text-primary underline underline-offset-4">
+            <Link href={`/review/${type}/${id}`} className={`font-medium text-primary underline underline-offset-4 ${TAP_LINK_BELOW_MD}`}>
               Open it in the review queue
             </Link>{' '}
             to approve or reject it.

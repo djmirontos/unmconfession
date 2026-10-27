@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { editPublished, removePublished } from '@/app/(panel)/content/actions';
 import { resolveReports } from '@/app/(panel)/reports/actions';
 import { ConfirmDialog, EditDialog, ReasonDialog } from '@/components/moderation/dialogs';
+import { ACTION_BAR_BELOW_MD, ACTION_GRID } from '@/components/moderation/mobile-dialog';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import type { FlowMessage } from '@/lib/moderation/mutations';
@@ -36,6 +37,7 @@ export function ReportActions({ type, id, body, status, openReports, cascades, n
   const [partial, setPartial] = useState<string | null>(null);
   const published = status === 'published';
   const editable = published && (type === 'post' || type === 'comment');
+  const anyAction = published || openReports > 0 || editable;
 
   /** One request at a time. Finished flows move on; partial ones stay with a retry for the rest. */
   const run = <T,>(call: () => Promise<ActionResult<T>>, onOk: (data: T) => void) => {
@@ -81,28 +83,31 @@ export function ReportActions({ type, id, body, status, openReports, cascades, n
         </Alert>
       ) : null}
 
-      <div className="flex flex-wrap gap-2">
-        {published ? (
-          <Button size="lg" variant="destructive" onClick={() => setDialog('remove')} disabled={pending}>
-            <Trash2 aria-hidden="true" /> Remove content…
-          </Button>
-        ) : null}
-        {openReports > 0 ? (
-          <>
-            <Button size="lg" onClick={() => setDialog('handled')} disabled={pending}>
-              <CheckCheck aria-hidden="true" /> Mark handled…
+      {/* Inline from md; on phones the same buttons are a bar pinned to the bottom edge. */}
+      {anyAction ? (
+        <div className={`${ACTION_GRID} ${ACTION_BAR_BELOW_MD}`}>
+          {published ? (
+            <Button size="lg" variant="destructive" onClick={() => setDialog('remove')} disabled={pending}>
+              <Trash2 aria-hidden="true" /> Remove content…
             </Button>
-            <Button size="lg" variant="outline" onClick={() => setDialog('dismiss')} disabled={pending}>
-              <XCircle aria-hidden="true" /> Dismiss reports…
+          ) : null}
+          {openReports > 0 ? (
+            <>
+              <Button size="lg" onClick={() => setDialog('handled')} disabled={pending}>
+                <CheckCheck aria-hidden="true" /> Mark handled…
+              </Button>
+              <Button size="lg" variant="outline" onClick={() => setDialog('dismiss')} disabled={pending}>
+                <XCircle aria-hidden="true" /> Dismiss reports…
+              </Button>
+            </>
+          ) : null}
+          {editable ? (
+            <Button size="lg" variant="outline" onClick={() => setDialog('edit')} disabled={pending}>
+              <PencilLine aria-hidden="true" /> Edit content…
             </Button>
-          </>
-        ) : null}
-        {editable ? (
-          <Button size="lg" variant="outline" onClick={() => setDialog('edit')} disabled={pending}>
-            <PencilLine aria-hidden="true" /> Edit content…
-          </Button>
-        ) : null}
-      </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <ReasonDialog
         key={dialog === 'remove' ? 'remove-open' : 'remove'}

@@ -23,6 +23,8 @@ export function FilterChips({ active, basePath = '/review' }: { active?: Content
             aria-current={selected ? 'page' : undefined}
             className={cn(
               'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',
+              // Phones: 44 px tall tap target.
+              'max-md:inline-flex max-md:min-h-11 max-md:items-center max-md:px-4',
               'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
               selected ? 'border-primary bg-primary text-primary-foreground' : 'bg-card hover:bg-muted',
             )}

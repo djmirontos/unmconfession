@@ -25,7 +25,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   return (
     <div className="space-y-0.5">
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="text-sm">{children}</dd>
+      <dd className="text-sm break-words">{children}</dd>
     </div>
   );
 }
@@ -75,7 +75,7 @@ export default async function UserPage({ params, searchParams }: PageProps<'/use
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="space-y-6">
           <Card>
             <CardContent>

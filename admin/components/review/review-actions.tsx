@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 import { approveItem, editAndApprove, rejectItem } from '@/app/(panel)/review/actions';
 import { EditDialog, ReasonDialog } from '@/components/moderation/dialogs';
+import { ACTION_BAR_BELOW_MD } from '@/components/moderation/mobile-dialog';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import type { ActionResult } from '@/lib/result';
@@ -98,19 +99,27 @@ export function ReviewActions({ type, id, body, afterActionHref, prevHref, nextH
         </Alert>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-2">
-        <Button size="lg" onClick={approve} disabled={pending} aria-keyshortcuts="A">
-          <Check aria-hidden="true" /> Approve
-        </Button>
-        <Button size="lg" variant="destructive" onClick={() => setRejectOpen(true)} disabled={pending} aria-keyshortcuts="R">
-          <X aria-hidden="true" /> Reject…
-        </Button>
-        {editable ? (
-          <Button size="lg" variant="outline" onClick={() => setEditOpen(true)} disabled={pending} aria-keyshortcuts="E">
-            <PencilLine aria-hidden="true" /> Edit and approve…
+      {/*
+        One set of buttons. From md: a single row (actions, then Previous / Next on the right).
+        On phones the actions become a bar pinned to the bottom edge (md:contents keeps them inline
+        from md) and Previous / Next get their own row.
+      */}
+      <div className="md:flex md:flex-wrap md:items-center md:gap-2">
+        <div className={`grid ${editable ? 'grid-cols-3' : 'grid-cols-2'} gap-2 md:contents ${ACTION_BAR_BELOW_MD}`}>
+          <Button size="lg" onClick={approve} disabled={pending} aria-keyshortcuts="A">
+            <Check aria-hidden="true" /> Approve
           </Button>
-        ) : null}
-        <div className="ml-auto flex gap-2">
+          <Button size="lg" variant="destructive" onClick={() => setRejectOpen(true)} disabled={pending} aria-keyshortcuts="R">
+            <X aria-hidden="true" /> Reject…
+          </Button>
+          {editable ? (
+            <Button size="lg" variant="outline" onClick={() => setEditOpen(true)} disabled={pending} aria-keyshortcuts="E">
+              <PencilLine aria-hidden="true" /> <span className="md:hidden">Edit…</span>
+              <span className="max-md:hidden">Edit and approve…</span>
+            </Button>
+          ) : null}
+        </div>
+        <div className="flex gap-2 max-md:*:flex-1 md:ml-auto">
           <NavButton href={prevHref} label="Previous item" shortcut="ArrowLeft">
             <ChevronLeft aria-hidden="true" /> Previous
           </NavButton>
@@ -120,7 +129,8 @@ export function ReviewActions({ type, id, body, afterActionHref, prevHref, nextH
         </div>
       </div>
 
-      <p className="text-xs text-muted-foreground">
+      {/* Keyboard shortcuts: not shown on phones or touch screens. */}
+      <p className="text-xs text-muted-foreground max-md:hidden pointer-coarse:hidden">
         Shortcuts: <Kbd>A</Kbd> approve · <Kbd>R</Kbd> reject{editable ? <> · <Kbd>E</Kbd> edit</> : null} ·{' '}
         <Kbd>←</Kbd> <Kbd>→</Kbd> previous / next
       </p>

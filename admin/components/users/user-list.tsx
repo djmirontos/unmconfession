@@ -32,7 +32,7 @@ export function UserList({ initial, filters, now }: { initial: Page<UserRow>; fi
                 </p>
                 <p className="text-xs text-muted-foreground">Joined {u.joinedExact}</p>
               </div>
-              <dl className="flex gap-4 text-xs text-muted-foreground">
+              <dl className="flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted-foreground">
                 <Stat label="Posts" value={u.posts} />
                 <Stat label="Comments" value={u.comments} />
                 <Stat label="Listings" value={u.listings} />

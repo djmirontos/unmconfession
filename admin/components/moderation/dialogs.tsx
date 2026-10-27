@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useId, useState } from 'react';
+import { type FormEvent, type ReactNode, useId, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -14,8 +14,15 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SHEET_BELOW_MD, TAP_BELOW_MD } from '@/components/moderation/mobile-dialog';
+import {
+  SHEET_BELOW_MD,
+  SHEET_BODY,
+  SHEET_FOOTER,
+  SHEET_FORM,
+  SHEET_HEADER,
+} from '@/components/moderation/mobile-dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import { REJECT_REASONS, type RejectReason } from '@/lib/review/reasons';
 import { EDIT_REASON_MAX, NOTE_MAX } from '@/lib/review/schemas';
 
@@ -23,13 +30,60 @@ import { EDIT_REASON_MAX, NOTE_MAX } from '@/lib/review/schemas';
 
 type Base = { open: boolean; onOpenChange: (open: boolean) => void; pending: boolean };
 
-function CancelButton({ className }: { className?: string }) {
+function CancelButton() {
   return (
     <DialogClose asChild>
-      <Button type="button" variant="outline" className={className}>
+      <Button type="button" variant="outline">
         Cancel
       </Button>
     </DialogClose>
+  );
+}
+
+/**
+ * The frame every moderation dialog uses: centred from md up; below md a bottom sheet with the
+ * title on top, a scrolling body (description and fields) and the buttons always on screen.
+ */
+function DialogForm({
+  open,
+  onOpenChange,
+  className,
+  title,
+  description,
+  onSubmit,
+  children,
+  footer,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  className?: string;
+  title: string;
+  description: ReactNode;
+  onSubmit: () => void;
+  children?: ReactNode;
+  footer: ReactNode;
+}) {
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    onSubmit();
+  };
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className={cn(SHEET_BELOW_MD, className)}>
+        <form className={SHEET_FORM} onSubmit={submit}>
+          <DialogHeader className={SHEET_HEADER}>
+            <DialogTitle>{title}</DialogTitle>
+          </DialogHeader>
+          <div className={SHEET_BODY}>
+            <DialogDescription asChild>
+              <div className="space-y-2">{description}</div>
+            </DialogDescription>
+            {children}
+          </div>
+          <DialogFooter className={SHEET_FOOTER}>{footer}</DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -55,54 +109,50 @@ export function ReasonDialog({
   const noteId = useId();
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <form
-          className="space-y-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (reason) onConfirm(reason, note.trim());
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
-          </DialogHeader>
-          <fieldset className="space-y-2">
-            <legend className="mb-2 text-sm font-medium">Reason (required)</legend>
-            {REJECT_REASONS.map((r) => (
-              <label
-                key={r.value}
-                className="flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring"
-              >
-                <input
-                  type="radio"
-                  name="reason"
-                  value={r.value}
-                  checked={reason === r.value}
-                  onChange={() => setReason(r.value)}
-                  className="size-4 accent-[var(--primary)]"
-                />
-                {r.label}
-              </label>
-            ))}
-          </fieldset>
-          <div className="space-y-2">
-            <Label htmlFor={noteId}>Note for the moderation log (optional)</Label>
-            <Textarea id={noteId} value={note} maxLength={NOTE_MAX} onChange={(e) => setNote(e.target.value)} rows={3} />
-            <p className="text-right text-xs text-muted-foreground" aria-live="polite">
-              {note.length}/{NOTE_MAX}
-            </p>
-          </div>
-          <DialogFooter>
-            <CancelButton />
-            <Button type="submit" variant="destructive" disabled={!reason || pending}>
-              {pending ? pendingLabel : confirmLabel}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <DialogForm
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      onSubmit={() => {
+        if (reason) onConfirm(reason, note.trim());
+      }}
+      footer={
+        <>
+          <CancelButton />
+          <Button type="submit" variant="destructive" disabled={!reason || pending}>
+            {pending ? pendingLabel : confirmLabel}
+          </Button>
+        </>
+      }
+    >
+      <fieldset className="space-y-2">
+        <legend className="mb-2 text-sm font-medium">Reason (required)</legend>
+        {REJECT_REASONS.map((r) => (
+          <label
+            key={r.value}
+            className="flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm max-md:min-h-11 has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring"
+          >
+            <input
+              type="radio"
+              name="reason"
+              value={r.value}
+              checked={reason === r.value}
+              onChange={() => setReason(r.value)}
+              className="size-4 accent-[var(--primary)]"
+            />
+            {r.label}
+          </label>
+        ))}
+      </fieldset>
+      <div className="space-y-2">
+        <Label htmlFor={noteId}>Note for the moderation log (optional)</Label>
+        <Textarea id={noteId} value={note} maxLength={NOTE_MAX} onChange={(e) => setNote(e.target.value)} rows={3} />
+        <p className="text-right text-xs text-muted-foreground" aria-live="polite">
+          {note.length}/{NOTE_MAX}
+        </p>
+      </div>
+    </DialogForm>
   );
 }
 
@@ -133,56 +183,53 @@ export function EditDialog({
   const valid = length > 0 && length <= max && reason.trim().length > 0;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <form
-          className="space-y-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (valid) onConfirm(body.trim(), reason.trim());
-          }}
+    <DialogForm
+      open={open}
+      onOpenChange={onOpenChange}
+      className="sm:max-w-2xl"
+      title={title}
+      description={description}
+      onSubmit={() => {
+        if (valid) onConfirm(body.trim(), reason.trim());
+      }}
+      footer={
+        <>
+          <CancelButton />
+          <Button type="submit" disabled={!valid || pending}>
+            {pending ? 'Saving…' : confirmLabel}
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-2">
+        <Label htmlFor={bodyId}>Text</Label>
+        <Textarea
+          id={bodyId}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          rows={8}
+          aria-invalid={length === 0 || length > max}
+          aria-describedby={`${bodyId}-count`}
+        />
+        <p
+          id={`${bodyId}-count`}
+          className={`text-right text-xs ${length > max ? 'text-destructive' : 'text-muted-foreground'}`}
+          aria-live="polite"
         >
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor={bodyId}>Text</Label>
-            <Textarea
-              id={bodyId}
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={8}
-              aria-invalid={length === 0 || length > max}
-              aria-describedby={`${bodyId}-count`}
-            />
-            <p
-              id={`${bodyId}-count`}
-              className={`text-right text-xs ${length > max ? 'text-destructive' : 'text-muted-foreground'}`}
-              aria-live="polite"
-            >
-              {length}/{max}
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={reasonId}>Why was it edited? (required)</Label>
-            <Input
-              id={reasonId}
-              value={reason}
-              maxLength={EDIT_REASON_MAX}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Removed a full name"
-            />
-          </div>
-          <DialogFooter>
-            <CancelButton />
-            <Button type="submit" disabled={!valid || pending}>
-              {pending ? 'Saving…' : confirmLabel}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          {length}/{max}
+        </p>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor={reasonId}>Why was it edited? (required)</Label>
+        <Input
+          id={reasonId}
+          value={reason}
+          maxLength={EDIT_REASON_MAX}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="e.g. Removed a full name"
+        />
+      </div>
+    </DialogForm>
   );
 }
 
@@ -199,7 +246,6 @@ export function ConfirmDialog({
   canConfirm = true,
   onConfirm,
   children,
-  sheetOnMobile = false,
 }: Base & {
   title: string;
   description: ReactNode;
@@ -209,35 +255,26 @@ export function ConfirmDialog({
   canConfirm?: boolean;
   onConfirm: () => void;
   children?: ReactNode;
-  /** Below md: a bottom sheet with 44 px buttons (opt-in; other pages keep the centred dialog). */
-  sheetOnMobile?: boolean;
 }) {
-  const tap = sheetOnMobile ? TAP_BELOW_MD : undefined;
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={sheetOnMobile ? SHEET_BELOW_MD : undefined}>
-        <form
-          className="space-y-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (canConfirm) onConfirm();
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription asChild>
-              <div className="space-y-2">{description}</div>
-            </DialogDescription>
-          </DialogHeader>
-          {children}
-          <DialogFooter>
-            <CancelButton className={tap} />
-            <Button type="submit" variant={destructive ? 'destructive' : 'default'} disabled={!canConfirm || pending} className={tap}>
-              {pending ? pendingLabel : confirmLabel}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+    <DialogForm
+      open={open}
+      onOpenChange={onOpenChange}
+      title={title}
+      description={description}
+      onSubmit={() => {
+        if (canConfirm) onConfirm();
+      }}
+      footer={
+        <>
+          <CancelButton />
+          <Button type="submit" variant={destructive ? 'destructive' : 'default'} disabled={!canConfirm || pending}>
+            {pending ? pendingLabel : confirmLabel}
+          </Button>
+        </>
+      }
+    >
+      {children}
+    </DialogForm>
   );
 }

@@ -2,6 +2,7 @@ import { Flag } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
 
+import { TAP_LINK_BELOW_MD } from '@/components/moderation/mobile-dialog';
 import { AccountStatusBadge, ContentStatusBadge } from '@/components/moderation/status-badges';
 import { authorLabel } from '@/components/review/hold-badge';
 import { HighlightedText } from '@/components/review/highlighted-text';
@@ -16,7 +17,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-0.5">
       <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="text-sm">{children}</dd>
+      <dd className="text-sm break-words">{children}</dd>
     </div>
   );
 }
@@ -36,10 +37,10 @@ export function ContentView({ item, images, parentNumber, highlightTerm = false,
   const listing = item.target_type === 'listing' ? parseListingExtra(item.extra) : null;
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
+    <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_18rem]">
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">
+          <CardTitle className="text-xl break-words">
             <h1>{item.target_type === 'listing' && item.title ? item.title : 'Content'}</h1>
           </CardTitle>
         </CardHeader>
@@ -83,7 +84,7 @@ export function ContentView({ item, images, parentNumber, highlightTerm = false,
                   {item.author_deleted ? (
                     <span className="italic text-muted-foreground">{authorLabel(item.nickname)}</span>
                   ) : (
-                    <Link href={`/users/${item.author_id}`} className="font-medium text-primary underline-offset-4 hover:underline">
+                    <Link href={`/users/${item.author_id}`} className={`font-medium text-primary underline-offset-4 hover:underline ${TAP_LINK_BELOW_MD}`}>
                       {authorLabel(item.nickname)}
                     </Link>
                   )}
@@ -125,7 +126,7 @@ export function ContentView({ item, images, parentNumber, highlightTerm = false,
                 {item.open_report_count > 0 ? (
                   <Link
                     href={`/reports/${item.target_type}/${item.target_id}`}
-                    className="inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline"
+                    className={`inline-flex items-center gap-1 font-medium text-primary underline-offset-4 hover:underline ${TAP_LINK_BELOW_MD}`}
                   >
                     <Flag className="size-3.5" aria-hidden="true" />
                     {item.open_report_count}

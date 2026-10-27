@@ -16,6 +16,7 @@ import {
   suspendUser,
 } from '@/app/(panel)/users/actions';
 import { ConfirmDialog } from '@/components/moderation/dialogs';
+import { ACTION_GRID, TAP_BELOW_MD } from '@/components/moderation/mobile-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -122,7 +123,7 @@ export function UserActions({ user, available }: Props) {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap gap-2">
+      <div className={ACTION_GRID}>
         {available.suspend ? (
           <Button variant="outline" onClick={() => open('suspend')} disabled={pending}>
             <Timer aria-hidden="true" /> {user.status === 'suspended' ? 'Change suspension…' : 'Suspend…'}
@@ -143,7 +144,7 @@ export function UserActions({ user, available }: Props) {
       {available.changeRole || available.rename || available.revealIdentity || available.deleteAccount ? (
         <div className="space-y-3 rounded-lg border border-dashed p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Admin only</p>
-          <div className="flex flex-wrap gap-2">
+          <div className={ACTION_GRID}>
             {available.changeRole ? (
               <Button variant="outline" onClick={() => open('role')} disabled={pending}>
                 <ShieldCheck aria-hidden="true" /> Change role…
@@ -224,13 +225,13 @@ export function UserActions({ user, available }: Props) {
             {SUSPENSION_PRESETS.map((p) => (
               <label
                 key={p.value}
-                className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring"
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring ${TAP_BELOW_MD}`}
               >
                 <input type="radio" name="until" checked={preset === p.value} onChange={() => setPreset(p.value)} className="accent-[var(--primary)]" />
                 {p.label}
               </label>
             ))}
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring">
+            <label className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring ${TAP_BELOW_MD}`}>
               <input type="radio" name="until" checked={preset === 'custom'} onChange={() => setPreset('custom')} className="accent-[var(--primary)]" />
               Pick a date
             </label>
@@ -290,7 +291,7 @@ export function UserActions({ user, available }: Props) {
           {ROLES.map((r) => (
             <label
               key={r}
-              className="flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 text-sm has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring"
+              className="flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-2.5 text-sm max-md:min-h-11 has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring"
             >
               <input type="radio" name="role" checked={role === r} onChange={() => setRole(r)} className="mt-0.5 accent-[var(--primary)]" />
               <span>

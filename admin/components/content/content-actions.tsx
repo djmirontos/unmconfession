@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 
 import { editPublished, removePublished, restoreRemoved } from '@/app/(panel)/content/actions';
 import { ConfirmDialog, EditDialog, ReasonDialog } from '@/components/moderation/dialogs';
+import { ACTION_GRID } from '@/components/moderation/mobile-dialog';
 import { Button } from '@/components/ui/button';
 import { contentActions } from '@/lib/moderation/availability';
 import type { ActionResult } from '@/lib/result';
@@ -54,7 +55,7 @@ export function ContentActions({ type, id, body, status, deletedByAuthor, cascad
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
+      <div className={ACTION_GRID}>
         {published ? (
           <Button size="lg" variant="destructive" onClick={() => setDialog('remove')} disabled={pending}>
             <Trash2 aria-hidden="true" /> Remove…

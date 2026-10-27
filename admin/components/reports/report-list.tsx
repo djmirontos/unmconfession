@@ -47,7 +47,7 @@ export function ReportList({ initial, filter }: { initial: Page<ReportRow>; filt
                     </Badge>
                   ))}
                 </div>
-                <p className="line-clamp-3 text-sm text-foreground/90">{row.preview || <em className="text-muted-foreground">No text</em>}</p>
+                <p className="line-clamp-3 text-sm break-words text-foreground/90">{row.preview || <em className="text-muted-foreground">No text</em>}</p>
                 <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   <span>
                     First reported <time title={row.firstExact}>{row.firstAgo}</time>

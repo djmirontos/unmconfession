@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 
 import { ContentActions } from '@/components/content/content-actions';
 import { ContentView } from '@/components/moderation/content-view';
+import { TAP_LINK_BELOW_MD } from '@/components/moderation/mobile-dialog';
 import { HistoryList } from '@/components/moderation/history-list';
 import { kindLabel, TypeBadge } from '@/components/review/hold-badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -45,7 +46,7 @@ export default async function ContentItemPage({ params }: PageProps<'/content/[t
           <Info />
           <AlertDescription>
             This item is waiting for review.{' '}
-            <Link href={`/review/${type}/${id}`} className="font-medium text-primary underline underline-offset-4">
+            <Link href={`/review/${type}/${id}`} className={`font-medium text-primary underline underline-offset-4 ${TAP_LINK_BELOW_MD}`}>
               Open it in the review queue
             </Link>
             .

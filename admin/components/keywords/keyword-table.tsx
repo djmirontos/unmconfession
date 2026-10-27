@@ -207,7 +207,6 @@ export function KeywordTable({ rows, empty }: { rows: KeywordRow[]; empty: React
         onOpenChange={close}
         pending={pending}
         destructive
-        sheetOnMobile
         title="Delete this keyword?"
         description={
           dialog?.kind === 'delete' ? (

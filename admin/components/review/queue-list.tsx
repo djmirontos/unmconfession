@@ -65,7 +65,7 @@ export function QueueList({ initialRows, initialCursor, filter }: Props) {
                     <HoldBadge reason={row.holdReason} term={row.matchedTerm} />
                   </span>
                 </div>
-                <p className="line-clamp-3 text-sm text-foreground/90">{row.preview || <em className="text-muted-foreground">No text</em>}</p>
+                <p className="line-clamp-3 text-sm break-words text-foreground/90">{row.preview || <em className="text-muted-foreground">No text</em>}</p>
                 {row.images > 0 ? (
                   <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <ImageIcon className="size-3.5" aria-hidden="true" />

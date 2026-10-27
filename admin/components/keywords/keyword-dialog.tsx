@@ -137,7 +137,7 @@ export function KeywordDialog({ open, onOpenChange, pending, title, confirmLabel
             if (parsed.success && canSave) onSubmit(parsed.data);
           }}
         >
-          <DialogHeader className="shrink-0 px-4 pt-4 pr-12 pb-3">
+          <DialogHeader className="shrink-0 px-4 pt-4 pr-12 pb-3 max-md:pr-14">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>A match holds the post for review. With the Nicknames scope, the name is refused.</DialogDescription>
           </DialogHeader>

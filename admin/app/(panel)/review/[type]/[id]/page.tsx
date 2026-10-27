@@ -64,7 +64,7 @@ export default async function ReviewItemPage({ params, searchParams }: PageProps
   return (
     <div className={`space-y-6 ${ACTION_BAR_SPACE_ONE_ROW}`}>
       <div className="flex flex-wrap items-center gap-3">
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="ghost" size="sm" className="max-lg:hidden">
           <Link href={back}>
             <ArrowLeft aria-hidden="true" /> Queue
           </Link>

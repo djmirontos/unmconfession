@@ -15,7 +15,7 @@ export function MobileNav({ items, counts }: { items: readonly NavItem[]; counts
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="ghost" size="icon-lg" className="lg:hidden" aria-label="Open menu">
+        <Button variant="ghost" size="icon-lg" className="size-11 lg:hidden" aria-label="Open menu">
           <Menu />
         </Button>
       </SheetTrigger>

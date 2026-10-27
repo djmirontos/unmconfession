@@ -32,7 +32,7 @@ export default async function ContentItemPage({ params }: PageProps<'/content/[t
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="ghost" size="sm" className="max-lg:hidden">
           <Link href="/content">
             <ArrowLeft aria-hidden="true" /> Content
           </Link>

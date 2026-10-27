@@ -56,7 +56,7 @@ export default async function UserPage({ params, searchParams }: PageProps<'/use
 
   return (
     <div className="space-y-6">
-      <Button asChild variant="ghost" size="sm">
+      <Button asChild variant="ghost" size="sm" className="max-lg:hidden">
         <Link href="/users">
           <ArrowLeft aria-hidden="true" /> Users
         </Link>

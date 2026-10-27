@@ -43,7 +43,7 @@ export default async function ReportItemPage({ params, searchParams }: PageProps
   if (!loaded) {
     return (
       <div className={`space-y-6 ${ACTION_BAR_SPACE_TWO_ROWS}`}>
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="ghost" size="sm" className="max-lg:hidden">
           <Link href={back}>
             <ArrowLeft aria-hidden="true" /> Reports
           </Link>
@@ -62,7 +62,7 @@ export default async function ReportItemPage({ params, searchParams }: PageProps
   return (
     <div className={`space-y-6 ${ACTION_BAR_SPACE_TWO_ROWS}`}>
       <div className="flex flex-wrap items-center gap-3">
-        <Button asChild variant="ghost" size="sm">
+        <Button asChild variant="ghost" size="sm" className="max-lg:hidden">
           <Link href={back}>
             <ArrowLeft aria-hidden="true" /> Reports
           </Link>

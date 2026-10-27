@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { BrandMark } from '@/components/brand/brand-mark';
+import { BackNavProvider } from '@/components/panel/back-nav';
 import { NavLinks } from '@/components/panel/nav-links';
 import { TopBar } from '@/components/panel/top-bar';
 import { navFor } from '@/lib/access';
@@ -25,7 +26,10 @@ export default async function PanelLayout({ children }: { children: ReactNode })
         <NavLinks items={items} counts={counts} />
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar staff={staff} items={items} counts={counts} />
+        {/* The layout stays mounted across panel navigation, so the tracker sees every step. */}
+        <BackNavProvider>
+          <TopBar staff={staff} items={items} counts={counts} />
+        </BackNavProvider>
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
           {children}
         </main>

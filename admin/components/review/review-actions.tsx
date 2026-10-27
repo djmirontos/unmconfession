@@ -3,27 +3,15 @@
 import { Check, ChevronLeft, ChevronRight, PencilLine, TriangleAlert, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useId, useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
 import { approveItem, editAndApprove, rejectItem } from '@/app/(panel)/review/actions';
+import { EditDialog, ReasonDialog } from '@/components/moderation/dialogs';
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import type { ActionResult } from '@/lib/result';
-import { REJECT_REASONS, type RejectReason } from '@/lib/review/reasons';
-import { BODY_MAX, EDIT_REASON_MAX, NOTE_MAX, type ContentType } from '@/lib/review/schemas';
+import { BODY_MAX, type ContentType } from '@/lib/review/schemas';
 import { resolveShortcut } from '@/lib/review/shortcuts';
 
 type Props = {
@@ -138,11 +126,15 @@ export function ReviewActions({ type, id, body, afterActionHref, prevHref, nextH
       </p>
 
       {/* Remounted on every opening so the form starts empty (and with the current text). */}
-      <RejectDialog
+      <ReasonDialog
         key={rejectOpen ? 'reject-open' : 'reject-closed'}
         open={rejectOpen}
         onOpenChange={setRejectOpen}
         pending={pending}
+        title="Reject this item"
+        description="The author is told the reason. The item will not be published."
+        confirmLabel="Reject"
+        pendingLabel="Rejecting…"
         onConfirm={(reason, note) => run(() => rejectItem({ type, id, reason, note }), 'Rejected')}
       />
       {editable ? (
@@ -153,6 +145,9 @@ export function ReviewActions({ type, id, body, afterActionHref, prevHref, nextH
           pending={pending}
           initialBody={body}
           max={BODY_MAX[type]}
+          title="Edit and approve"
+          description="Remove names or personal details, then approve. The original text is kept in the moderation log."
+          confirmLabel="Save and approve"
           onConfirm={(newBody, reason) =>
             run(
               () => editAndApprove({ type, id, body: newBody, reason }),
@@ -190,154 +185,5 @@ function NavButton({ href, label, shortcut, children }: { href: string | null; l
         {children}
       </Link>
     </Button>
-  );
-}
-
-function RejectDialog({
-  open,
-  onOpenChange,
-  pending,
-  onConfirm,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  pending: boolean;
-  onConfirm: (reason: RejectReason, note: string) => void;
-}) {
-  const [reason, setReason] = useState<RejectReason | null>(null);
-  const [note, setNote] = useState('');
-  const noteId = useId();
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <form
-          className="space-y-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (reason) onConfirm(reason, note.trim());
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Reject this item</DialogTitle>
-            <DialogDescription>The author is told the reason. The item will not be published.</DialogDescription>
-          </DialogHeader>
-          <fieldset className="space-y-2">
-            <legend className="mb-2 text-sm font-medium">Reason (required)</legend>
-            {REJECT_REASONS.map((r) => (
-              <label
-                key={r.value}
-                className="flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring"
-              >
-                <input
-                  type="radio"
-                  name="reason"
-                  value={r.value}
-                  checked={reason === r.value}
-                  onChange={() => setReason(r.value)}
-                  className="size-4 accent-[var(--primary)]"
-                />
-                {r.label}
-              </label>
-            ))}
-          </fieldset>
-          <div className="space-y-2">
-            <Label htmlFor={noteId}>Note for the moderation log (optional)</Label>
-            <Textarea id={noteId} value={note} maxLength={NOTE_MAX} onChange={(e) => setNote(e.target.value)} rows={3} />
-            <p className="text-right text-xs text-muted-foreground" aria-live="polite">
-              {note.length}/{NOTE_MAX}
-            </p>
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button type="submit" variant="destructive" disabled={!reason || pending}>
-              {pending ? 'Rejecting…' : 'Reject'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function EditDialog({
-  open,
-  onOpenChange,
-  pending,
-  initialBody,
-  max,
-  onConfirm,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  pending: boolean;
-  initialBody: string;
-  max: number;
-  onConfirm: (body: string, reason: string) => void;
-}) {
-  const [body, setBody] = useState(initialBody);
-  const [reason, setReason] = useState('');
-  const bodyId = useId();
-  const reasonId = useId();
-  const length = body.trim().length;
-  const valid = length > 0 && length <= max && reason.trim().length > 0;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
-        <form
-          className="space-y-5"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (valid) onConfirm(body.trim(), reason.trim());
-          }}
-        >
-          <DialogHeader>
-            <DialogTitle>Edit and approve</DialogTitle>
-            <DialogDescription>
-              Remove names or personal details, then approve. The original text is kept in the moderation log.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor={bodyId}>Text</Label>
-            <Textarea
-              id={bodyId}
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              rows={8}
-              aria-invalid={length === 0 || length > max}
-              aria-describedby={`${bodyId}-count`}
-            />
-            <p id={`${bodyId}-count`} className={`text-right text-xs ${length > max ? 'text-destructive' : 'text-muted-foreground'}`} aria-live="polite">
-              {length}/{max}
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor={reasonId}>Why was it edited? (required)</Label>
-            <Input
-              id={reasonId}
-              value={reason}
-              maxLength={EDIT_REASON_MAX}
-              onChange={(e) => setReason(e.target.value)}
-              placeholder="e.g. Removed a full name"
-            />
-          </div>
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                Cancel
-              </Button>
-            </DialogClose>
-            <Button type="submit" disabled={!valid || pending}>
-              {pending ? 'Saving…' : 'Save and approve'}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }

@@ -1,6 +1,5 @@
 import { StatTile, StatTileSkeleton } from '@/components/dashboard/stat-tile';
-import { codeFromError, messageFor } from '@/lib/errors';
-import { createClient } from '@/lib/supabase/server';
+import { getDashboard } from '@/lib/dashboard';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -15,12 +14,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 /** mod_dashboard checks the staff role itself; the page has already called requireStaff(). */
 export async function DashboardStats() {
-  const supabase = await createClient();
-  const { data, error } = await supabase.rpc('mod_dashboard');
-  // Caught by the (panel) error boundary, which offers a retry.
-  if (error) throw new Error(messageFor(codeFromError(error)));
-  const d = data?.[0];
-  if (!d) throw new Error(messageFor('unknown'));
+  // Errors reach the (panel) error boundary, which offers a retry.
+  const d = await getDashboard();
 
   return (
     <div className="space-y-10">

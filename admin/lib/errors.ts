@@ -27,6 +27,13 @@ const MESSAGES: Record<string, string> = {
   invalid_target: 'Only posts and comments can be edited.',
   invalid_action: 'That action is not available.',
   approve_failed_after_edit: 'The edit was saved, but approving failed. Try approving again.',
+  // Reports, content, users
+  cannot_restore_deleted: 'The author deleted this item, so it cannot be restored.',
+  nickname_invalid: 'Use 3 to 20 letters, digits, underscores or dots.',
+  nickname_taken: 'That nickname is already taken.',
+  no_user_with_email: 'No user with that email.',
+  confirm_mismatch: 'Type the nickname exactly as shown to confirm.',
+  identity_unavailable: 'This account has no sign-in record (it may have been deleted).',
   // Fallbacks
   invalid_input: 'Check the form and try again.',
   network: 'Could not reach the server. Check your connection and try again.',
@@ -70,6 +77,8 @@ export function codeFromError(error: unknown): string {
   const message = field(error, 'message')?.trim();
   if (message && DB_CODES.has(message)) return message;
   if (authCode === '42501') return 'forbidden';
+  // Unique index on lower(nickname): two renames at the same moment.
+  if (authCode === '23505' && /nickname/i.test(message ?? '')) return 'nickname_taken';
   if (field(error, 'name') === 'AuthRetryableFetchError' || (error instanceof TypeError && /fetch/i.test(error.message))) {
     return 'network';
   }

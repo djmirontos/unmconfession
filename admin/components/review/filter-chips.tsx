@@ -1,6 +1,5 @@
 import Link from 'next/link';
 
-import { listHref } from '@/lib/review/queue';
 import type { ContentType } from '@/lib/review/schemas';
 import { cn } from '@/lib/utils';
 
@@ -11,7 +10,8 @@ const CHIPS: { label: string; value?: ContentType }[] = [
   { label: 'Listings', value: 'listing' },
 ];
 
-export function FilterChips({ active }: { active?: ContentType }) {
+/** Type chips for a list page (`?filter=`). */
+export function FilterChips({ active, basePath = '/review' }: { active?: ContentType; basePath?: string }) {
   return (
     <nav aria-label="Filter by type" className="flex flex-wrap gap-2">
       {CHIPS.map((chip) => {
@@ -19,7 +19,7 @@ export function FilterChips({ active }: { active?: ContentType }) {
         return (
           <Link
             key={chip.label}
-            href={listHref(chip.value)}
+            href={chip.value ? `${basePath}?filter=${chip.value}` : basePath}
             aria-current={selected ? 'page' : undefined}
             className={cn(
               'rounded-full border px-3.5 py-1.5 text-sm font-medium transition-colors',

@@ -824,3 +824,43 @@ Layout and dialog behaviour below `md` only (target 390 px, laid out for 360–4
 **Tests (286, 26 new in `tests/mobile.test.ts`):** the phone-only helpers contain only `max-md:` classes (plus the desktop spacing they keep), every Button size is 44 px below md with unchanged desktop heights, the review and report actions are a single set of buttons with the bar and page padding, the shortcut hint is hidden on touch screens, and all three moderation dialogs use the shared sheet frame. No existing assertion changed.
 
 **Verified:** typecheck, lint, tests, check:secrets and `next build` pass; the built CSS contains the new classes (`pointer-coarse:hidden`, `md:contents`, `max-md:max-w-none!`, the 90dvh sheet). Not checked in a browser: the panel needs a staff session with TOTP.
+
+## Module 7e.2: moderation log, audit log and dashboard links (2026-10-27)
+
+**No migrations.** Uses the live `mod_get_actions`, `admin_get_audit` and `mod_dashboard`.
+
+**/log (moderators and admins):**
+- Cards (all widths): action label, actor nickname (links to the user page), Manila time, the target type with an "Open" link to the content or user page, reason, note, and the collapsible "Original text before the edit" (`OriginalBody`, now shared with the moderation history).
+- Filters in the URL, ids only: target type (`post`, `comment`, `listing`, `user`, from the `moderation_actions.target_type` check) and staff member (moderators and admins from the existing `mod_search_users`; a former staff member chosen from a link is added to the list). Inline from md, in the Filters bottom sheet on phones. The subject user comes from the new "Open in the moderation log" link on the user page and shows as a removable chip ("About <nickname>").
+- Action labels come from the `moderation_actions.action` check (approve, reject, remove, restore, edit, suspend, ban, restore_user, all already labelled); unknown values are shown as stored.
+- Keyset "Load more" (30 per page, cursor = created_at + id), loading skeleton, "No actions yet" / "Nothing matches these filters", inline error card.
+
+**/audit (admins only):** cards with Manila time, admin nickname, the action label (Viewed identity, Looked up by email, Changed role, Deleted account; unknown values as stored), the account (links to the user page; "None" for an email lookup without a match), and the stored detail (role change, deletion reason, "No account matched"). No email is shown or stored. Same paging, skeleton, empty and error states; no filters. `admin_get_audit` also returns `view_content_author` entries (the content-author lookups in `identity_audit_log`): labelled "Viewed a content author" with an "Open" link to the content.
+
+**Access:** the pages, the loaders (`fetchLog` → `requireStaff()`, `fetchAudit` → `requireAdmin()`) and the "Load more" actions all check on the server; the RPCs check again. Moderators get the existing /403 redirect on /audit, and the nav entry was already admin-only. The try/catch around the loaders calls `unstable_rethrow`, so a guard redirect is never turned into the error card. URL params and "Load more" input are zod-validated (uuid, enum, ISO timestamp + uuid cursor).
+
+**Nav:** both entries already existed; the "Coming soon" placeholders and `ComingSoon` are removed.
+
+**Dashboard:** links come from `lib/dashboard-links.ts`. Linked: pending posts / comments / listings → review queue by type; reported items and reports in total → reports; new posts / comments / listings (24 h) → content list by type; suspended / banned → users list by status. Plain text (no exact filter exists): new accounts (24 h) and deleted accounts ("Show deleted accounts" adds them to the list rather than showing only them). Note: the suspended count excludes expired suspensions; the users list status filter may still include accounts whose suspension has run out.
+
+**Shared:** `components/moderation/filter-sheet.tsx` (the Keywords Filters sheet, now shared by /keywords and /log), `lib/url-params.ts` (`withoutParams`), `lib/moderation/keyset.ts` (the keyset page helper moved out of the server-only `data.ts`), `lib/moderation/log.ts` (filters, RPC arguments, labels, links).
+
+**Tests (310, 24 new in `tests/log.test.ts`):** filters → `mod_get_actions` arguments, bad URL values, chips and "Clear", the "Load more" schemas, cursor handling, action labels including unknown values, target links, the admin-only guard on the audit page / loader / action (and the staff guard on /log), the rethrow, no email fields, and every dashboard link parsed by the target page's own filter schema (plus the two unlinked tiles).
+
+**Verified:** typecheck, lint, tests, check:secrets and `next build` pass. Not tested against live data or in a browser (the panel needs a staff session with TOTP).
+
+## Module 7e.b: phone back arrow and V2 backlog (2026-10-27)
+
+**No migrations, no change to any action.** Layout and navigation only.
+
+**Back arrow:** below lg the top bar shows a 44 px "Back" arrow next to the menu button on every panel page that is not a sidebar destination (dashboard, review queue, reports, content, users, keywords, log, audit). That covers the review, report, content and user detail pages. Login and TOTP enrolment are outside the panel layout and get none. If the panel has its own history entry behind the current one, the arrow calls `router.back()`, so filters and search in the URL come back exactly. Otherwise it goes to the parent list (`/review`, `/reports`, `/content`, `/users`) or the dashboard. The pure logic lives in `lib/back-nav.ts` (`isMainDestination`, `backFallback` and the tracker), the components in `components/panel/back-nav.tsx`.
+
+**Tracker:** in memory in the panel layout, with no sessionStorage. It starts at zero on every full page load, so a bookmark, a new tab or a refresh always uses the fallback. It counts growth of `history.length` (in-panel pushes) and treats each `popstate` as one step back. A replace, which is how the review and report "next item" flow moves between detail pages, adds nothing. Every miscount undercounts, so `router.back()` never leaves the site. The browser's own back button and Server Action redirects are untouched.
+
+**Other changes:** the detail pages' "Queue / Reports / Content / Users" links are hidden below lg, with desktop unchanged. The review page's "Back to the queue" button on an already-handled item stays, as it is the page's main action. Below sm, "Sign out" is icon-only (its label stays for screen readers) and the nickname truncates, so the arrow fits at 360 px. The menu button is now 44 px up to lg as well.
+
+**Backlog:** `docs/V2_BACKLOG.md` lists mute status, replies removed by the comment cascade, auditing keyword changes, and (optional) nickname rules for admin renames.
+
+**Tests (327, 17 new in `tests/back-nav.test.ts`):** main destinations, the fallback for every detail route, the "next" routes and unknown paths, the tracker (direct open, push, replace, back, forward, a push that truncates history, the floor at zero), and source checks for the wiring and the hidden desktop links.
+
+**Verified:** typecheck, lint, tests and `next build` pass. Not checked in a browser: the panel needs a staff session with TOTP.

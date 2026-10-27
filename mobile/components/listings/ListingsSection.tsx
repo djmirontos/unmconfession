@@ -52,7 +52,7 @@ function emptyCopy(kind: ListingKind, search: string, type: TypeFilter, hideClos
   return {
     icon: 'search-outline' as const,
     title: type === 'lost' ? 'No lost items posted' : type === 'found' ? 'No found items posted' : 'Nothing here yet',
-    message: 'Lost or found something on campus? Tap Create to post it.',
+    message: 'Lost or found something? Tap Create to let members know.',
   };
 }
 

@@ -68,7 +68,7 @@ export function PollForm({ userId }: { userId: string }) {
           draft.set('question', t);
           touched.touch('question');
         }}
-        placeholder="Ask the campus something…"
+        placeholder="Ask the members something…"
         multiline
         maxLength={LIMITS.pollQuestion}
         counter={{ length: question.length, max: LIMITS.pollQuestion }}

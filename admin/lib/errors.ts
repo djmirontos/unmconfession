@@ -43,6 +43,14 @@ const MESSAGES: Record<string, string> = {
   keyword_invalid: 'Invalid keyword settings.',
   keyword_term_invalid: 'Enter a term of 1 to 200 characters.',
   keyword_matches_everything: 'This pattern would match almost everything and hold all content.',
+  // Announcements
+  announcement_invalid: 'Check the dates and the text limits.',
+  announcement_title_invalid: 'Enter a title of 1 to 100 characters.',
+  announcement_body_invalid: 'Enter a message of 1 to 1000 characters.',
+  announcement_date_invalid: 'Enter a valid date and time.',
+  announcement_start_too_far: 'The start can be at most 1 year from now.',
+  announcement_end_before_start: 'The end must be after the start.',
+  announcement_not_live: 'This announcement is not live any more.',
   // Fallbacks
   invalid_input: 'Check the form and try again.',
   network: 'Could not reach the server. Check your connection and try again.',
@@ -77,6 +85,12 @@ export function keywordErrorCode(error: unknown): string {
   const message = field(error, 'message') ?? '';
   if (pgCode === '23505' && /keywords_term_key/.test(message)) return 'keyword_exists';
   if (pgCode === '23514') return 'keyword_invalid';
+  return codeFromError(error);
+}
+
+/** Writes to public.announcements: a check violation (text limits, end after start) gets one message. */
+export function announcementErrorCode(error: unknown): string {
+  if (field(error, 'code') === '23514') return 'announcement_invalid';
   return codeFromError(error);
 }
 

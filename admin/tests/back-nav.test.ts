@@ -20,7 +20,7 @@ const src = (path: string) => readFileSync(fileURLToPath(new URL(`../${path}`, i
 describe('main destinations (no back arrow)', () => {
   it('every sidebar entry is a main destination', () => {
     for (const item of NAV_ITEMS) expect(isMainDestination(item.href), item.href).toBe(true);
-    expect(NAV_ITEMS.map((n) => n.href)).toEqual(['/', '/review', '/reports', '/content', '/users', '/keywords', '/log', '/audit']);
+    expect(NAV_ITEMS.map((n) => n.href)).toEqual(['/', '/review', '/reports', '/content', '/users', '/keywords', '/announcements', '/log', '/audit']);
   });
   it('a trailing slash does not matter', () => {
     expect(isMainDestination('/users/')).toBe(true);

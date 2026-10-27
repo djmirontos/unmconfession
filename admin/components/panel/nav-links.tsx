@@ -6,6 +6,7 @@ import {
   Flag,
   LayoutDashboard,
   type LucideIcon,
+  Megaphone,
   ScrollText,
   ShieldCheck,
   Tags,
@@ -24,6 +25,7 @@ const ICONS: Record<NavIcon, LucideIcon> = {
   content: FileSearch,
   users: Users,
   keywords: Tags,
+  announcements: Megaphone,
   log: ScrollText,
   audit: ShieldCheck,
 };

@@ -100,9 +100,12 @@ export type Database = {
           audit_retention_days: number
           id: number
           logo_path: string | null
+          min_app_version: string
           moderation_mode: string
           rejected_retention_days: number
           tagline: string
+          update_message: string | null
+          update_url: string | null
           updated_at: string
           updated_by: string | null
         }
@@ -111,9 +114,12 @@ export type Database = {
           audit_retention_days?: number
           id?: number
           logo_path?: string | null
+          min_app_version?: string
           moderation_mode?: string
           rejected_retention_days?: number
           tagline?: string
+          update_message?: string | null
+          update_url?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -122,9 +128,12 @@ export type Database = {
           audit_retention_days?: number
           id?: number
           logo_path?: string | null
+          min_app_version?: string
           moderation_mode?: string
           rejected_retention_days?: number
           tagline?: string
+          update_message?: string | null
+          update_url?: string | null
           updated_at?: string
           updated_by?: string | null
         }
@@ -1584,6 +1593,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_app_requirements: {
+        Args: never
+        Returns: {
+          min_app_version: string
+          update_message: string
+          update_url: string
+        }[]
       }
       get_comments: {
         Args: {

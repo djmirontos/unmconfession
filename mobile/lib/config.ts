@@ -1,15 +1,19 @@
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
-// TODO: replace before release with the team's real feedback address.
-export const FEEDBACK_EMAIL = 'feedback@example.com';
+export const FEEDBACK_EMAIL = 'support@klasmeyt.com';
 
 const APP_NAME = 'UNM Freedom Confessions';
+
+/** The app.json version ("1.0.0") this build runs; null if unavailable. */
+export function installedVersion(): string | null {
+  return Constants.expoConfig?.version ?? null;
+}
 
 /** "1.0.0", or "1.0.0 (12)" when the build sets a build number. */
 export function appVersion(): string {
   const config = Constants.expoConfig;
-  const version = config?.version ?? 'unknown';
+  const version = installedVersion() ?? 'unknown';
   const build = Platform.OS === 'android' ? config?.android?.versionCode : config?.ios?.buildNumber;
   return build !== undefined ? `${version} (${build})` : version;
 }

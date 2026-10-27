@@ -7,11 +7,13 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SignInSheet } from '@/components/auth/SignInSheet';
+import { ForceUpdateGate } from '@/components/layout/ForceUpdateGate';
 import { ThemeRoot } from '@/components/layout/ThemeRoot';
 import { ReactionPickerOverlay } from '@/components/reactions/ReactionPickerOverlay';
 import { ShareCardHost } from '@/components/share/ShareCardHost';
 import { Toast } from '@/components/ui/Toast';
 import { ImageViewer } from '@/components/viewer/ImageViewer';
+import { useAppRequirementsSync } from '@/hooks/useAppRequirements';
 import { useAuthBootstrap } from '@/hooks/useAuthBootstrap';
 import { useNotificationsRealtime } from '@/hooks/useNotificationsRealtime';
 import { type MembershipStatus, useMembership } from '@/hooks/useProfile';
@@ -21,6 +23,7 @@ import { useAuthStore } from '@/stores/authStore';
 
 export default function RootLayout() {
   useAuthBootstrap();
+  useAppRequirementsSync();
   useEffect(() => void loadGoogleSignIn(), []);
 
   // The query client wraps the whole app, outside any auth gate, so cached
@@ -36,6 +39,8 @@ export default function RootLayout() {
           <ReactionPickerOverlay />
           <ImageViewer />
           <ShareCardHost />
+          {/* Last, so its Modal stacks above every sheet and modal. */}
+          <ForceUpdateGate />
         </ThemeRoot>
       </PersistQueryClientProvider>
     </GestureHandlerRootView>

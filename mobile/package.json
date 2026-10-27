@@ -12,6 +12,7 @@
     "gen:types": "supabase gen types typescript --linked --schema public --workdir .. > types/database.ts",
     "test:redact": "node --test tests/redact.test.mjs",
     "test:share": "node --test tests/shareText.test.mjs",
+    "test:version": "node --test tests/versionGate.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

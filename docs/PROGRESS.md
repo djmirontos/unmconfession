@@ -724,3 +724,24 @@
 - A way to restore the replies a top-level comment removal cascaded, or log them in `moderation_actions`.
 - A "mute" status (the PRD lists mute; the schema has active, suspended and banned only).
 - A last-admin guard on `admin_set_role` (two admins can demote each other).
+
+## Module 7d.2 / 7d.3: panel follow-ups (2026-10-27)
+
+**Migration** `20261027120000_admin_panel_followups.sql` (7d.2, applied):
+- `mod_list_content` gains a trailing `p_author` filter (dropped and recreated, since the signature changed; staff only as before).
+- `mod_review('restore')` refuses items the author deleted themselves (`deleted_by_author`) and no longer notifies a deleted account.
+- `admin_set_nickname` refuses deleted accounts (`account_deleted`).
+- Types regenerated with the CLI; `admin/types/database.ts` and `mobile/types/database.ts` are identical again (one optional arg added; mobile typecheck passes).
+
+**Panel (7d.3):**
+- `/users/[id]`: "Content by this user" card: the shared `ContentList` (rows link to `/content/[type]/[id]`, keyset Load more) filtered by author, with type and status filters in the URL, a row skeleton (Suspense), "This user has no content" / "Nothing matches these filters", and an inline error. Works for deleted accounts (rows show "Deleted user").
+- `contentListArgs` (`lib/moderation/content-args.ts`) builds the `mod_list_content` arguments for the Content page and the user page; `contentFiltersSchema` accepts an `author` id.
+- `contentActions` (`lib/moderation/availability.ts`) decides Remove / Edit / Restore; author-deleted items show "Deleted by author" instead of Restore. Restore only appears on the content detail page (the review and report pages offer none). The server action still pre-checks `deleted_at` and surfaces `deleted_by_author` if the RPC refuses.
+- Errors: `deleted_by_author` → "The author deleted this themselves, so it cannot be restored."; `renameUser` maps `account_deleted` to `nickname_account_deleted` → "This account was deleted, so its nickname cannot be changed." The generic `account_deleted` text stays for the other actions.
+- Rename was already hidden for deleted accounts (no actions at all); now covered by a test.
+
+**Tests (217):** author filter pass-through and schema, the two new codes, Restore hidden / shown by `deleted_at`, rename hidden for deleted accounts.
+
+**Verified:** typecheck, lint, tests and check:secrets pass. Not tested against live data.
+
+**Left (from the 7d suggestions):** `admin_set_nickname` still does not apply the reserved / flagged-word rules, and the replies a top-level comment removal cascaded still cannot be restored. The other 7d suggestions are unchanged.

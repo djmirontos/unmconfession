@@ -15,7 +15,7 @@ Checks: `npm run typecheck`, `npm run lint`, `npm run build`. To test the produc
 
 | Route | Content |
 |---|---|
-| `/` | What the app is (from the PRD) and "coming soon to Google Play" |
+| `/` | What the app is (from the PRD) and the Google Play and GitHub download buttons |
 | `/privacy`, `/terms`, `/rules` | The app's legal texts, word for word (`content/legal.ts`) |
 | `/child-safety` | Child Safety Standards (CSAE), site only, not mirrored in the app (`content/child-safety.ts`) |
 | `/delete-account` | In-app steps, what happens, and how to request deletion by email |
@@ -46,7 +46,7 @@ The home page's "Get the app" block reads two constants in `site/lib/site.ts`:
 - `PLAY_STORE_URL`: the app's Google Play listing.
 - `APK_RELEASES_URL`: the GitHub releases page with the .apk files.
 
-While a constant is `null`, its button is dimmed, is not a link, and has the caption "Coming soon". To turn a button on, set the URL, then commit and redeploy. The button becomes a link that opens in a new tab. When `APK_RELEASES_URL` is set, a short note on installing from GitHub also appears.
+While a constant is `null`, its button is dimmed, is not a link, and has the caption "Coming soon". To turn a button on, set the URL, then commit and redeploy. The button becomes a link: Google Play opens in the same tab, GitHub in a new tab. When `APK_RELEASES_URL` is set, a short note on installing from GitHub also appears.
 
 Brand rules:
 - The Google Play badge (`site/public/badges/google-play-badge.svg`) is Google's official file. Use it unmodified: no recolouring, cropping, stretching, rotating or effects. Keep its aspect ratio and the clear space around it.

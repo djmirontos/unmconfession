@@ -55,7 +55,9 @@ Finally, on `/delete-account`, tap the email link and check that a new mail open
 
 ## Download links
 
-The "Get the app" buttons show "Coming soon" until their URLs are set. Set `PLAY_STORE_URL` (the Play listing) and `APK_RELEASES_URL` (the GitHub releases page) in `site/lib/site.ts`, then commit and push. Vercel redeploys the site. Check that each button on the home page opens its page in a new tab.
+The "Get the app" buttons show "Coming soon" until their URLs are set. Set `PLAY_STORE_URL` (the Play listing) and `APK_RELEASES_URL` (the GitHub releases page) in `site/lib/site.ts`, then commit and push. Vercel redeploys the site. Check that each button on the home page opens its page: Google Play in the same tab, GitHub in a new tab.
+
+Both URLs are set: Google Play is `https://play.google.com/store/apps/details?id=com.unmfreedom.confessions` (package `com.unmfreedom.confessions`, as in `mobile/app.json`), GitHub is the latest release of `djmirontos/unm-releases`.
 
 Keep the Google Play badge and the GitHub mark unmodified (no recolouring, cropping, stretching or effects; keep their proportions and clear space). See `site/README.md`.
 

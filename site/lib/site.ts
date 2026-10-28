@@ -8,7 +8,7 @@ export const SUPPORT_EMAIL = 'support@klasmeyt.com';
 /** The app's Google Play listing (https://play.google.com/store/apps/details?id=...). */
 export const PLAY_STORE_URL: string | null = null;
 /** The GitHub releases page that holds the signed .apk files. */
-export const APK_RELEASES_URL: string | null = null;
+export const APK_RELEASES_URL: string | null = 'https://github.com/djmirontos/unm-releases/releases/latest';
 
 export const PAGES = [
   { path: '/', label: 'Home' },

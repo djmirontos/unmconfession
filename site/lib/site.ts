@@ -15,6 +15,7 @@ export const PAGES = [
   { path: '/privacy', label: 'Privacy' },
   { path: '/terms', label: 'Terms' },
   { path: '/rules', label: 'Community rules' },
+  { path: '/child-safety', label: 'Child safety' },
   { path: '/delete-account', label: 'Delete your account' },
 ] as const;
 

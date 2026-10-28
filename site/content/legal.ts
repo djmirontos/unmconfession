@@ -1,14 +1,14 @@
 // The legal texts, copied WORD FOR WORD from the app (mobile/app/legal/[doc].tsx, `DOCS`).
 // Do not edit them here alone: change the app and this file together (see site/README.md).
 
-/** No date is stated in the app's texts; this is the date the site was first published. */
-export const LEGAL_LAST_UPDATED = '27 October 2026';
+/** No date is stated in the app's texts; this is the date they last changed. */
+export const LEGAL_LAST_UPDATED = '28 October 2026';
 
 export const LEGAL = {
   terms: {
     title: 'Terms of Use',
     sections: [
-      'Anyone can read UNM Freedom Confessions without an account. To create an account you must be of legal age in the country where you live, or have the permission of a parent or legal guardian. By creating an account you confirm this. You are responsible for the account you register and for everything that is posted with it.',
+      'Anyone can read UNM Freedom Confessions without an account. You must be at least 18 years old to create an account or use UNM Freedom Confessions. If we learn that an account belongs to someone under 18, we may remove it. By creating an account you confirm this. You are responsible for the account you register and for everything that is posted with it.',
       'Posts are shown under your nickname. You can change it once every 30 days; the new name shows on all your old posts and comments. Posts are pseudonymous, not anonymous.',
       'Admins can see the email address behind any nickname to handle abuse. Every such lookup is recorded in an audit log.',
       'Do not post names, phone numbers or other details that identify people without their consent. Bullying, harassment and prohibited items are removed.',
@@ -39,6 +39,7 @@ export const LEGAL = {
       'Listings must not offer prohibited items such as weapons, drugs, alcohol, stolen goods or counterfeit items.',
       "Don't pretend to be a moderator, staff member or another person.",
       'No sexually explicit or violent content.',
+      'Content that sexualizes minors, or that is used to contact or exploit minors, is strictly prohibited and will be reported to the relevant authorities.',
       'See something wrong? Use the Report button and a moderator will look at it.',
       'Moderators may remove content, hold posts for review, and suspend or ban accounts that break these rules.',
       'Nothing in the app is a payment or a guarantee. Deals are between the users involved.',

@@ -6,7 +6,7 @@ export const SUPPORT_EMAIL = 'support@klasmeyt.com';
 
 // Download links: null shows the button dimmed with "Coming soon". Set them and redeploy.
 /** The app's Google Play listing (https://play.google.com/store/apps/details?id=...). */
-export const PLAY_STORE_URL: string | null = null;
+export const PLAY_STORE_URL: string | null = 'https://play.google.com/store/apps/details?id=com.unmfreedom.confessions';
 /** The GitHub releases page that holds the signed .apk files. */
 export const APK_RELEASES_URL: string | null = 'https://github.com/djmirontos/unm-releases/releases/latest';
 

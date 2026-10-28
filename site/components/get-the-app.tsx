@@ -8,11 +8,15 @@ import { APK_RELEASES_URL, PLAY_STORE_URL } from '@/lib/site';
 const BADGE_HEIGHT = 56;
 const BADGE_WIDTH = Math.round((BADGE_HEIGHT * 238.96) / 70.87);
 
-/** A download button: a new-tab link when there is a URL, otherwise dimmed, inert and captioned. */
-function Download({ href, children }: { href: string | null; children: ReactNode }) {
+/** A download button: a link when there is a URL (new tab if `newTab`), otherwise dimmed, inert and captioned. */
+function Download({ href, newTab = false, children }: { href: string | null; newTab?: boolean; children: ReactNode }) {
   if (href) {
-    return (
+    return newTab ? (
       <a href={href} target="_blank" rel="noopener noreferrer" className="inline-flex rounded-lg">
+        {children}
+      </a>
+    ) : (
+      <a href={href} rel="noopener" className="inline-flex rounded-lg">
         {children}
       </a>
     );
@@ -45,7 +49,7 @@ export function GetTheApp() {
             />
           </span>
         </Download>
-        <Download href={APK_RELEASES_URL}>
+        <Download href={APK_RELEASES_URL} newTab>
           <span className="m-1 inline-flex min-h-14 items-center gap-3 rounded-lg bg-[#24292f] px-5 py-3 font-semibold text-white">
             <GitHubMark className="size-6 shrink-0" />
             Download APK on GitHub

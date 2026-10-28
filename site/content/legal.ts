@@ -8,7 +8,7 @@ export const LEGAL = {
   terms: {
     title: 'Terms of Use',
     sections: [
-      'Anyone can read UNM Freedom Confessions without an account. You must be at least 18 years old to create an account or use UNM Freedom Confessions. If we learn that an account belongs to someone under 18, we may remove it. By creating an account you confirm this. You are responsible for the account you register and for everything that is posted with it.',
+      'Anyone can read UNM Freedom Confessions without an account. UNM Freedom Confessions is intended for adults. You must be at least 18 years old to create an account. If we learn that an account belongs to someone under 18, we may remove it. By creating an account you confirm this. You are responsible for the account you register and for everything that is posted with it.',
       'Posts are shown under your nickname. You can change it once every 30 days; the new name shows on all your old posts and comments. Posts are pseudonymous, not anonymous.',
       'Admins can see the email address behind any nickname to handle abuse. Every such lookup is recorded in an audit log.',
       'Do not post names, phone numbers or other details that identify people without their consent. Bullying, harassment and prohibited items are removed.',

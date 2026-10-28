@@ -21,3 +21,15 @@ Adding, editing and deleting keywords is not logged anywhere today: staff write 
 ## Remember closed announcements per account
 
 Remember closed announcements per account (sync across devices) instead of per device. In V1 the app keeps the closed ids in AsyncStorage on the phone (guests included, kept after sign-out), so a member who closes an announcement on one phone still sees it on another.
+
+## CSAM escalation and evidence preservation
+
+When a moderator marks content as apparent CSAM, hide it (do not delete it), exempt it from `purge_expired` and storage cleanup, restrict access to admins, and log the escalation, so it can be handed to the authorities. Moderators must never download, screenshot or forward such material. In V1 removed content is purged after 30 days and reporting to the authorities is a manual step.
+
+## Child safety report reason
+
+Add a dedicated "child safety" report reason (the `reports.reason` check, `lib/reports.ts`, the mobile report sheet, and the admin panel filter), with priority in the review queue. In V1 the closest reason is "Inappropriate content".
+
+## Terms version and re-acceptance
+
+Add a `terms_version` column and ask existing users to confirm they are 18 or older on their next launch. In V1 only `user_flags.terms_accepted_at` is stored, so people who accepted the earlier wording are not asked again.

@@ -30,9 +30,9 @@ Optional: Settings → Git → **Ignored Build Step**, so commits that touch onl
 
 Open each page and check it loads over HTTPS:
 - https://unm.klasmeyt.com
-- `/privacy`, `/terms`, `/rules` and `/delete-account`
+- `/privacy`, `/terms`, `/rules`, `/child-safety` and `/delete-account`
 - `/robots.txt` (allows all, and lists the sitemap)
-- `/sitemap.xml` (lists the five pages)
+- `/sitemap.xml` (lists the six pages)
 - a missing page such as `/nope`, which should show "Page not found" with status 404
 
 Check the headers:

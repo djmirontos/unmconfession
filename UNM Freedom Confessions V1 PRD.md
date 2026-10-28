@@ -45,7 +45,7 @@ The app is open to read and needs an account only to take part, Yipster style. T
 
 **Terms and Privacy Policy** are accepted at sign-up. They state that admins can see the identity behind a post and that identity lookups are logged.
 
-**Sign-in methods.** Email sign-up uses a password and a 6-digit code to verify the email. Google sign-in is native (Google's ID token is exchanged for a Supabase session); a new Google account chooses its nickname and accepts the Terms, including the legal-age confirmation, on the nickname screen. Acceptance is stored in `user_flags.terms_accepted_at`. The session on the phone is stored encrypted.
+**Sign-in methods.** Email sign-up uses a password and a 6-digit code to verify the email. Google sign-in is native (Google's ID token is exchanged for a Supabase session); a new Google account chooses its nickname and accepts the Terms, including the confirmation that they are 18 or older, on the nickname screen. Acceptance is stored in `user_flags.terms_accepted_at`. The session on the phone is stored encrypted.
 
 ## App structure
 

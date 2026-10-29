@@ -33,3 +33,11 @@ Add a dedicated "child safety" report reason (the `reports.reason` check, `lib/r
 ## Terms version and re-acceptance
 
 Add a `terms_version` column and ask existing users to confirm they are 18 or older on their next launch. In V1 only `user_flags.terms_accepted_at` is stored, so people who accepted the earlier wording are not asked again.
+
+## Storage cleanup processor
+
+Storage cleanup processor (storage_cleanup_queue has no consumer; avatars/ and post-images/ files of removed content and deleted accounts are not physically deleted yet).
+
+## Remove a profile picture in the admin panel
+
+`mod_remove_avatar(p_user, p_reason)` (migration `20261029100000_custom_avatars.sql`) resets a member's custom picture to the default preset, queues the file for cleanup and writes a `remove_avatar` moderation action. The admin panel has no button for it yet. It checks `is_staff()`, so it only works for a signed-in staff account through the API; the SQL editor has no `auth.uid()` and is refused.

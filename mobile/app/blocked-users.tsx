@@ -7,6 +7,7 @@ import { GuestPrompt } from '@/components/auth/GuestPrompt';
 import { EmptyState, ErrorState } from '@/components/feed/ListStates';
 import { BackHeader } from '@/components/layout/BackHeader';
 import { Avatar } from '@/components/profile/Avatar';
+import { ProfileLink } from '@/components/profile/ProfileLink';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { useBlockedUsers } from '@/hooks/useBlockedUsers';
@@ -47,10 +48,12 @@ function BlockedRow({ user, onUnblock }: { user: BlockedUser; onUnblock: (user: 
   const name = atNickname(user.nickname);
   return (
     <View className={CARD}>
-      <Avatar avatarKey={user.avatarKey} userId={user.id} nickname={user.nickname} size={44} deleted={isDeletedAuthor(user.nickname)} />
-      <Text numberOfLines={1} className="min-w-0 flex-1 text-base font-bold text-text">
-        {authorLabel(user.nickname)}
-      </Text>
+      <ProfileLink userId={user.id} nickname={user.nickname} height={44} className="min-w-0 flex-1 flex-row items-center gap-3">
+        <Avatar avatarKey={user.avatarKey} userId={user.id} nickname={user.nickname} size={44} deleted={isDeletedAuthor(user.nickname)} />
+        <Text numberOfLines={1} className="min-w-0 flex-1 text-base font-bold text-text">
+          {authorLabel(user.nickname)}
+        </Text>
+      </ProfileLink>
       <Pressable
         onPress={() => onUnblock(user)}
         hitSlop={4}

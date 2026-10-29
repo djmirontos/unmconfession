@@ -7,6 +7,8 @@ import { invalidateNotifications } from '@/lib/notifications';
 // server result takes over.
 const AUTHORED_LISTS = [
   ['feed'],
+  ['user-posts'],
+  ['user-profile'],
   ['post'],
   ['listing'],
   ['listings'],

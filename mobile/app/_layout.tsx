@@ -96,6 +96,7 @@ function AppStack({ needsNickname }: { needsNickname: boolean }) {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="post/[id]" />
         <Stack.Screen name="listing/[id]" />
+        <Stack.Screen name="user/[id]" />
         <Stack.Screen name="my-posts" />
         <Stack.Screen name="blocked-users" />
         <Stack.Screen name="notifications" />

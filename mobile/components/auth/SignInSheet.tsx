@@ -21,6 +21,7 @@ const COPY: Record<ParticipationAction, { icon: IconName; title: string }> = {
   report: { icon: 'flag-outline', title: 'Sign in to report' },
   block: { icon: 'ban-outline', title: 'Sign in to block' },
   share: { icon: 'share-social-outline', title: 'Sign in to share' },
+  profile: { icon: 'person-circle-outline', title: 'Sign in to see profiles' },
   default: { icon: 'sparkles-outline', title: 'Join the conversation' },
 };
 

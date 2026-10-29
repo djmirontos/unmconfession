@@ -4,6 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { PostBody } from '@/components/feed/PostBody';
 import { MoreButton } from '@/components/myposts/MoreButton';
 import { Avatar } from '@/components/profile/Avatar';
+import { ProfileLink } from '@/components/profile/ProfileLink';
 import { ReactionButton } from '@/components/reactions/ReactionButton';
 import { TopReactions } from '@/components/reactions/TopReactions';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -29,12 +30,22 @@ function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = fal
   const name = authorLabel(comment.nickname);
   return (
     <View className={`flex-row gap-3 ${isReply ? 'py-2' : 'py-3'} ${sending ? 'opacity-60' : ''}`}>
-      <Avatar avatarKey={comment.avatarKey} userId={comment.authorId} nickname={comment.nickname} size={isReply ? 24 : 32} deleted={isDeletedAuthor(comment.nickname)} />
+      <ProfileLink userId={comment.authorId} nickname={comment.nickname} height={isReply ? 24 : 32}>
+        <Avatar
+          avatarKey={comment.avatarKey}
+          userId={comment.authorId}
+          nickname={comment.nickname}
+          size={isReply ? 24 : 32}
+          deleted={isDeletedAuthor(comment.nickname)}
+        />
+      </ProfileLink>
       <View className="flex-1 gap-1">
         <View className="flex-row items-center gap-2">
-          <Text numberOfLines={1} className="shrink text-sm font-bold text-text">
-            {name}
-          </Text>
+          <ProfileLink userId={comment.authorId} nickname={comment.nickname} height={20} className="shrink">
+            <Text numberOfLines={1} className="text-sm font-bold text-text">
+              {name}
+            </Text>
+          </ProfileLink>
           <Text className="flex-1 text-xs text-text-dim">
             {sending ? 'Sending…' : formatRelative(comment.time)}
             {!sending && comment.editedAt ? ' · Edited' : ''}

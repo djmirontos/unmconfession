@@ -9,6 +9,7 @@ export type ParticipationAction =
   | 'report'
   | 'block'
   | 'share'
+  | 'profile'
   | 'default';
 
 type SignInSheetState = {

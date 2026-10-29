@@ -4,6 +4,7 @@ import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/profile/Avatar';
+import { ProfileLink } from '@/components/profile/ProfileLink';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useTheme } from '@/hooks/useTheme';
 import { isDeletedAuthor } from '@/lib/authorLabel';
@@ -21,7 +22,15 @@ function Leading({ group }: { group: NotificationGroup }) {
     const reaction = isReaction && group.reaction_type ? REACTIONS[group.reaction_type] : null;
     return (
       <View style={{ width: AVATAR, height: AVATAR }}>
-        <Avatar avatarKey={group.actor_avatar_key} userId={group.actor_id} nickname={group.actor_nickname} size={AVATAR} deleted={isDeletedAuthor(group.actor_nickname)} />
+        <ProfileLink userId={group.actor_id} nickname={group.actor_nickname} height={AVATAR}>
+          <Avatar
+            avatarKey={group.actor_avatar_key}
+            userId={group.actor_id}
+            nickname={group.actor_nickname}
+            size={AVATAR}
+            deleted={isDeletedAuthor(group.actor_nickname)}
+          />
+        </ProfileLink>
         {reaction ? (
           <View className="absolute -bottom-1 -right-1 rounded-full bg-surface1 p-0.5">
             <Image source={reaction.image} style={{ width: 20, height: 20 }} contentFit="contain" />

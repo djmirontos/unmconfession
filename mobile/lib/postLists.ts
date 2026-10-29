@@ -46,12 +46,12 @@ function mapPosts(posts: readonly FeedPost[], change: (post: FeedPost) => FeedPo
 
 /**
  * Applies `change` to every cached post list: the feed pages (every viewer's key),
- * Trending and active polls. Returning null drops the post; returning it unchanged
+ * members' profile pages, Trending and active polls. Returning null drops the post; returning it unchanged
  * keeps that list's identity, so untouched screens do not re-render. The post
  * detail cache is left to the caller.
  */
 export function updateListedPosts(queryClient: QueryClient, change: (post: FeedPost) => FeedPost | null): void {
-  queryClient.setQueriesData<FeedData>({ queryKey: ['feed'] }, (data) => {
+  const updatePages = (data: FeedData | undefined) => {
     if (!data) return data;
     let changed = false;
     const pages = data.pages.map((page) => {
@@ -61,7 +61,9 @@ export function updateListedPosts(queryClient: QueryClient, change: (post: FeedP
       return { ...page, items };
     });
     return changed ? { ...data, pages } : data;
-  });
+  };
+  queryClient.setQueriesData<FeedData>({ queryKey: ['feed'] }, updatePages);
+  queryClient.setQueriesData<FeedData>({ queryKey: ['user-posts'] }, updatePages);
   for (const queryKey of [['trending'], ['polls']]) {
     queryClient.setQueriesData<FeedPost[]>({ queryKey }, (list) => (list ? (mapPosts(list, change) ?? list) : list));
   }

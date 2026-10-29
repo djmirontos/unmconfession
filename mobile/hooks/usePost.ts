@@ -26,10 +26,12 @@ export function usePost(id: string) {
     queryFn: () => fetchPost(id),
     // Paint from the feed cache while the fresh row loads.
     placeholderData: () => {
-      for (const [, data] of queryClient.getQueriesData<FeedData>({ queryKey: ['feed'] })) {
-        for (const page of data?.pages ?? []) {
-          const hit = page.items.find((p) => p.id === id);
-          if (hit) return hit;
+      for (const queryKey of [['feed'], ['user-posts']]) {
+        for (const [, data] of queryClient.getQueriesData<FeedData>({ queryKey })) {
+          for (const page of data?.pages ?? []) {
+            const hit = page.items.find((p) => p.id === id);
+            if (hit) return hit;
+          }
         }
       }
       return undefined;

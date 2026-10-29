@@ -1070,3 +1070,13 @@ App only: no database change. Tapping a member's avatar or nickname opens `/user
 **Verified:** typecheck, lint and all mobile tests (5 + 11 + 8 + 9 + 10 + 7 + 8). Not checked on a device. Site and admin untouched.
 
 **Not included:** listings (Buy & Sell / Lost & Found are the separate `listings` table, read through `get_listings`; a profile section for them would need a filtered query). Reporting a profile is 12c-2 in the V2 backlog.
+
+## Module 12c-1: listings tab on public profiles (2026-10-29)
+
+App only: no database change. The profile page (`app/user/[id].tsx`) has a "Posts | Listings" chip group under the avatar (`ChipGroup`, radio role, 36 px chips with 44 px touch targets). The chosen tab lives only while the screen is open. The Posts tab is unchanged. The Listings tab loads the first time it is opened; after that both lists stay mounted and keep their scroll position. Tabs show only in the normal state (not guest, blocked, deleted, missing or loading).
+
+- `lib/userListings.ts`: `feed_listings` filtered by `author_id` (Buy & Sell and Lost & Found, closed ones included), newest first, keyset `(published_at, id)` with 20 per page, the same quoted `or()` cursor as the posts. `toListingCard` in `lib/listings.ts` is now exported, so rows parse exactly like the Buy & Sell lists.
+- Key `['listings', viewer, { author: id }]`: it sits under `['listings', viewer]` with the same page shape, so `updateListedListings` (comment counts, sold / returned, blocks), `findListedListing` (instant listing screen), `invalidateAuthoredLists`, the edit and delete invalidations and the sign-out cleanup all cover it with no new code. It never hides closed listings. Not persisted.
+- `useUserListings` (`hooks/useUserProfile.ts`) and `components/profile/UserListings.tsx`: the full `ListingCard` with its comment count (the Lost & Found card, for both kinds), tap opens `listing/[id]`, no author link back to the same profile (`CurrentProfileContext`). Skeletons, "No listings yet", error with Retry, pull to refresh, load more and "That's everything.".
+
+**Verified:** typecheck, lint and all mobile tests (5 + 11 + 8 + 9 + 10 + 7 + 8). The keyset filter was checked live on `feed_posts` in 12c; `feed_listings` returned no rows to a guest, so its paging was not checked live. Not checked on a device. No new pure helper, so no new test. Site and admin untouched.

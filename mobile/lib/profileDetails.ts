@@ -65,6 +65,9 @@ export function detailsChanged(saved: MyProfileDetails, draft: MyProfileDetails)
   );
 }
 
+/** Codes set_my_profile_details raises; lib/errors.ts must recognise them in an error message. */
+export const DETAILS_ERROR_CODES = ['details_contact', 'details_flagged', 'details_invalid'] as const;
+
 const DETAILS_MESSAGES: Record<string, string> = {
   details_contact: 'Please remove links, phone numbers, @ handles and app names.',
   details_flagged: "Some words aren't allowed. Please rephrase.",

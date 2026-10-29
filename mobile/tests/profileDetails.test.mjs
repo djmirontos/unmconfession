@@ -1,5 +1,6 @@
 // Run with: npm run test:details  (Node 22.6+ strips the TypeScript types of the import)
 import assert from 'node:assert/strict';
+import { register } from 'node:module';
 import { test } from 'node:test';
 
 import {
@@ -74,4 +75,29 @@ test('buildDetailLines keeps order and skips empty fields', () => {
   ]);
   assert.deepEqual(buildDetailLines(empty), []);
   assert.deepEqual(buildDetailLines(null), []);
+});
+
+// lib/errors.ts as the screen uses it, with the error shape a failed supabase.rpc() returns
+// (PostgrestError from `raise exception '<code>'`: the code is the message, `code` is P0001).
+register('./aliasHook.mjs', import.meta.url);
+const { getProfileDetailsErrorMessage } = await import('../lib/errors.ts');
+const rpcError = (message) => ({ message, code: 'P0001', details: null, hint: null });
+
+test('getProfileDetailsErrorMessage reads the code from a real rpc error', () => {
+  assert.equal(getProfileDetailsErrorMessage(rpcError('details_contact')), 'Please remove links, phone numbers, @ handles and app names.');
+  assert.equal(getProfileDetailsErrorMessage(rpcError('details_flagged')), "Some words aren't allowed. Please rephrase.");
+  assert.equal(getProfileDetailsErrorMessage(rpcError('details_invalid')), 'Please check your answers and try again.');
+});
+
+test('getProfileDetailsErrorMessage keeps the account and connection wording', () => {
+  assert.equal(getProfileDetailsErrorMessage(rpcError('banned')), 'This account has been banned.');
+  assert.equal(getProfileDetailsErrorMessage(rpcError('suspended')), 'This account is suspended for now. Try again later.');
+  assert.equal(getProfileDetailsErrorMessage(rpcError('nickname_required')), 'Choose a nickname before you take part.');
+  assert.equal(getProfileDetailsErrorMessage(new TypeError('Network request failed')), 'No connection. Check your internet and try again.');
+});
+
+test('getProfileDetailsErrorMessage falls back to the generic text', () => {
+  assert.equal(getProfileDetailsErrorMessage(rpcError('something_else')), 'Could not save your details. Please try again.');
+  assert.equal(getProfileDetailsErrorMessage(new Error('boom')), 'Could not save your details. Please try again.');
+  assert.equal(getProfileDetailsErrorMessage(null), 'Could not save your details. Please try again.');
 });

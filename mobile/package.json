@@ -17,7 +17,7 @@
     "test:session": "node --test tests/sessionRules.test.mjs",
     "test:avatar": "node --test tests/avatar.test.mjs",
     "test:profile": "node --test tests/profileView.test.mjs",
-    "test:details": "node --test tests/profileDetails.test.mjs",
+    "test:details": "node --no-warnings --test tests/profileDetails.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

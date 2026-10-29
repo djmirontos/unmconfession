@@ -1,6 +1,6 @@
 import { isAuthError, isAuthRetryableFetchError } from '@supabase/supabase-js';
 
-import { getDetailsErrorMessage } from '@/lib/profileDetails';
+import { DETAILS_ERROR_CODES, getDetailsErrorMessage } from '@/lib/profileDetails';
 
 const JOINED_WITH_GOOGLE = 'Joined with Google? Use Continue with Google.';
 
@@ -83,7 +83,8 @@ const FALLBACK = 'Something went wrong. Please try again.';
 export const SESSION_ENDED = 'Please sign in again.';
 const NETWORK = 'No connection. Check your internet and try again.';
 
-const DB_CODE = new RegExp(`\\b(${Object.keys(MESSAGES).join('|')})\\b`);
+// Known codes: every MESSAGES key, plus the profile details codes (their text lives in lib/profileDetails.ts).
+const DB_CODE = new RegExp(`\\b(${[...Object.keys(MESSAGES), ...DETAILS_ERROR_CODES].join('|')})\\b`);
 
 /** Extracts a known error code from an Auth or Postgrest error, if any. */
 export function getErrorCode(error: unknown): string | null {

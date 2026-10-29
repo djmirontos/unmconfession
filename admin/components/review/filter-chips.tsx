@@ -1,20 +1,29 @@
 import Link from 'next/link';
 
-import type { ContentType } from '@/lib/review/schemas';
+import type { ReportTargetType } from '@/lib/review/schemas';
 import { cn } from '@/lib/utils';
 
-const CHIPS: { label: string; value?: ContentType }[] = [
+const CHIPS: { label: string; value?: ReportTargetType }[] = [
   { label: 'All' },
   { label: 'Posts', value: 'post' },
   { label: 'Comments', value: 'comment' },
   { label: 'Listings', value: 'listing' },
 ];
+const PROFILES_CHIP: { label: string; value: ReportTargetType } = { label: 'Profiles', value: 'profile' };
 
-/** Type chips for a list page (`?filter=`). */
-export function FilterChips({ active, basePath = '/review' }: { active?: ContentType; basePath?: string }) {
+/** Type chips for a list page (`?filter=`). The reports list adds Profiles. */
+export function FilterChips({
+  active,
+  basePath = '/review',
+  withProfiles = false,
+}: {
+  active?: ReportTargetType;
+  basePath?: string;
+  withProfiles?: boolean;
+}) {
   return (
     <nav aria-label="Filter by type" className="flex flex-wrap gap-2">
-      {CHIPS.map((chip) => {
+      {(withProfiles ? [...CHIPS, PROFILES_CHIP] : CHIPS).map((chip) => {
         const selected = chip.value === active;
         return (
           <Link

@@ -85,7 +85,8 @@ describe('detail page actions', () => {
   });
   it('pages with a bar reserve room for it', () => {
     expect(src('app/(panel)/review/[type]/[id]/page.tsx')).toContain('ACTION_BAR_SPACE_ONE_ROW');
-    expect(src('app/(panel)/reports/[type]/[id]/page.tsx').match(/ACTION_BAR_SPACE_TWO_ROWS\}/g)).toHaveLength(2);
+    // Profile report, missing content and content: each branch reserves room for the bar.
+    expect(src('app/(panel)/reports/[type]/[id]/page.tsx').match(/ACTION_BAR_SPACE_TWO_ROWS\}/g)).toHaveLength(3);
   });
   it('every moderation dialog uses the shared sheet frame', () => {
     const s = src('components/moderation/dialogs.tsx');

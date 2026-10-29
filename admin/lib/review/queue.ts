@@ -1,7 +1,7 @@
-import type { ContentType } from '@/lib/review/schemas';
+import type { ContentType, ReportTargetType } from '@/lib/review/schemas';
 
-/** A pending item as the queue RPC returns it (only what navigation needs). */
-export type QueueEntry = { target_type: ContentType; target_id: string; created_at: string };
+/** A pending or reported item (only what navigation needs); reported items can be profiles. */
+export type QueueEntry = { target_type: ReportTargetType; target_id: string; created_at: string };
 
 export const keyOf = (e: { target_type: string; target_id: string }) => `${e.target_type}:${e.target_id}`;
 
@@ -13,7 +13,7 @@ export function listHref(filter?: ContentType): string {
   return filter ? `/review?filter=${filter}` : '/review';
 }
 
-const visible = (entries: readonly QueueEntry[], filter?: ContentType) =>
+const visible = (entries: readonly QueueEntry[], filter?: ReportTargetType) =>
   filter ? entries.filter((e) => e.target_type === filter) : entries;
 
 /**
@@ -50,7 +50,7 @@ export function pickNextAfterAction(
   after: readonly QueueEntry[],
   head: readonly QueueEntry[],
   currentKey: string,
-  filter?: ContentType,
+  filter?: ReportTargetType,
 ): QueueEntry | null {
   const notCurrent = (e: QueueEntry) => keyOf(e) !== currentKey;
   return visible(after, filter).find(notCurrent) ?? visible(head, filter).find(notCurrent) ?? null;

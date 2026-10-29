@@ -16,7 +16,7 @@ export function HoldBadge({ reason, term }: { reason: string | null; term: strin
   return <Badge variant="outline">No hold record</Badge>;
 }
 
-const TYPE_LABEL: Record<string, string> = { post: 'Post', comment: 'Comment', listing: 'Listing' };
+const TYPE_LABEL: Record<string, string> = { post: 'Post', comment: 'Comment', listing: 'Listing', profile: 'Profile' };
 
 export function TypeBadge({ type }: { type: string }) {
   return (

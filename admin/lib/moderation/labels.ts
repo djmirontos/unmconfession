@@ -14,6 +14,7 @@ const ACTION_LABEL: Record<string, string> = {
   suspend: 'Suspended',
   ban: 'Banned',
   restore_user: 'Account restored',
+  remove_avatar: 'Removed profile picture',
 };
 
 export function moderationActionLabel(action: string): string {

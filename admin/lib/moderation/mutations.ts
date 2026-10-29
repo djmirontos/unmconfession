@@ -12,7 +12,7 @@ import {
 } from '@/lib/moderation/resolve';
 import { type ActionResult, fail, ok } from '@/lib/result';
 import { fetchContent } from '@/lib/review/data';
-import type { Target } from '@/lib/review/schemas';
+import type { ReportTarget, Target } from '@/lib/review/schemas';
 import { createClient } from '@/lib/supabase/server';
 
 // Shared by the reports and content actions (each action checks access and validates first).
@@ -59,7 +59,7 @@ export async function removeAndResolve(target: Target, reasonLabel: string, note
 }
 
 /** Resolve every open report on the item ("Mark handled" or "Dismiss reports"). */
-export async function resolveAllOpen(target: Target, status: 'actioned' | 'dismissed'): Promise<ActionResult<FlowMessage>> {
+export async function resolveAllOpen(target: ReportTarget, status: 'actioned' | 'dismissed'): Promise<ActionResult<FlowMessage>> {
   const open = await openReportIds(target.type, target.id);
   if (open === null) return fail('unknown');
   const outcome = await resolveEach(open, (id) => resolveOne(id, status));

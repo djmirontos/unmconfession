@@ -5,7 +5,7 @@ import { codeFromError } from '@/lib/errors';
 import { formatAgo, formatExact } from '@/lib/format';
 import { imageCount, parseImages, type ReviewImage } from '@/lib/review/content';
 import { keyOf, neighbors, pickNextAfterAction, preview, type QueueEntry } from '@/lib/review/queue';
-import type { ContentType } from '@/lib/review/schemas';
+import { type ContentType, isContentType } from '@/lib/review/schemas';
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
 
@@ -31,8 +31,10 @@ export type QueueRow = {
   matchedTerm: string | null;
 };
 
-function toRow(r: QueueRpcRow): QueueRow {
-  return {
+// The queue holds posts, comments and listings only; the guard narrows the type.
+function toRow(r: QueueRpcRow): QueueRow[] {
+  if (!isContentType(r.target_type)) return [];
+  const row: QueueRow = {
     key: keyOf(r),
     type: r.target_type,
     id: r.target_id,
@@ -46,6 +48,7 @@ function toRow(r: QueueRpcRow): QueueRow {
     holdReason: r.hold_reason,
     matchedTerm: r.matched_term,
   };
+  return [row];
 }
 
 async function queueRpc(limit: number, after?: string): Promise<QueueRpcRow[]> {
@@ -61,7 +64,7 @@ const entry = (r: QueueRpcRow): QueueEntry => ({ target_type: r.target_type, tar
 export async function fetchQueuePage(after?: string): Promise<{ rows: QueueRow[]; nextCursor: string | null }> {
   const data = await queueRpc(QUEUE_PAGE, after);
   return {
-    rows: data.map(toRow),
+    rows: data.flatMap(toRow),
     nextCursor: data.length === QUEUE_PAGE ? data[data.length - 1].created_at : null,
   };
 }

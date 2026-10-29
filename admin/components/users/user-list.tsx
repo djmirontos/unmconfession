@@ -23,7 +23,7 @@ export function UserList({ initial, filters, now }: { initial: Page<UserRow>; fi
               href={`/users/${u.id}`}
               className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5 transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring sm:px-5"
             >
-              <UserAvatar nickname={u.nickname} />
+              <UserAvatar nickname={u.nickname} src={u.avatarUrl} />
               <div className="min-w-40 flex-1 space-y-1">
                 <p className="flex flex-wrap items-center gap-2">
                   <span className={u.nickname ? 'font-medium' : 'italic text-muted-foreground'}>{u.nickname ?? 'Deleted user'}</span>

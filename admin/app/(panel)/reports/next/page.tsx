@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { requireStaff } from '@/lib/auth';
 import { fetchNextReport } from '@/lib/moderation/data';
 import { keysetCursorSchema } from '@/lib/moderation/schemas';
-import { filterSchema, targetSchema } from '@/lib/review/schemas';
+import { reportFilterSchema, reportTargetSchema } from '@/lib/review/schemas';
 
 /**
  * /reports/next?type=&id=&after=&filter= : after an item's reports are handled, go to the
@@ -13,8 +13,8 @@ export default async function ReportsNextPage({ searchParams }: PageProps<'/repo
   await requireStaff();
   const params = await searchParams;
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
-  const filter = filterSchema.parse(one(params.filter));
-  const target = targetSchema.safeParse({ type: one(params.type), id: one(params.id) });
+  const filter = reportFilterSchema.parse(one(params.filter));
+  const target = reportTargetSchema.safeParse({ type: one(params.type), id: one(params.id) });
   const cursor = keysetCursorSchema.safeParse({ ts: one(params.after), id: one(params.id) });
 
   const next = target.success ? await fetchNextReport(target.data, cursor.success ? cursor.data : undefined, filter) : null;

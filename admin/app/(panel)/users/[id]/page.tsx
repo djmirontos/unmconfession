@@ -11,9 +11,11 @@ import { UserAvatar } from '@/components/moderation/user-avatar';
 import { RoleBadge } from '@/components/panel/role-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { RemoveAvatarButton } from '@/components/users/remove-avatar';
 import { UserActions } from '@/components/users/user-actions';
 import { UserContent, UserContentFilters, UserContentSkeleton } from '@/components/users/user-content';
 import { requireStaff } from '@/lib/auth';
+import { canRemoveAvatar } from '@/lib/moderation/avatar';
 import { userActions } from '@/lib/moderation/availability';
 import { fetchHistory, fetchUser, type HistoryQuery } from '@/lib/moderation/data';
 import { contentFiltersSchema, userIdSchema } from '@/lib/moderation/schemas';
@@ -53,6 +55,7 @@ export default async function UserPage({ params, searchParams }: PageProps<'/use
     now,
   );
   const suspension = suspensionLabel(user.status, user.suspendedUntil, now);
+  const removableAvatar = canRemoveAvatar(staff, user);
 
   return (
     <div className="space-y-6">
@@ -63,7 +66,7 @@ export default async function UserPage({ params, searchParams }: PageProps<'/use
       </Button>
 
       <div className="flex flex-wrap items-center gap-4">
-        <UserAvatar nickname={user.nickname} size="lg" />
+        <UserAvatar nickname={user.nickname} src={user.avatarUrl} size="xl" />
         <div className="space-y-1">
           <h1 className={`text-2xl font-semibold ${user.nickname ? '' : 'italic text-muted-foreground'}`}>
             {user.nickname ?? 'Deleted user'}
@@ -87,6 +90,7 @@ export default async function UserPage({ params, searchParams }: PageProps<'/use
                   {user.posts} posts · {user.comments} comments · {user.listings} listings
                 </Fact>
                 <Fact label="Open reports against">{user.openReports}</Fact>
+                <Fact label="Profile picture">{user.avatarUrl ? 'Own picture' : 'Default avatar'}</Fact>
                 {suspension ? <Fact label="Suspension">{suspension}</Fact> : null}
                 {user.statusReason ? <Fact label={user.deleted ? 'Stored reason' : 'Status reason'}>{user.statusReason}</Fact> : null}
               </dl>
@@ -103,10 +107,13 @@ export default async function UserPage({ params, searchParams }: PageProps<'/use
               {user.deleted ? (
                 <p className="text-sm text-muted-foreground">This account was deleted. Nothing can be changed.</p>
               ) : (
-                <UserActions
-                  user={{ id: user.id, nickname: user.nickname, role: user.role, status: user.status }}
-                  available={available}
-                />
+                <div className="space-y-4">
+                  <UserActions
+                    user={{ id: user.id, nickname: user.nickname, role: user.role, status: user.status }}
+                    available={available}
+                  />
+                  {removableAvatar ? <RemoveAvatarButton user={{ id: user.id, nickname: user.nickname }} /> : null}
+                </div>
               )}
             </CardContent>
           </Card>

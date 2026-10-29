@@ -4,8 +4,9 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { requireAdmin, requireStaff } from '@/lib/auth';
-import { codeFromError, renameErrorCode } from '@/lib/errors';
+import { codeFromError, removeAvatarErrorCode, renameErrorCode } from '@/lib/errors';
 import { formatExact } from '@/lib/format';
+import { removeAvatarSchema } from '@/lib/moderation/avatar';
 import { fetchUser, fetchUsersPage, type Page, type UserRow } from '@/lib/moderation/data';
 import { refreshPanel } from '@/lib/moderation/mutations';
 import {
@@ -25,7 +26,8 @@ import { type ActionResult, fail, ok } from '@/lib/result';
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
 
-// Moderators and admins: status changes (the database limits moderators to regular users).
+// Moderators and admins: status changes and removing a profile picture (the database limits
+// moderators to regular users).
 // Admins only: role, nickname, identity, email lookup, account deletion (requireAdmin() here
 // and again in the database).
 
@@ -84,6 +86,21 @@ export async function restoreUser(input: unknown): Promise<ActionResult> {
   const parsed = restoreUserSchema.safeParse(input);
   if (!parsed.success) return fail('invalid_input');
   return setStatus(parsed.data.user, 'active', parsed.data.reason || undefined);
+}
+
+/** Resets a custom picture to the default preset. Open reports stay open (resolve them separately). */
+export async function removeAvatar(input: unknown): Promise<ActionResult> {
+  await requireStaff();
+  const parsed = removeAvatarSchema.safeParse(input);
+  if (!parsed.success) return fail(parsed.error.issues.some((i) => i.path[0] === 'reason') ? 'reason_too_long' : 'invalid_input');
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('mod_remove_avatar', {
+    p_user: parsed.data.user,
+    ...(parsed.data.reason ? { p_reason: parsed.data.reason } : {}),
+  });
+  if (error) return fail(removeAvatarErrorCode(codeFromError(error)));
+  refreshPanel();
+  return ok(undefined);
 }
 
 export async function setUserRole(input: unknown): Promise<ActionResult> {

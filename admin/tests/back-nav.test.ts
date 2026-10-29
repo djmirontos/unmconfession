@@ -101,7 +101,8 @@ describe('back arrow wiring', () => {
     for (const f of ['app/(panel)/review/[type]/[id]/page.tsx', 'app/(panel)/content/[type]/[id]/page.tsx', 'app/(panel)/users/[id]/page.tsx']) {
       expect(src(f).match(/variant="ghost" size="sm" className="max-lg:hidden"/g), f).toHaveLength(1);
     }
-    expect(src('app/(panel)/reports/[type]/[id]/page.tsx').match(/variant="ghost" size="sm" className="max-lg:hidden"/g)).toHaveLength(2);
+    // The report page builds its Back link once and shows it in each branch (profile, missing, content).
+    expect(src('app/(panel)/reports/[type]/[id]/page.tsx').match(/variant="ghost" size="sm" className="max-lg:hidden"/g)).toHaveLength(1);
   });
   it('the login and enrolment pages are outside the panel layout (no arrow there)', () => {
     const auth = src('app/(auth)/layout.tsx');

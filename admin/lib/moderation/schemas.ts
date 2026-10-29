@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { REJECT_REASON_VALUES } from '@/lib/review/reasons';
-import { contentTypeSchema, NOTE_MAX, targetSchema } from '@/lib/review/schemas';
+import { contentTypeSchema, NOTE_MAX, reportTargetSchema, targetSchema } from '@/lib/review/schemas';
 
 export const STATUS_REASON_MIN = 3;
 export const STATUS_REASON_MAX = 300;
@@ -22,7 +22,8 @@ export const removeSchema = targetSchema.extend({
   note: z.string().trim().max(NOTE_MAX).optional(),
 });
 
-export const resolveSchema = targetSchema.extend({ status: z.enum(['actioned', 'dismissed']) });
+// Resolve works on every report target, profiles included.
+export const resolveSchema = reportTargetSchema.extend({ status: z.enum(['actioned', 'dismissed']) });
 
 // URL filters (bad values fall back to "all").
 export const contentFiltersSchema = z.object({

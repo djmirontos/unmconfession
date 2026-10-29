@@ -1,8 +1,10 @@
 import 'server-only';
 
 import { requireAdmin, requireStaff } from '@/lib/auth';
+import { serverEnv } from '@/lib/env';
 import { codeFromError } from '@/lib/errors';
 import { formatAgo, formatExact } from '@/lib/format';
+import { avatarUrl } from '@/lib/moderation/avatar';
 import { type ContentFilters, contentListArgs } from '@/lib/moderation/content-args';
 import { afterArgs, keysetPage, type Page } from '@/lib/moderation/keyset';
 import { moderationActionLabel, reportReasonLabel } from '@/lib/moderation/labels';
@@ -10,7 +12,7 @@ import { auditActionLabel, auditArgs, auditDetail, LOG_PAGE, type LogFilters, lo
 import type { KeysetCursor } from '@/lib/moderation/schemas';
 import { imageCount } from '@/lib/review/content';
 import { keyOf, pickNextAfterAction, preview, type QueueEntry } from '@/lib/review/queue';
-import type { ContentType } from '@/lib/review/schemas';
+import { type ContentType, isContentType, type ReportTargetType } from '@/lib/review/schemas';
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
 
@@ -33,7 +35,7 @@ const after = afterArgs;
 
 export type ReportRow = {
   key: string;
-  type: ContentType;
+  type: ReportTargetType;
   id: string;
   count: number;
   reasons: string[];
@@ -47,6 +49,8 @@ export type ReportRow = {
   kind: string | null;
   preview: string;
   images: number;
+  /** Profile reports: the reported picture (null for a preset). */
+  avatarUrl: string | null;
 };
 
 type ReportRpc = Fn['mod_get_reports']['Returns'][number];
@@ -68,6 +72,7 @@ function toReportRow(r: ReportRpc): ReportRow {
     kind: r.title,
     preview: preview(r.body),
     images: imageCount(r.images),
+    avatarUrl: r.target_type === 'profile' ? avatarUrl(r.target_id, r.avatar_key, serverEnv().url) : null,
   };
 }
 
@@ -95,7 +100,7 @@ export type ReportDetail = {
   handledExact: string | null;
 };
 
-export async function fetchReportDetails(type: ContentType, id: string): Promise<ReportDetail[]> {
+export async function fetchReportDetails(type: ReportTargetType, id: string): Promise<ReportDetail[]> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('mod_get_report_details', { p_type: type, p_id: id });
   if (error) fail(error);
@@ -114,7 +119,7 @@ export async function fetchReportDetails(type: ContentType, id: string): Promise
 }
 
 /** Ids of the reports still open on the item, or null if they could not be read. */
-export async function openReportIds(type: ContentType, id: string): Promise<string[] | null> {
+export async function openReportIds(type: ReportTargetType, id: string): Promise<string[] | null> {
   try {
     return (await fetchReportDetails(type, id)).filter((r) => r.status === 'open').map((r) => r.id);
   } catch {
@@ -125,7 +130,7 @@ export async function openReportIds(type: ContentType, id: string): Promise<stri
 const reportEntry = (r: ReportRpc): QueueEntry => ({ target_type: r.target_type, target_id: r.target_id, created_at: r.first_reported_at });
 
 /** Next reported item after the current one (same rules as the review queue, ordered by first report). */
-export async function fetchNextReport(current: { type: ContentType; id: string }, cursor: KeysetCursor | undefined, filter?: ContentType) {
+export async function fetchNextReport(current: { type: ReportTargetType; id: string }, cursor: KeysetCursor | undefined, filter?: ReportTargetType) {
   const [afterRows, head] = await Promise.all([cursor ? reportsRpc(WINDOW, cursor) : Promise.resolve([]), reportsRpc(WINDOW)]);
   return pickNextAfterAction(afterRows.map(reportEntry), head.map(reportEntry), keyOf({ target_type: current.type, target_id: current.id }), filter);
 }
@@ -154,23 +159,27 @@ export async function fetchContentPage(filters: ContentFilters, cursor?: KeysetC
   const supabase = await createClient();
   const { data, error } = await supabase.rpc('mod_list_content', contentListArgs(filters, PAGE, cursor));
   if (error) fail(error);
+  // mod_list_content lists posts, comments and listings only; the guard narrows the type.
   return page(
     data ?? [],
-    (r) => ({
-      key: keyOf(r),
-      type: r.target_type,
-      id: r.target_id,
-      status: r.status,
-      kind: r.title,
-      preview: preview(r.body),
-      nickname: r.nickname,
-      ago: formatAgo(r.created_at),
-      exact: formatExact(r.created_at),
-      createdAt: r.created_at,
-      deletedByAuthor: r.deleted_at !== null,
-      postNumber: r.post_number,
-      images: imageCount(r.images),
-    }),
+    (r) => {
+      if (!isContentType(r.target_type)) return null;
+      return {
+        key: keyOf(r),
+        type: r.target_type,
+        id: r.target_id,
+        status: r.status,
+        kind: r.title,
+        preview: preview(r.body),
+        nickname: r.nickname,
+        ago: formatAgo(r.created_at),
+        exact: formatExact(r.created_at),
+        createdAt: r.created_at,
+        deletedByAuthor: r.deleted_at !== null,
+        postNumber: r.post_number,
+        images: imageCount(r.images),
+      };
+    },
     (r) => ({ ts: r.created_at, id: r.target_id }),
     PAGE,
   );
@@ -188,6 +197,8 @@ export type UserRow = {
   suspendedUntil: string | null;
   statusReason: string | null;
   deleted: boolean;
+  avatarKey: string | null;
+  avatarUrl: string | null;
   joinedAt: string;
   joinedExact: string;
   termsAcceptedExact: string | null;
@@ -206,6 +217,8 @@ function toUserRow(r: UserRpc): UserRow {
     suspendedUntil: r.suspended_until,
     statusReason: r.status_reason,
     deleted: r.deleted,
+    avatarKey: r.avatar_key,
+    avatarUrl: avatarUrl(r.user_id, r.avatar_key, serverEnv().url),
     joinedAt: r.joined_at,
     joinedExact: formatExact(r.joined_at),
     termsAcceptedExact: r.terms_accepted_at ? formatExact(r.terms_accepted_at) : null,

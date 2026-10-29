@@ -2,7 +2,7 @@
 
 import { CheckCheck, PencilLine, Trash2, TriangleAlert, XCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useRef, useState, useTransition } from 'react';
+import { type ReactNode, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
 import { editPublished, removePublished } from '@/app/(panel)/content/actions';
@@ -13,10 +13,10 @@ import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import type { FlowMessage } from '@/lib/moderation/mutations';
 import type { ActionResult } from '@/lib/result';
-import { BODY_MAX, type ContentType } from '@/lib/review/schemas';
+import { BODY_MAX, type ReportTargetType } from '@/lib/review/schemas';
 
 type Props = {
-  type: ContentType;
+  type: ReportTargetType;
   id: string;
   body: string;
   status: string;
@@ -25,19 +25,23 @@ type Props = {
   cascades: boolean;
   /** Where to go once the item is handled (the server picks the next reported item). */
   nextHref: string;
+  /** Extra buttons at the start of the bar (a profile report: Remove avatar). */
+  leading?: ReactNode;
 };
 
 type Dialog = 'remove' | 'dismiss' | 'handled' | 'edit' | null;
 
-export function ReportActions({ type, id, body, status, openReports, cascades, nextHref }: Props) {
+export function ReportActions({ type, id, body, status, openReports, cascades, nextHref, leading }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const busy = useRef(false);
   const [dialog, setDialog] = useState<Dialog>(null);
   const [partial, setPartial] = useState<string | null>(null);
-  const published = status === 'published';
+  // A profile is not content: no Remove or Edit here (Remove avatar comes in `leading`).
+  const isProfile = type === 'profile';
+  const published = !isProfile && status === 'published';
   const editable = published && (type === 'post' || type === 'comment');
-  const anyAction = published || openReports > 0 || editable;
+  const anyAction = published || openReports > 0 || editable || leading !== undefined;
 
   /** One request at a time. Finished flows move on; partial ones stay with a retry for the rest. */
   const run = <T,>(call: () => Promise<ActionResult<T>>, onOk: (data: T) => void) => {
@@ -86,6 +90,7 @@ export function ReportActions({ type, id, body, status, openReports, cascades, n
       {/* Inline from md; on phones the same buttons are a bar pinned to the bottom edge. */}
       {anyAction ? (
         <div className={`${ACTION_GRID} ${ACTION_BAR_BELOW_MD}`}>
+          {leading}
           {published ? (
             <Button size="lg" variant="destructive" onClick={() => setDialog('remove')} disabled={pending}>
               <Trash2 aria-hidden="true" /> Remove content…
@@ -130,7 +135,13 @@ export function ReportActions({ type, id, body, status, openReports, cascades, n
         onOpenChange={(o) => setDialog(o ? 'handled' : null)}
         pending={pending}
         title="Mark the reports handled"
-        description={<p>The content stays as it is. Use this after editing it or acting on the author&apos;s account.</p>}
+        description={
+          isProfile ? (
+            <p>The profile stays as it is. Use this after removing the picture or acting on the account.</p>
+          ) : (
+            <p>The content stays as it is. Use this after editing it or acting on the author&apos;s account.</p>
+          )
+        }
         confirmLabel="Mark handled"
         onConfirm={() => run(() => resolveReports({ type, id, status: 'actioned' }), finishFlow)}
       />
@@ -139,7 +150,7 @@ export function ReportActions({ type, id, body, status, openReports, cascades, n
         onOpenChange={(o) => setDialog(o ? 'dismiss' : null)}
         pending={pending}
         title="Dismiss the reports"
-        description={<p>The reports were not justified. The content stays and nobody is notified.</p>}
+        description={<p>The reports were not justified. The {isProfile ? 'profile' : 'content'} stays and nobody is notified.</p>}
         confirmLabel="Dismiss reports"
         onConfirm={() => run(() => resolveReports({ type, id, status: 'dismissed' }), finishFlow)}
       />

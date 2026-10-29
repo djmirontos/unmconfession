@@ -37,6 +37,10 @@ const MESSAGES: Record<string, string> = {
   no_user_with_email: 'No user with that email.',
   confirm_mismatch: 'Type the nickname exactly as shown to confirm.',
   identity_unavailable: 'This account has no sign-in record (it may have been deleted).',
+  // Profile pictures (mod_remove_avatar); removeAvatarErrorCode gives forbidden its own text.
+  no_custom_avatar: 'This user has no custom profile picture. It may already have been removed.',
+  avatar_forbidden: "Only an admin can remove a moderator's or admin's profile picture.",
+  avatar_account_deleted: 'This account was deleted, so its picture cannot be changed.',
   // Keywords
   invalid_regex: 'This regular expression is not valid.',
   keyword_exists: 'That term already exists for this match type.',
@@ -97,6 +101,13 @@ export function announcementErrorCode(error: unknown): string {
 /** Rename-specific wording: a deleted account explains that its nickname cannot change. */
 export function renameErrorCode(code: string): string {
   return code === 'account_deleted' ? 'nickname_account_deleted' : code;
+}
+
+/** mod_remove_avatar codes with avatar wording (other actions keep the generic text). */
+export function removeAvatarErrorCode(code: string): string {
+  if (code === 'forbidden') return 'avatar_forbidden';
+  if (code === 'account_deleted') return 'avatar_account_deleted';
+  return code;
 }
 
 export function messageFor(code: string): string {

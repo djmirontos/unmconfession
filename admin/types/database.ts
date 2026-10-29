@@ -1922,6 +1922,7 @@ export type Database = {
         Args: { p_after_id?: string; p_after_ts?: string; p_limit?: number }
         Returns: {
           author_id: string
+          avatar_key: string
           body: string
           content_status: Database["public"]["Enums"]["content_status"]
           first_reported_at: string
@@ -2064,7 +2065,7 @@ export type Database = {
       account_status: "active" | "suspended" | "banned"
       app_role: "user" | "moderator" | "admin"
       content_status: "published" | "pending" | "rejected" | "removed"
-      content_type: "post" | "comment" | "listing"
+      content_type: "post" | "comment" | "listing" | "profile"
       listing_kind: "sell" | "lost_found"
       post_kind: "confession" | "shoutout" | "poll"
       reaction_type: "like" | "love" | "haha" | "wow" | "sad" | "angry"
@@ -2198,7 +2199,7 @@ export const Constants = {
       account_status: ["active", "suspended", "banned"],
       app_role: ["user", "moderator", "admin"],
       content_status: ["published", "pending", "rejected", "removed"],
-      content_type: ["post", "comment", "listing"],
+      content_type: ["post", "comment", "listing", "profile"],
       listing_kind: ["sell", "lost_found"],
       post_kind: ["confession", "shoutout", "poll"],
       reaction_type: ["like", "love", "haha", "wow", "sad", "angry"],

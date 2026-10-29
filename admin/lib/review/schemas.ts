@@ -11,11 +11,24 @@ export const EDIT_REASON_MAX = 200;
 
 export const contentTypeSchema = z.enum(CONTENT_TYPES);
 
+/** Reports can also target a member's profile (target id = the user's id). */
+export const REPORT_TARGET_TYPES = [...CONTENT_TYPES, 'profile'] as const;
+export type ReportTargetType = (typeof REPORT_TARGET_TYPES)[number];
+
+/** Narrows a content_type value from the database to the three content tables. */
+export const isContentType = (type: string): type is ContentType => (CONTENT_TYPES as readonly string[]).includes(type);
+
 export const targetSchema = z.object({
   type: contentTypeSchema,
   id: z.uuid(),
 });
 export type Target = z.infer<typeof targetSchema>;
+
+export const reportTargetSchema = z.object({
+  type: z.enum(REPORT_TARGET_TYPES),
+  id: z.uuid(),
+});
+export type ReportTarget = z.infer<typeof reportTargetSchema>;
 
 // The queue's created_at, used only as a cursor (passed back unchanged to keep microseconds).
 export const cursorSchema = z.iso.datetime({ offset: true });
@@ -35,3 +48,5 @@ export const editSchema = z
   .refine((v) => v.body.length <= BODY_MAX[v.type], { path: ['body'], message: 'too_long' });
 
 export const filterSchema = contentTypeSchema.optional().catch(undefined);
+/** The reports list also filters on profiles. */
+export const reportFilterSchema = z.enum(REPORT_TARGET_TYPES).optional().catch(undefined);

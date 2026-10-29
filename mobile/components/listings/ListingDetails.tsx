@@ -44,7 +44,7 @@ function ListingDetailsImpl({ listing, onToggleClosed }: Props) {
     <View className="gap-4">
       <View className="gap-3">
         <View className="flex-row items-center">
-          <AuthorLine nickname={listing.nickname} avatarKey={listing.avatarKey} time={listing.time} editedAt={listing.editedAt} />
+          <AuthorLine authorId={listing.authorId} nickname={listing.nickname} avatarKey={listing.avatarKey} time={listing.time} editedAt={listing.editedAt} />
         </View>
         <ListingGallery images={listing.images} kind={listing.kind} />
       </View>

@@ -15,6 +15,7 @@
     "test:version": "node --test tests/versionGate.test.mjs",
     "test:announcements": "node --test tests/announcements.test.mjs",
     "test:session": "node --test tests/sessionRules.test.mjs",
+    "test:avatar": "node --test tests/avatar.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

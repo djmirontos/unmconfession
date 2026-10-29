@@ -1,18 +1,55 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
+import { useState } from 'react';
 import { Text, View } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
+import { avatarUrl } from '@/lib/avatar';
 import { emojiTint, getAvatar } from '@/lib/avatars';
 
 type Props = {
   avatarKey: string | null | undefined;
+  /** The member's id: needed to show a custom picture (without it the first preset shows). */
+  userId?: string | null;
+  /** For the custom picture's accessibility label. */
+  nickname?: string | null;
   size?: number;
   /** A deleted account: a neutral grey silhouette instead of any preset. */
   deleted?: boolean;
 };
 
-/** A member's avatar from the one table in lib/avatars (unknown keys show the first preset). */
-export function Avatar({ avatarKey, size = 40, deleted = false }: Props) {
+/**
+ * A member's avatar: a custom picture (avatars bucket) or a preset from lib/avatars
+ * (unknown keys show the first preset, which also sits under a custom picture while it
+ * loads and stays if it fails).
+ */
+export function Avatar({ avatarKey, userId, nickname, size = 40, deleted = false }: Props) {
+  const url = deleted ? null : avatarUrl(userId, avatarKey);
+  // Keyed by URL, so a new picture gets a fresh try.
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+
+  if (!url || failedUrl === url) return <PresetAvatar avatarKey={avatarKey} size={size} deleted={deleted} />;
+  return (
+    <View
+      style={{ width: size, height: size }}
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel={nickname ? `${nickname}'s profile picture` : 'Profile picture'}
+    >
+      <PresetAvatar avatarKey="avatar_01" size={size} deleted={false} />
+      <Image
+        source={{ uri: url }}
+        style={{ position: 'absolute', width: size, height: size, borderRadius: size / 2 }}
+        cachePolicy="disk"
+        transition={120}
+        recyclingKey={url}
+        onError={() => setFailedUrl(url)}
+      />
+    </View>
+  );
+}
+
+function PresetAvatar({ avatarKey, size, deleted }: { avatarKey: string | null | undefined; size: number; deleted: boolean }) {
   const { scheme, colors } = useTheme();
   const avatar = getAvatar(avatarKey);
   const circle = { width: size, height: size, borderRadius: size / 2 };

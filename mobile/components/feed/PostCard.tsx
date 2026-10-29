@@ -71,6 +71,7 @@ function PostCardImpl({
       <PostHeader
         kind={post.kind}
         number={post.number}
+        author_id={post.author_id}
         nickname={post.nickname}
         avatar_key={post.avatar_key}
         published_at={post.published_at}

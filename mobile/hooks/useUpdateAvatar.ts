@@ -2,12 +2,19 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { type Profile, profileQueryKey } from '@/hooks/useProfile';
 import { invalidateAuthoredLists } from '@/lib/authoredLists';
+import { removeCustomAvatar } from '@/lib/avatarStorage';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
+/** profiles.avatar_key is the one profile column members may update. A custom key needs its file uploaded first. */
+export async function saveAvatarKey(userId: string, avatarKey: string): Promise<void> {
+  const { error } = await supabase.from('profiles').update({ avatar_key: avatarKey }).eq('id', userId);
+  if (error) throw error;
+}
+
 /**
- * Optimistically sets profiles.avatar_key (the one profile column members may update).
- * On success every list showing the member's avatar refetches.
+ * Optimistically sets a preset avatar. On success every list showing the member's avatar
+ * refetches, and a custom picture it replaces is deleted (best effort).
  */
 export function useUpdateAvatar() {
   const queryClient = useQueryClient();
@@ -16,8 +23,7 @@ export function useUpdateAvatar() {
   return useMutation({
     mutationFn: async (avatarKey: string) => {
       if (!userId) throw new Error('not_authenticated');
-      const { error } = await supabase.from('profiles').update({ avatar_key: avatarKey }).eq('id', userId);
-      if (error) throw error;
+      await saveAvatarKey(userId, avatarKey);
     },
     onMutate: async (avatarKey) => {
       if (!userId) return { previous: undefined };
@@ -30,7 +36,11 @@ export function useUpdateAvatar() {
     onError: (_error, _key, context) => {
       if (userId && context?.previous) queryClient.setQueryData(profileQueryKey(userId), context.previous);
     },
-    onSuccess: () => invalidateAuthoredLists(queryClient),
+    onSuccess: (_data, avatarKey, context) => {
+      invalidateAuthoredLists(queryClient);
+      const replaced = context?.previous?.avatar_key;
+      if (userId && replaced !== avatarKey) void removeCustomAvatar(userId, replaced);
+    },
     onSettled: () => {
       if (userId) void queryClient.invalidateQueries({ queryKey: profileQueryKey(userId) });
     },

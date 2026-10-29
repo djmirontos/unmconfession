@@ -106,6 +106,17 @@ export function getErrorMessage(error: unknown): string {
   return FALLBACK;
 }
 
+// Profile picture: account states and photo problems keep their own text, anything else is one line.
+const AVATAR_FAILED = 'Could not update your picture. Please try again.';
+const AVATAR_SPECIFIC = new Set(['banned', 'suspended', 'nickname_required', 'image_too_large', 'photo_read_failed', 'network_error']);
+
+export function getAvatarErrorMessage(error: unknown): string {
+  const code = getErrorCode(error);
+  if (code && AVATAR_SPECIFIC.has(code)) return MESSAGES[code] ?? AVATAR_FAILED;
+  if (isNetworkError(error)) return NETWORK;
+  return AVATAR_FAILED;
+}
+
 // Reaction failures use their own wording: a missing post reads as unavailable,
 // and rate or permission problems reuse the generic connection text.
 const REACTION_GENERIC = new Set(['rate_limited', 'banned', 'suspended', 'not_authenticated', 'nickname_required', 'no_profile']);

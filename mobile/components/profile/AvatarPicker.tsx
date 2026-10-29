@@ -1,9 +1,11 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/profile/Avatar';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { ChipGroup } from '@/components/ui/ChipGroup';
+import { useTheme } from '@/hooks/useTheme';
 import { AVATAR_CATEGORIES, type AvatarCategory, type AvatarDef, avatarsIn, getAvatar } from '@/lib/avatars';
 
 const PER_ROW = 5;
@@ -17,8 +19,24 @@ type Props = {
   /** The member's current avatar key (ringed, and its category opens first). */
   value: string;
   onSelect: (key: string) => void;
+  /** A custom picture: the sheet closes and the screen runs the picker. */
+  onPickPhoto: (source: 'library' | 'camera') => void;
   onClose: () => void;
 };
+
+function PhotoOption({ icon, label, onPress }: { icon: 'images-outline' | 'camera-outline'; label: string; onPress: () => void }) {
+  const { colors } = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      className="min-h-11 flex-1 flex-row items-center justify-center gap-2 rounded-xl border border-hairline px-3 py-2 active:bg-surface2"
+    >
+      <Ionicons name={icon} size={18} color={colors.text} />
+      <Text className="text-sm font-semibold text-text">{label}</Text>
+    </Pressable>
+  );
+}
 
 function Cell({ avatar, selected, onPress }: { avatar: AvatarDef; selected: boolean; onPress: () => void }) {
   return (
@@ -36,7 +54,7 @@ function Cell({ avatar, selected, onPress }: { avatar: AvatarDef; selected: bool
 }
 
 /** Bottom sheet: category chips and a 5-per-row grid of avatars. */
-function AvatarPickerSheet({ value, onSelect, onClose }: Omit<Props, 'visible'>) {
+function AvatarPickerSheet({ value, onSelect, onPickPhoto, onClose }: Omit<Props, 'visible'>) {
   // Opens on the category of the current avatar.
   const [category, setCategory] = useState<AvatarCategory>(getAvatar(value).category);
   const items = avatarsIn(category);
@@ -47,6 +65,10 @@ function AvatarPickerSheet({ value, onSelect, onClose }: Omit<Props, 'visible'>)
       <Text accessibilityRole="header" className="px-2 text-base font-bold text-text">
         Choose an avatar
       </Text>
+      <View className="flex-row gap-2">
+        <PhotoOption icon="images-outline" label="Choose from gallery" onPress={() => onPickPhoto('library')} />
+        <PhotoOption icon="camera-outline" label="Take a photo" onPress={() => onPickPhoto('camera')} />
+      </View>
       <ChipGroup options={AVATAR_CATEGORIES} value={category} onChange={setCategory} accessibilityLabel="Avatar category" scroll />
       <View style={{ gap: ROW_GAP, height: ROWS * CELL + (ROWS - 1) * ROW_GAP }} accessibilityRole="radiogroup" accessibilityLabel="Avatars">
         {rows.map((row, r) => (
@@ -70,11 +92,11 @@ function AvatarPickerSheet({ value, onSelect, onClose }: Omit<Props, 'visible'>)
   );
 }
 
-export function AvatarPicker({ visible, value, onSelect, onClose }: Props) {
+export function AvatarPicker({ visible, value, onSelect, onPickPhoto, onClose }: Props) {
   return (
     <BottomSheet visible={visible} onClose={onClose} closeLabel="Close avatar picker">
       {/* Mounted only while open, so each opening starts on the current avatar's category. */}
-      {visible ? <AvatarPickerSheet value={value} onSelect={onSelect} onClose={onClose} /> : null}
+      {visible ? <AvatarPickerSheet value={value} onSelect={onSelect} onPickPhoto={onPickPhoto} onClose={onClose} /> : null}
     </BottomSheet>
   );
 }

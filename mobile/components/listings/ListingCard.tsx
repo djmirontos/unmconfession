@@ -33,7 +33,7 @@ function ListingCardImpl({ listing, onOpen, showCommentCount = false, headerAcce
   const content = (
     <View className="gap-3">
       <View className="flex-row items-center gap-2">
-        <AuthorLine nickname={listing.nickname} avatarKey={listing.avatarKey} time={listing.time} editedAt={listing.editedAt} />
+        <AuthorLine authorId={listing.authorId} nickname={listing.nickname} avatarKey={listing.avatarKey} time={listing.time} editedAt={listing.editedAt} />
         <CardTag label={typeLabel(listing)} />
         {listing.isClosed ? (
           <Text className="rounded-full bg-accent px-2.5 py-1 text-xs font-bold text-on-accent">{closedLabel(listing)}</Text>

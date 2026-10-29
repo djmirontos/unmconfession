@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { type ReactNode, useState } from 'react';
-import { Linking, Pressable, Text, View } from 'react-native';
+import { type ReactNode, useCallback, useState } from 'react';
+import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native';
 
 import { AccountLoadError } from '@/components/auth/AccountLoadError';
 import { TabScreen } from '@/components/layout/TabScreen';
@@ -13,14 +13,17 @@ import { ThemeSwitch } from '@/components/profile/ThemeSwitch';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useAvatarPhoto } from '@/hooks/useAvatarPhoto';
 import { useAvatarPrompt } from '@/hooks/useAvatarPrompt';
 import { useMySettings } from '@/hooks/useMySettings';
+import { usePhotoPicker } from '@/hooks/usePhotoPicker';
 import { type Profile, useMembership } from '@/hooks/useProfile';
 import { useTheme } from '@/hooks/useTheme';
 import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { useUpdateAvatar } from '@/hooks/useUpdateAvatar';
 import { logOut } from '@/lib/auth';
 import { appVersion, FEEDBACK_EMAIL, feedbackMailto } from '@/lib/config';
+import { getAvatarErrorMessage } from '@/lib/errors';
 import { formatManilaDay } from '@/lib/manilaDate';
 import { inNicknameCooldown } from '@/lib/settings';
 import { useToastStore } from '@/stores/toastStore';
@@ -70,12 +73,38 @@ function AvatarPrompt({ onPick, onDismiss }: { onPick: () => void; onDismiss: ()
 }
 
 /** Avatar (tap to change, pencil badge), nickname and email. */
-function ProfileHeader({ profile, email, onChangeAvatar }: { profile: Profile; email: string | null; onChangeAvatar: () => void }) {
+function ProfileHeader({
+  profile,
+  email,
+  busy,
+  onChangeAvatar,
+}: {
+  profile: Profile;
+  email: string | null;
+  /** A picture is being saved: the avatar dims, shows progress and cannot be tapped. */
+  busy: boolean;
+  onChangeAvatar: () => void;
+}) {
   const { colors } = useTheme();
   return (
     <View className="flex-row items-center gap-4 rounded-2xl border border-hairline bg-surface1 p-4">
-      <Pressable onPress={onChangeAvatar} accessibilityRole="button" accessibilityLabel="Change avatar" className="active:opacity-80">
-        <Avatar avatarKey={profile.avatar_key} size={AVATAR_SIZE} />
+      <Pressable
+        onPress={onChangeAvatar}
+        disabled={busy}
+        accessibilityRole="button"
+        accessibilityLabel="Change avatar"
+        accessibilityState={{ disabled: busy, busy }}
+        className="active:opacity-80"
+      >
+        <Avatar avatarKey={profile.avatar_key} userId={profile.id} nickname={profile.nickname} size={AVATAR_SIZE} />
+        {busy ? (
+          <View
+            style={{ width: AVATAR_SIZE, height: AVATAR_SIZE, borderRadius: AVATAR_SIZE / 2 }}
+            className="absolute items-center justify-center bg-black/40"
+          >
+            <ActivityIndicator color="#FFFFFF" />
+          </View>
+        ) : null}
         <View className="absolute -bottom-0.5 -right-0.5 h-7 w-7 items-center justify-center rounded-full border-2 border-surface1 bg-accent">
           <Ionicons name="pencil" size={13} color={colors.onAccent} />
         </View>
@@ -158,17 +187,41 @@ function AboutGroup() {
 function MemberProfile({ profile, email }: { profile: Profile; email: string | null }) {
   const router = useRouter();
   const updateAvatar = useUpdateAvatar();
+  const avatarPhoto = useAvatarPhoto();
   const showToast = useToastStore((s) => s.show);
   const { showPrompt, markSeen } = useAvatarPrompt(profile.id);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const busy = avatarPhoto.isPending || updateAvatar.isPending;
+
+  const onPhotoPicked = useCallback(
+    (uris: string[]) => {
+      const sourceUri = uris[0];
+      if (!sourceUri) return;
+      avatarPhoto.mutate(
+        { sourceUri, currentKey: profile.avatar_key },
+        {
+          onSuccess: () => showToast('Profile picture updated'),
+          onError: (error) => showToast(getAvatarErrorMessage(error)),
+        },
+      );
+    },
+    [avatarPhoto, profile.avatar_key, showToast],
+  );
+  const photoPicker = usePhotoPicker(onPhotoPicked, 'avatar');
 
   const openPicker = () => {
+    if (busy) return;
     setPickerOpen(true);
     markSeen();
   };
+  const pickPhoto = (source: 'library' | 'camera') => {
+    setPickerOpen(false);
+    // Let the sheet's Modal finish closing before the system picker opens over it.
+    setTimeout(() => void (source === 'library' ? photoPicker.fromLibrary(1) : photoPicker.fromCamera()), 300);
+  };
   const chooseAvatar = (key: string) => {
     setPickerOpen(false);
-    if (key === profile.avatar_key) return;
+    if (key === profile.avatar_key || busy) return;
     updateAvatar.mutate(key, {
       onSuccess: () => showToast('Avatar updated'),
       onError: () => showToast(AVATAR_FAILED),
@@ -178,7 +231,7 @@ function MemberProfile({ profile, email }: { profile: Profile; email: string | n
   return (
     <View className="gap-3">
       {showPrompt ? <AvatarPrompt onPick={openPicker} onDismiss={markSeen} /> : null}
-      <ProfileHeader profile={profile} email={email} onChangeAvatar={openPicker} />
+      <ProfileHeader profile={profile} email={email} busy={busy} onChangeAvatar={openPicker} />
       <AccountGroup nickname={profile.nickname} />
       <AboutGroup />
       <SettingsGroup title="Appearance">
@@ -205,7 +258,13 @@ function MemberProfile({ profile, email }: { profile: Profile; email: string | n
           onPress={() => router.push('/delete-account')}
         />
       </SettingsGroup>
-      <AvatarPicker visible={pickerOpen} value={profile.avatar_key} onSelect={chooseAvatar} onClose={() => setPickerOpen(false)} />
+      <AvatarPicker
+        visible={pickerOpen}
+        value={profile.avatar_key}
+        onSelect={chooseAvatar}
+        onPickPhoto={pickPhoto}
+        onClose={() => setPickerOpen(false)}
+      />
     </View>
   );
 }

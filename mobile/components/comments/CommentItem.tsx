@@ -29,7 +29,7 @@ function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = fal
   const name = authorLabel(comment.nickname);
   return (
     <View className={`flex-row gap-3 ${isReply ? 'py-2' : 'py-3'} ${sending ? 'opacity-60' : ''}`}>
-      <Avatar avatarKey={comment.avatarKey} size={isReply ? 24 : 32} deleted={isDeletedAuthor(comment.nickname)} />
+      <Avatar avatarKey={comment.avatarKey} userId={comment.authorId} nickname={comment.nickname} size={isReply ? 24 : 32} deleted={isDeletedAuthor(comment.nickname)} />
       <View className="flex-1 gap-1">
         <View className="flex-row items-center gap-2">
           <Text numberOfLines={1} className="shrink text-sm font-bold text-text">

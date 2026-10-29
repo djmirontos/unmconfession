@@ -47,7 +47,7 @@ function BlockedRow({ user, onUnblock }: { user: BlockedUser; onUnblock: (user: 
   const name = atNickname(user.nickname);
   return (
     <View className={CARD}>
-      <Avatar avatarKey={user.avatarKey} size={44} deleted={isDeletedAuthor(user.nickname)} />
+      <Avatar avatarKey={user.avatarKey} userId={user.id} nickname={user.nickname} size={44} deleted={isDeletedAuthor(user.nickname)} />
       <Text numberOfLines={1} className="min-w-0 flex-1 text-base font-bold text-text">
         {authorLabel(user.nickname)}
       </Text>

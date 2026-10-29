@@ -1242,6 +1242,7 @@ export type Database = {
     }
     Functions: {
       _bump_reaction: { Args: { b: Json; d: number; t: string }; Returns: Json }
+      _can_upload_avatar: { Args: never; Returns: boolean }
       _check_images: { Args: { p_images: Json; p_uid: string }; Returns: Json }
       _moderation_decision: {
         Args: {
@@ -1957,6 +1958,10 @@ export type Database = {
           target_type: Database["public"]["Enums"]["content_type"]
           title: string
         }[]
+      }
+      mod_remove_avatar: {
+        Args: { p_reason?: string; p_user: string }
+        Returns: undefined
       }
       mod_resolve_report: {
         Args: { p_report_id: string; p_status: string }

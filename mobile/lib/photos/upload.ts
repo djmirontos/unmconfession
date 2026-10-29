@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase';
 export const PHOTO_BUCKET = 'post-images';
 // Matches the bucket's file_size_limit.
 const MAX_BYTES = 3 * 1024 * 1024;
+export const AVATAR_MAX_BYTES = 512 * 1024;
 const SCOPE = 'photos.upload';
 
 /** Error whose message is a code from lib/errors.ts, keeping the real error as `cause`. */
@@ -20,7 +21,7 @@ function fail(code: 'photo_read_failed' | 'upload_failed' | 'network_error' | 'i
 
 const NETWORK = /network|timed? ?out|timeout|offline|unable to resolve host|failed to connect|connection (reset|refused|abort)/i;
 
-function isNetworkFailure(error: unknown): boolean {
+export function isNetworkFailure(error: unknown): boolean {
   if (typeof error !== 'object' || error === null) return false;
   const e = error as { message?: unknown; originalError?: unknown; cause?: unknown };
   return (
@@ -34,7 +35,7 @@ function isNetworkFailure(error: unknown): boolean {
  * Reads the processed JPEG with expo-file-system's native File API (no fetch of a
  * file:// URL: SDK 57's global fetch is expo/fetch). Strips EXIF/XMP/IPTC.
  */
-async function readJpeg(localUri: string): Promise<ArrayBuffer> {
+async function readJpeg(localUri: string, maxBytes: number): Promise<ArrayBuffer> {
   let raw: Uint8Array;
   try {
     const file = new File(localUri);
@@ -54,7 +55,7 @@ async function readJpeg(localUri: string): Promise<ArrayBuffer> {
     throw fail('photo_read_failed', error);
   }
   logInfo(SCOPE, 'bytes ready', { bytesRead: raw.length, bytesAfterStrip: stripped.bytes.length, metadataSegmentsRemoved: stripped.removed });
-  if (stripped.bytes.length > MAX_BYTES) throw fail('image_too_large');
+  if (stripped.bytes.length > maxBytes) throw fail('image_too_large');
 
   // Exact-size ArrayBuffer, as in Supabase's React Native upload example.
   const { bytes } = stripped;
@@ -63,7 +64,21 @@ async function readJpeg(localUri: string): Promise<ArrayBuffer> {
 
 /** Uploads a processed JPEG to post-images/<uid>/<uuid>.jpg and returns the path. */
 export async function uploadPhoto(localUri: string, userId: string): Promise<string> {
-  const body = await readJpeg(localUri);
+  return uploadJpeg(PHOTO_BUCKET, (uid) => `${uid}/${randomUUID()}.jpg`, localUri, userId, MAX_BYTES);
+}
+
+/**
+ * Uploads a processed JPEG (metadata stripped, no upsert) to `bucket` at `pathFor(session user id)`.
+ * Throws network_error, upload_failed, image_too_large, photo_read_failed or not_authenticated.
+ */
+export async function uploadJpeg(
+  bucket: string,
+  pathFor: (userId: string) => string,
+  localUri: string,
+  userId: string,
+  maxBytes: number,
+): Promise<string> {
+  const body = await readJpeg(localUri, maxBytes);
 
   // The storage policy requires the first folder to be auth.uid(), so the session must match.
   const { data } = await supabase.auth.getSession();
@@ -74,9 +89,9 @@ export async function uploadPhoto(localUri: string, userId: string): Promise<str
   }
   if (sessionUserId !== userId) logError(SCOPE, new Error('session user differs from form user'), { pathUser: userId, sessionUser: sessionUserId });
 
-  const path = `${sessionUserId}/${randomUUID()}.jpg`;
-  logInfo(SCOPE, 'upload start', { bucket: PHOTO_BUCKET, path, contentType: 'image/jpeg', bytes: body.byteLength });
-  const { error } = await supabase.storage.from(PHOTO_BUCKET).upload(path, body, {
+  const path = pathFor(sessionUserId);
+  logInfo(SCOPE, 'upload start', { bucket, path, contentType: 'image/jpeg', bytes: body.byteLength });
+  const { error } = await supabase.storage.from(bucket).upload(path, body, {
     contentType: 'image/jpeg',
     upsert: false,
   });

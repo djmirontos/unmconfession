@@ -21,7 +21,7 @@ function Leading({ group }: { group: NotificationGroup }) {
     const reaction = isReaction && group.reaction_type ? REACTIONS[group.reaction_type] : null;
     return (
       <View style={{ width: AVATAR, height: AVATAR }}>
-        <Avatar avatarKey={group.actor_avatar_key} size={AVATAR} deleted={isDeletedAuthor(group.actor_nickname)} />
+        <Avatar avatarKey={group.actor_avatar_key} userId={group.actor_id} nickname={group.actor_nickname} size={AVATAR} deleted={isDeletedAuthor(group.actor_nickname)} />
         {reaction ? (
           <View className="absolute -bottom-1 -right-1 rounded-full bg-surface1 p-0.5">
             <Image source={reaction.image} style={{ width: 20, height: 20 }} contentFit="contain" />

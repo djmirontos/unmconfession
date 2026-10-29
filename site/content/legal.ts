@@ -2,7 +2,7 @@
 // Do not edit them here alone: change the app and this file together (see site/README.md).
 
 /** No date is stated in the app's texts; this is the date they last changed. */
-export const LEGAL_LAST_UPDATED = '28 October 2026';
+export const LEGAL_LAST_UPDATED = '29 October 2026';
 
 export const LEGAL = {
   terms: {
@@ -23,7 +23,7 @@ export const LEGAL = {
       'We collect your email address, nickname and the content you post. We do not collect your real name.',
       'If you sign in with Google, Google shares your email address with us, and also your name and profile photo, which we do not use or show in the app. We keep only your email address for your account.',
       'Your email is never shown to other users. Only admins can view it, and each view is logged.',
-      'Photo location data (EXIF) is removed before upload.',
+      'Photo location data (EXIF) is removed before upload. A profile picture you upload is public, like your nickname.',
       'Audit logs and rejected posts are kept for 30 days, then deleted.',
       'You can delete your own posts, comments and listings at any time, and you can delete your account yourself in Profile → Delete account.',
       'Deleting your account: you can do it yourself in Profile → Delete account. Your sign-in, email, nickname, avatar, blocked users, notification settings and notifications are erased. Your posts, comments, reactions, poll votes and listings stay on the app, no longer linked to you, and are shown as "Deleted user". Your open listings are closed. Reports you filed stay with the moderators. This cannot be undone.',
@@ -40,6 +40,7 @@ export const LEGAL = {
       "Don't pretend to be a moderator, staff member or another person.",
       'No sexually explicit or violent content.',
       'Content that sexualizes minors, or that is used to contact or exploit minors, is strictly prohibited and will be reported to the relevant authorities.',
+      'These rules also apply to your profile picture.',
       'See something wrong? Use the Report button and a moderator will look at it.',
       'Moderators may remove content, hold posts for review, and suspend or ban accounts that break these rules.',
       'Nothing in the app is a payment or a guarantee. Deals are between the users involved.',

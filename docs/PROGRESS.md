@@ -1017,3 +1017,22 @@ The first signed APK is published at github.com/djmirontos/unm-releases (release
 ## Module 11c: Play URL set on site (2026-10-28)
 
 `PLAY_STORE_URL` in `site/lib/site.ts` is now https://play.google.com/store/apps/details?id=com.unmfreedom.confessions (the package in `mobile/app.json`). The official Google Play badge is a normal link in the same tab (`rel="noopener"`); the "Coming soon" caption and "coming soon to Google Play" line are gone. The GitHub APK button stays and still opens in a new tab (`noopener noreferrer`). `Download` in `get-the-app.tsx` gained a `newTab` flag for that. CSP and headers unchanged; no new requests or scripts. Verified: site typecheck, lint and build; a production start serves both links and no "Coming soon".
+
+## Module 12a: stay signed in (2026-10-29)
+
+**Goal:** a member stays signed in until they tap Log out. No inactivity or session-age limit exists in the app (none was found; none added). The admin panel keeps its own 30-minute idle and 12-hour limits (not touched).
+
+**Audit:** the client already had `persistSession`, `autoRefreshToken`, `detectSessionInUrl: false`, encrypted storage (AES key in SecureStore, ciphertext in AsyncStorage, so the ~2 KB SecureStore limit does not apply) and the AppState start/stop pattern. In React Native, auth-js also starts the refresh ticker at launch. auth-js 2.118 keeps the stored session on network, timeout and 502/503/504 errors, and removes it only when the refresh token is rejected (or `getUser` reports a missing session). `signOut` is called only by Log out (Profile, choose-nickname) and account deletion. The query cache (`unm-query-cache`, buster 4) is separate from the session key.
+
+**Fixed:**
+- Offline launch with an expired access token: `getSession()` returns no session, so the app showed a guest until a refresh succeeded. `useAuthBootstrap` now keeps the stored session in that case (`restoreOutcome` in `lib/sessionRules.ts`); auto-refresh sends `TOKEN_REFRESHED` once online. `INITIAL_SESSION` is no longer applied (the launch read covers it), and a later auth event always wins over the launch read.
+- `sessionStorage.getItem` removed the session on any error, including a Keystore read that fails for a moment. SecureStore reads now retry (3 tries) and then throw, which leaves the session stored. Only a missing key or a ciphertext that no key opens still counts as no session.
+- A crash between writing the new AES key and the new ciphertext (every refresh) left a pair that could not be opened, which signed the person out. `setItem` keeps the previous key (`<key>.prev`), `getItem` falls back to it and repairs the main key, and reads and writes run one at a time.
+- A sign-out the person did not ask for (refresh token rejected or revoked) now shows "Please sign in again." (`SESSION_ENDED` in `lib/errors.ts`); Log out and account deletion do not (`isIntentionalSignOut`).
+- `storageKey` is passed explicitly with Supabase's default value (`SESSION_STORAGE_KEY`), so no stored session moves and nobody is signed out by this change.
+
+**Tests:** `npm run test:session` (6 tests: retryable vs rejected refresh errors, the launch outcome, forced vs intentional sign-out).
+
+**Verified:** mobile typecheck, lint and all tests (5 + 11 + 8 + 9 + 6) pass. Not checked on a device.
+
+**Left:** Log out while offline fails with the connection message and keeps the session (auth-js only clears it after the server call); decide whether Log out should always clear the device. Plain-text sessions from before encrypted storage (dev builds only, before 9b) are still treated as no session. The Supabase dashboard session settings must be checked by hand.

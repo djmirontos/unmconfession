@@ -4,7 +4,7 @@
 
 import { SUPPORT_EMAIL } from '@/lib/site';
 
-export const CHILD_SAFETY_LAST_UPDATED = '28 October 2026';
+export const CHILD_SAFETY_LAST_UPDATED = '29 October 2026';
 
 export type ChildSafetySection = {
   id: string;
@@ -75,7 +75,7 @@ export const CHILD_SAFETY = {
       list: [
         'Nickname-only profiles: we do not collect real names, and other users never see your email address.',
         'No private messaging: the app has no direct messages. Posts, comments and listings are visible to everyone and to our moderators.',
-        'At most 3 photos per post or listing, and none on polls. Photo location data (EXIF) is removed before upload.',
+        'At most 3 photos per post or listing, and none on polls. Photo location data (EXIF) is removed before upload. Profile pictures follow the same rules as post photos. Moderators can remove a profile picture that breaks these rules.',
         'Block: hide a person’s posts, comments and listings from you. They are not told.',
         'Report: available on every post, comment and listing.',
       ],

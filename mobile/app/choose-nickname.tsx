@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { FormMessage } from '@/components/ui/FormMessage';
 import { Screen } from '@/components/ui/Screen';
 import { profileQueryKey, useTermsAccepted } from '@/hooks/useProfile';
-import { signOut } from '@/lib/auth';
+import { logOut } from '@/lib/auth';
 import { getErrorCode, getErrorMessage } from '@/lib/errors';
 import { supabase } from '@/lib/supabase';
 import { nicknameFormSchema, nicknameSchema, validate } from '@/lib/validation';
@@ -87,7 +87,7 @@ export default function ChooseNicknameScreen() {
       ) : null}
       <Button label="Save nickname" onPress={handleSubmit} loading={loading} disabled={!canSubmit} />
       <Pressable
-        onPress={() => signOut().catch((e: unknown) => setFormError(getErrorMessage(e)))}
+        onPress={() => void logOut()}
         accessibilityRole="button"
         className="items-center py-2"
       >

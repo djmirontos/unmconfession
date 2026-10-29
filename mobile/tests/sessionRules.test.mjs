@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { isForcedSignOut, isRetryableAuthError, restoreOutcome } from '../lib/sessionRules.ts';
+import { isForcedSignOut, isRetryableAuthError, logOutLocallyFirst, restoreOutcome } from '../lib/sessionRules.ts';
 
 // Shapes of the errors @supabase/auth-js returns.
 const networkError = Object.assign(new Error('Network request failed'), { name: 'AuthRetryableFetchError', status: 0 });
@@ -48,4 +48,64 @@ test('only an unrequested SIGNED_OUT of a signed-in person is forced', () => {
   for (const event of ['INITIAL_SESSION', 'SIGNED_IN', 'TOKEN_REFRESHED', 'USER_UPDATED', 'PASSWORD_RECOVERY']) {
     assert.equal(isForcedSignOut(event, true, false), false, event);
   }
+});
+
+// Log out: a fake phone with a stored session and a server call that fails, hangs or works.
+function phone(revoke) {
+  const state = { signedIn: true, stored: true, revokeStartedFirst: null, revokeErrors: [] };
+  const steps = {
+    revoke: () => {
+      state.revokeStartedFirst ??= state.stored;
+      return revoke();
+    },
+    becomeGuest: () => {
+      state.signedIn = false;
+    },
+    clearLocal: async () => {
+      state.stored = false;
+    },
+    onRevokeFailed: (error) => state.revokeErrors.push(error),
+    timeoutMs: 20,
+  };
+  return { state, steps };
+}
+
+test('log out offline: the phone is signed out and the failure is swallowed', async () => {
+  const { state, steps } = phone(() => Promise.reject(networkError));
+  const { revoked } = await logOutLocallyFirst(steps);
+  assert.equal(state.signedIn, false);
+  assert.equal(state.stored, false);
+  await revoked;
+  assert.deepEqual(state.revokeErrors, [networkError]);
+});
+
+test('log out with a hanging server call: finished locally at once, the call gives up after the limit', async () => {
+  const { state, steps } = phone(() => new Promise(() => {}));
+  const { revoked } = await logOutLocallyFirst(steps);
+  assert.equal(state.signedIn, false);
+  assert.equal(state.stored, false);
+  assert.equal(state.revokeErrors.length, 0);
+  await revoked;
+  assert.equal(state.revokeErrors[0].message, 'timeout');
+});
+
+test('log out with a server call that throws at once: still signed out', async () => {
+  const { state, steps } = phone(() => {
+    throw invalidRefresh;
+  });
+  const { revoked } = await logOutLocallyFirst(steps);
+  await revoked;
+  assert.equal(state.signedIn, false);
+  assert.equal(state.stored, false);
+  assert.deepEqual(state.revokeErrors, [invalidRefresh]);
+});
+
+test('log out online: revoked first, nothing reported', async () => {
+  const { state, steps } = phone(() => Promise.resolve());
+  const { revoked } = await logOutLocallyFirst(steps);
+  await revoked;
+  assert.equal(state.revokeStartedFirst, true);
+  assert.equal(state.signedIn, false);
+  assert.equal(state.stored, false);
+  assert.deepEqual(state.revokeErrors, []);
 });

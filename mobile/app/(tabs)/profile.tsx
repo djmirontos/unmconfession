@@ -12,7 +12,6 @@ import { SettingsGroup, SettingsRow } from '@/components/profile/SettingsRow';
 import { ThemeSwitch } from '@/components/profile/ThemeSwitch';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { Button } from '@/components/ui/Button';
-import { FormMessage } from '@/components/ui/FormMessage';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useAvatarPrompt } from '@/hooks/useAvatarPrompt';
 import { useMySettings } from '@/hooks/useMySettings';
@@ -20,9 +19,8 @@ import { type Profile, useMembership } from '@/hooks/useProfile';
 import { useTheme } from '@/hooks/useTheme';
 import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { useUpdateAvatar } from '@/hooks/useUpdateAvatar';
-import { signOut } from '@/lib/auth';
+import { logOut } from '@/lib/auth';
 import { appVersion, FEEDBACK_EMAIL, feedbackMailto } from '@/lib/config';
-import { getErrorMessage } from '@/lib/errors';
 import { formatManilaDay } from '@/lib/manilaDate';
 import { inNicknameCooldown } from '@/lib/settings';
 import { useToastStore } from '@/stores/toastStore';
@@ -163,8 +161,6 @@ function MemberProfile({ profile, email }: { profile: Profile; email: string | n
   const showToast = useToastStore((s) => s.show);
   const { showPrompt, markSeen } = useAvatarPrompt(profile.id);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const openPicker = () => {
     setPickerOpen(true);
@@ -177,18 +173,6 @@ function MemberProfile({ profile, email }: { profile: Profile; email: string | n
       onSuccess: () => showToast('Avatar updated'),
       onError: () => showToast(AVATAR_FAILED),
     });
-  };
-
-  const handleSignOut = async () => {
-    setError(null);
-    setSigningOut(true);
-    try {
-      await signOut();
-    } catch (e) {
-      setError(getErrorMessage(e));
-    } finally {
-      setSigningOut(false);
-    }
   };
 
   return (
@@ -207,12 +191,10 @@ function MemberProfile({ profile, email }: { profile: Profile; email: string | n
           first
           destructive
           icon="log-out-outline"
-          label={signingOut ? 'Logging out…' : 'Log out'}
-          disabled={signingOut}
-          onPress={() => void handleSignOut()}
+          label="Log out"
+          onPress={() => void logOut()}
         />
       </SettingsGroup>
-      <FormMessage tone="error" message={error} />
       <SettingsGroup title="Danger zone">
         <SettingsRow
           first
@@ -244,20 +226,6 @@ function ProfileSkeleton() {
 /** `onRetry` is set when the profile failed to load (signed in, nothing cached). */
 function GuestOrLoading({ loading, onRetry }: { loading: boolean; onRetry?: () => void }) {
   const router = useRouter();
-  const [signingOut, setSigningOut] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSignOut = async () => {
-    setError(null);
-    setSigningOut(true);
-    try {
-      await signOut();
-    } catch (e) {
-      setError(getErrorMessage(e));
-    } finally {
-      setSigningOut(false);
-    }
-  };
 
   return (
     <>
@@ -274,10 +242,7 @@ function GuestOrLoading({ loading, onRetry }: { loading: boolean; onRetry?: () =
         />
       </Section>
       {loading ? (
-        <>
-          <FormMessage tone="error" message={error} />
-          <Button label="Log out" variant="danger" icon="log-out-outline" loading={signingOut} onPress={handleSignOut} />
-        </>
+        <Button label="Log out" variant="danger" icon="log-out-outline" onPress={() => void logOut()} />
       ) : null}
     </>
   );

@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
 
-import { isIntentionalSignOut, readStoredSession } from '@/lib/auth';
+import { clearMemberCaches, isIntentionalSignOut, readStoredSession } from '@/lib/auth';
 import { SESSION_ENDED } from '@/lib/errors';
 import { logError } from '@/lib/log';
-import { queryClient } from '@/lib/queryClient';
 import { isForcedSignOut, restoreOutcome } from '@/lib/sessionRules';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -38,18 +37,14 @@ export function useAuthBootstrap() {
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
       // The launch state comes from restore(), which also covers the offline case.
       if (event === 'INITIAL_SESSION') return;
+      // A refresh that finishes while Log out runs must not sign the person back in.
+      if (isIntentionalSignOut() && event !== 'SIGNED_OUT') return;
       changed = true;
       const hadSession = useAuthStore.getState().session !== null;
       setSession(session);
       if (event === 'SIGNED_OUT') {
         if (isForcedSignOut(event, hadSession, isIntentionalSignOut())) useToastStore.getState().show(SESSION_ENDED);
-        queryClient.removeQueries({ queryKey: ['profile'] });
-        queryClient.removeQueries({ queryKey: ['notifications'] });
-        queryClient.removeQueries({ queryKey: ['notifications-unread'] });
-        queryClient.removeQueries({ queryKey: ['trending'] });
-        queryClient.removeQueries({ queryKey: ['polls'] });
-        queryClient.removeQueries({ queryKey: ['listings'] });
-        queryClient.removeQueries({ queryKey: ['my-settings'] });
+        clearMemberCaches();
       }
     });
     return () => data.subscription.unsubscribe();

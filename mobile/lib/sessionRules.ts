@@ -23,3 +23,39 @@ export function restoreOutcome(hasSession: boolean, error: unknown): RestoreOutc
 export function isForcedSignOut(event: string, hadSession: boolean, intentional: boolean): boolean {
   return event === 'SIGNED_OUT' && hadSession && !intentional;
 }
+
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error('timeout')), ms);
+  });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+}
+
+export type LogOutSteps = {
+  /** Server revocation of this session's refresh token. */
+  revoke: () => Promise<void>;
+  becomeGuest: () => void;
+  /** Must not need the network. */
+  clearLocal: () => Promise<void>;
+  onRevokeFailed: (error: unknown) => void;
+  timeoutMs: number;
+};
+
+/**
+ * Log out clears the phone whatever the network does. The revocation starts first but runs in the
+ * background with a time limit; a failure only reaches onRevokeFailed. Returns the background
+ * revocation so tests can wait for it.
+ */
+export async function logOutLocallyFirst(steps: LogOutSteps): Promise<{ revoked: Promise<void> }> {
+  let started: Promise<void>;
+  try {
+    started = steps.revoke();
+  } catch (error) {
+    started = Promise.reject(error);
+  }
+  const revoked = withTimeout(started, steps.timeoutMs).catch(steps.onRevokeFailed);
+  steps.becomeGuest();
+  await steps.clearLocal();
+  return { revoked };
+}

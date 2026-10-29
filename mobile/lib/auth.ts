@@ -5,6 +5,7 @@ import { getErrorMessage } from '@/lib/errors';
 import { getGoogleIdToken, signOutOfGoogle } from '@/lib/googleSignIn';
 import { logError } from '@/lib/log';
 import { queryClient } from '@/lib/queryClient';
+import { logOutLocallyFirst } from '@/lib/sessionRules';
 import { encryptedSessionStorage, SUPABASE_SESSION_KEY } from '@/lib/sessionStorage';
 import { SESSION_STORAGE_KEY, supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
@@ -105,10 +106,47 @@ async function signOutLocally() {
   }
 }
 
-export async function signOut() {
-  const { error } = await signOutLocally();
-  if (error) throw authFail('signOut', error);
-  applySession(null);
+/** Caches that belong to the signed-in person; also cleared on every SIGNED_OUT. */
+export function clearMemberCaches() {
+  for (const key of ['profile', 'notifications', 'notifications-unread', 'trending', 'polls', 'listings', 'my-settings']) {
+    queryClient.removeQueries({ queryKey: [key] });
+  }
+}
+
+const REVOKE_TIMEOUT_MS = 5000;
+
+/**
+ * Log out (Profile, choose-nickname). The person is a guest at once and the phone keeps no session,
+ * even offline or when the server call fails or hangs. Never throws.
+ */
+export async function logOut(): Promise<void> {
+  // Taken before the local clear: the revocation needs it and the clear removes it.
+  const accessToken = useAuthStore.getState().session?.access_token ?? null;
+  intentionalSignOut = true;
+  try {
+    await logOutLocallyFirst({
+      // The request signOut({ scope: 'local' }) makes: ends this session and its refresh token on the server.
+      revoke: async () => {
+        if (!accessToken) return;
+        const { error } = await supabase.auth.admin.signOut(accessToken, 'local');
+        if (error) throw error;
+      },
+      becomeGuest: () => {
+        applySession(null);
+        clearMemberCaches();
+      },
+      clearLocal: async () => {
+        await removeStoredSession().catch((error: unknown) => logError('auth.logOut.clear', error));
+        // With nothing stored, signOut makes no request: it resets the client and emits SIGNED_OUT.
+        const { error } = await supabase.auth.signOut({ scope: 'local' });
+        if (error) logError('auth.logOut.local', error);
+      },
+      onRevokeFailed: (error) => logError('auth.logOut.revoke', error),
+      timeoutMs: REVOKE_TIMEOUT_MS,
+    });
+  } finally {
+    intentionalSignOut = false;
+  }
   void signOutOfGoogle();
 }
 

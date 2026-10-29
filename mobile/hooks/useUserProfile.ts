@@ -3,9 +3,11 @@ import { useMemo } from 'react';
 
 import type { Profile } from '@/hooks/useProfile';
 import type { FeedCursor } from '@/lib/feed';
+import type { ListingCardData, ListingsCursor } from '@/lib/listings';
 import { logError } from '@/lib/log';
 import type { FeedPost } from '@/lib/posts';
 import { supabase } from '@/lib/supabase';
+import { fetchUserListingsPage, userListingsKey } from '@/lib/userListings';
 import { fetchUserPostsPage, userPostsKey } from '@/lib/userPosts';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -79,4 +81,30 @@ export function useUserPosts(id: string | null) {
   }, [query.data]);
 
   return { query, posts };
+}
+
+/** Their listings (both kinds, closed ones too), paged like the posts. `id` null skips the query (tab not opened yet). */
+export function useUserListings(id: string | null) {
+  const viewerId = useAuthStore((s) => s.session?.user.id ?? null);
+  const query = useInfiniteQuery({
+    queryKey: userListingsKey(id ?? '', viewerId),
+    queryFn: id ? ({ pageParam }) => fetchUserListingsPage(id, pageParam) : skipToken,
+    initialPageParam: null as ListingsCursor | null,
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+  });
+
+  const listings = useMemo(() => {
+    const seen = new Set<string>();
+    const out: ListingCardData[] = [];
+    for (const page of query.data?.pages ?? []) {
+      for (const listing of page.items) {
+        if (seen.has(listing.id)) continue;
+        seen.add(listing.id);
+        out.push(listing);
+      }
+    }
+    return out;
+  }, [query.data]);
+
+  return { query, listings };
 }

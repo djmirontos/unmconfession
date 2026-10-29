@@ -105,7 +105,7 @@ const listingRowSchema = z.object({
 });
 
 /** A feed_listings row as a card, or null if it does not parse (never expected from the view). */
-function toListingCard(row: unknown): ListingCardData | null {
+export function toListingCard(row: unknown): ListingCardData | null {
   const parsed = listingRowSchema.safeParse(row);
   if (!parsed.success) return null;
   const r = parsed.data;

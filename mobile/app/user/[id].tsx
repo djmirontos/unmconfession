@@ -12,13 +12,15 @@ import { PostCard } from '@/components/feed/PostCard';
 import { BackHeader } from '@/components/layout/BackHeader';
 import { Avatar } from '@/components/profile/Avatar';
 import { CurrentProfileContext } from '@/components/profile/ProfileLink';
+import { UserListings } from '@/components/profile/UserListings';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { Button } from '@/components/ui/Button';
+import { ChipGroup } from '@/components/ui/ChipGroup';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useBlockUser } from '@/hooks/useBlockUser';
 import { usePostListActions } from '@/hooks/usePostListActions';
-import { useMembership } from '@/hooks/useProfile';
+import { type Profile, useMembership } from '@/hooks/useProfile';
 import { useTheme } from '@/hooks/useTheme';
 import { blockedByMeKey, useBlockedByMe, useUserPosts, useUserProfile } from '@/hooks/useUserProfile';
 import { authorLabel } from '@/lib/authorLabel';
@@ -177,7 +179,46 @@ function UserPosts({ userId, head }: { userId: string; head: ReactElement }) {
   );
 }
 
-/** A member's public profile: avatar, nickname and their posts. Signed-in members only. */
+type Tab = 'posts' | 'listings';
+const TABS = [
+  { value: 'posts', label: 'Posts' },
+  { value: 'listings', label: 'Listings' },
+] as const;
+
+/**
+ * Posts | Listings under the avatar. The tab lives only while the screen is open. Listings load
+ * the first time their tab opens; then both lists stay mounted, keeping their scroll position.
+ */
+function ProfileTabs({ user }: { user: Profile }) {
+  const [tab, setTab] = useState<Tab>('posts');
+  const [listingsOpened, setListingsOpened] = useState(false);
+  const choose = (value: Tab) => {
+    setTab(value);
+    if (value === 'listings') setListingsOpened(true);
+  };
+  const head = (
+    <View className="pb-3">
+      <ProfileHead userId={user.id} nickname={user.nickname} avatarKey={user.avatar_key} />
+      <View className="items-center">
+        <ChipGroup options={TABS} value={tab} onChange={choose} accessibilityLabel="Show" />
+      </View>
+    </View>
+  );
+  return (
+    <>
+      <View className="flex-1" style={tab === 'posts' ? undefined : { display: 'none' }}>
+        <UserPosts userId={user.id} head={head} />
+      </View>
+      {listingsOpened ? (
+        <View className="flex-1" style={tab === 'listings' ? undefined : { display: 'none' }}>
+          <UserListings userId={user.id} head={head} />
+        </View>
+      ) : null}
+    </>
+  );
+}
+
+/** A member's public profile: avatar, nickname, their posts and listings. Signed-in members only. */
 export default function UserProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -275,7 +316,7 @@ export default function UserProfileScreen() {
   } else {
     body = (
       <CurrentProfileContext.Provider value={user.id}>
-        <UserPosts userId={user.id} head={<ProfileHead userId={user.id} nickname={user.nickname} avatarKey={user.avatar_key} />} />
+        <ProfileTabs user={user} />
       </CurrentProfileContext.Provider>
     );
   }

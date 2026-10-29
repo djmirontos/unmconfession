@@ -1057,3 +1057,16 @@ The first signed APK is published at github.com/djmirontos/unm-releases (release
 **Verified:** mobile typecheck, lint and all tests (5 + 11 + 8 + 9 + 10 + 7); admin typecheck with the new types; site typecheck, lint and build; legal parity true. Not checked on a device.
 
 **Deviations / notes:** no connectivity module is installed (adding one would need a new build), so the first request (listing the own folder) is the "no internet" check. The DB queues replaced files but nothing processes the queue yet (V2 backlog). JS only: no new native module, no rebuild.
+
+## Module 12c: public profiles (2026-10-29)
+
+App only: no database change. Tapping a member's avatar or nickname opens `/user/[id]` (`app/user/[id].tsx`, a stack screen like `post/[id]`): their avatar (96 px, same preset fallback), nickname and published posts. Nothing else is shown.
+
+- `lib/profileView.ts` (pure, `npm run test:profile`, 8 tests): `isValidUserId` (UUID route param) and `getProfileViewState` → guest / self / missing / deleted / blocked / ok.
+- `components/profile/ProfileLink.tsx`: wraps avatar and/or nickname; `accessibilityRole="link"`, "View <nickname>'s profile", touch area grown to 44 px with `hitSlop` so nothing moves. Guests get the sign-in sheet ("Sign in to see profiles", new `profile` action); your own id opens the Profile tab; a deleted account (null nickname) is not pressable; on a profile page its own posts do not link to the same page again (`CurrentProfileContext`). Used in `AuthorLine` (post and listing cards and details; only the avatar-and-name block, so the rest of the header still opens the card), comments (avatar and name), notifications (actor avatar) and Blocked users (avatar and name). No list of who reacted exists, so none was built.
+- Data (`hooks/useUserProfile.ts`, `lib/userPosts.ts`): `profiles` (`id, nickname, avatar_key`, `maybeSingle`), my own `user_blocks` row (`kind = 'block'`), and `feed_posts` filtered by `author_id`, newest first, keyset `(published_at, id)` with 20 per page (the `or()` cursor is quoted and was checked against the live view). Keys `['user-profile', id]`, `['blocked-by-me', me, id]`, `['user-posts', id, me]`; none persisted. `updateListedPosts` also patches `['user-posts']`, so reactions, votes, counts and blocks update there like in the feed; `invalidateAuthoredLists` refetches it; `usePost` paints a post opened from a profile from that cache; `afterBlock` / `afterUnblock` refetch `['blocked-by-me']`.
+- Screen states: guest prompt (also on a direct link), your own id replaced by the Profile tab, skeleton while loading, error with Retry, "This profile isn't available" with Back (unknown or invalid id), deleted account (silhouette and "Deleted user", nothing else), blocked ("You blocked this user" with Unblock, no posts), and the posts list with pull to refresh, "No posts yet", load more and "That's everything.". The header has Block (existing confirm flow) except on your own and blocked profiles.
+
+**Verified:** typecheck, lint and all mobile tests (5 + 11 + 8 + 9 + 10 + 7 + 8). Not checked on a device. Site and admin untouched.
+
+**Not included:** listings (Buy & Sell / Lost & Found are the separate `listings` table, read through `get_listings`; a profile section for them would need a filtered query). Reporting a profile is 12c-2 in the V2 backlog.

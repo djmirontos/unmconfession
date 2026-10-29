@@ -58,7 +58,7 @@ export function ReportSheet({ target, onClose }: Props) {
       finish();
       showToast('Thanks — our moderators will review this');
     } catch (e) {
-      setError(getReportErrorMessage(e));
+      setError(getReportErrorMessage(e, target.type));
     } finally {
       setBusy(false);
     }

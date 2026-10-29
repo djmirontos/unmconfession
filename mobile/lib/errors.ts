@@ -160,7 +160,13 @@ const REPORT_MESSAGES: Record<string, string> = {
   not_found: 'This content is no longer available.',
 };
 
-export function getReportErrorMessage(error: unknown): string {
+// A profile: deleted accounts and ones without a nickname are not reportable (not_found).
+const PROFILE_REPORT_MESSAGES: Record<string, string> = {
+  own_content: "You can't report your own profile.",
+  not_found: "This profile isn't available.",
+};
+
+export function getReportErrorMessage(error: unknown, target?: string): string {
   const code = getErrorCode(error);
-  return (code && REPORT_MESSAGES[code]) || getErrorMessage(error);
+  return (code && target === 'profile' && PROFILE_REPORT_MESSAGES[code]) || (code && REPORT_MESSAGES[code]) || getErrorMessage(error);
 }

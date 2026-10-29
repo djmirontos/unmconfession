@@ -10,6 +10,7 @@ import { GuestPrompt } from '@/components/auth/GuestPrompt';
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { PostCard } from '@/components/feed/PostCard';
 import { BackHeader } from '@/components/layout/BackHeader';
+import { ReportSheet } from '@/components/moderation/ReportSheet';
 import { Avatar } from '@/components/profile/Avatar';
 import { CurrentProfileContext } from '@/components/profile/ProfileLink';
 import { UserListings } from '@/components/profile/UserListings';
@@ -71,18 +72,30 @@ function Unavailable() {
   );
 }
 
-function BlockButton({ onPress }: { onPress: () => void }) {
+/** Report and Block in the header (44 px tall each). */
+function HeaderActions({ onReport, onBlock }: { onReport: () => void; onBlock: () => void }) {
   const { colors } = useTheme();
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel="Block user"
-      className="h-11 flex-row items-center gap-1 rounded-full px-3 active:bg-surface2"
-    >
-      <Ionicons name="ban-outline" size={18} color={colors.danger} />
-      <Text className="text-sm font-semibold text-danger">Block</Text>
-    </Pressable>
+    <View className="flex-row items-center">
+      <Pressable
+        onPress={onReport}
+        accessibilityRole="button"
+        accessibilityLabel="Report this profile"
+        className="h-11 flex-row items-center gap-1 rounded-full px-3 active:bg-surface2"
+      >
+        <Ionicons name="flag-outline" size={18} color={colors.textDim} />
+        <Text className="text-sm font-semibold text-text-dim">Report</Text>
+      </Pressable>
+      <Pressable
+        onPress={onBlock}
+        accessibilityRole="button"
+        accessibilityLabel="Block user"
+        className="h-11 flex-row items-center gap-1 rounded-full px-3 active:bg-surface2"
+      >
+        <Ionicons name="ban-outline" size={18} color={colors.danger} />
+        <Text className="text-sm font-semibold text-danger">Block</Text>
+      </Pressable>
+    </View>
   );
 }
 
@@ -235,6 +248,7 @@ export default function UserProfileScreen() {
   const profile = useUserProfile(lookUp);
   const blocked = useBlockedByMe(lookUp);
   const [unblocking, setUnblocking] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   const loading = lookUp !== null && (profile.data === undefined || blocked.data === undefined);
   const failed = lookUp !== null && (profile.isError || blocked.isError) && loading;
@@ -323,8 +337,13 @@ export default function UserProfileScreen() {
 
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: insets.top }}>
-      <BackHeader title={state === 'ok' && user ? authorLabel(user.nickname) : 'Profile'} right={state === 'ok' ? <BlockButton onPress={onBlock} /> : undefined} />
+      <BackHeader
+        title={state === 'ok' && user ? authorLabel(user.nickname) : 'Profile'}
+        right={state === 'ok' ? <HeaderActions onReport={() => setReporting(true)} onBlock={onBlock} /> : undefined}
+      />
       {body}
+      {/* Same sheet as posts: reasons, optional note, report_content with target 'profile'. */}
+      <ReportSheet target={reporting && user ? { type: 'profile', id: user.id } : null} onClose={() => setReporting(false)} />
     </View>
   );
 }

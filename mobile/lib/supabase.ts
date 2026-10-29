@@ -15,9 +15,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
   );
 }
 
+/** Supabase's default key, named here so the app can read it; changing it would sign everyone out. */
+export const SESSION_STORAGE_KEY = `sb-${new URL(supabaseUrl).hostname.split('.')[0]}-auth-token`;
+
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: encryptedSessionStorage,
+    storageKey: SESSION_STORAGE_KEY,
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: false,

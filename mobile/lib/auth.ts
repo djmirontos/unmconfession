@@ -6,7 +6,7 @@ import { getGoogleIdToken, signOutOfGoogle } from '@/lib/googleSignIn';
 import { logError } from '@/lib/log';
 import { queryClient } from '@/lib/queryClient';
 import { encryptedSessionStorage, SUPABASE_SESSION_KEY } from '@/lib/sessionStorage';
-import { supabase } from '@/lib/supabase';
+import { SESSION_STORAGE_KEY, supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
 /** Logs the real Auth error (dev only, redacted) and returns it for rethrowing. */
@@ -91,12 +91,44 @@ export async function signInWithGoogle(): Promise<GoogleSignInOutcome> {
   }
 }
 
+// Set while the app itself signs out, so the SIGNED_OUT it causes is not read as a forced one.
+let intentionalSignOut = false;
+export const isIntentionalSignOut = () => intentionalSignOut;
+
+async function signOutLocally() {
+  intentionalSignOut = true;
+  try {
+    // 'local' signs out this device only.
+    return await supabase.auth.signOut({ scope: 'local' });
+  } finally {
+    intentionalSignOut = false;
+  }
+}
+
 export async function signOut() {
-  // 'local' signs out this device only.
-  const { error } = await supabase.auth.signOut({ scope: 'local' });
+  const { error } = await signOutLocally();
   if (error) throw authFail('signOut', error);
   applySession(null);
   void signOutOfGoogle();
+}
+
+const isStoredSession = (value: unknown): value is Session =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as Partial<Session>).access_token === 'string' &&
+  typeof (value as Partial<Session>).refresh_token === 'string' &&
+  typeof (value as Partial<Session>).user?.id === 'string';
+
+/** The stored session as it is, even with an expired access token (see restoreOutcome). */
+export async function readStoredSession(): Promise<Session | null> {
+  try {
+    const raw = await encryptedSessionStorage.getItem(SESSION_STORAGE_KEY);
+    const value: unknown = raw === null ? null : JSON.parse(raw);
+    return isStoredSession(value) ? value : null;
+  } catch (error) {
+    logError('auth.readStoredSession', error);
+    return null;
+  }
 }
 
 async function removeStoredSession(): Promise<void> {
@@ -114,7 +146,7 @@ export async function forgetDeletedAccount(userId: string): Promise<void> {
   applySession(null);
   // The server user no longer exists. Supabase drops the local session on 401/403/404,
   // but keeps it when the request fails (offline), so then the key is removed directly.
-  const { error } = await supabase.auth.signOut({ scope: 'local' });
+  const { error } = await signOutLocally();
   if (error) {
     logError('auth.forgetDeletedAccount.signOut', error);
     await removeStoredSession();

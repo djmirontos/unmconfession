@@ -77,6 +77,8 @@ const MESSAGES: Record<string, string> = {
 };
 
 const FALLBACK = 'Something went wrong. Please try again.';
+/** Shown when Supabase ends the session itself (refresh token rejected or revoked). */
+export const SESSION_ENDED = 'Please sign in again.';
 const NETWORK = 'No connection. Check your internet and try again.';
 
 const DB_CODE = new RegExp(`\\b(${Object.keys(MESSAGES).join('|')})\\b`);

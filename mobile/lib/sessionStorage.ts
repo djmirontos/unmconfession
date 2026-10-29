@@ -26,43 +26,87 @@ function decrypt(keyHex: string, encrypted: string): string {
   return decodeURIComponent(aesjs.utils.utf8.fromBytes(cipher.decrypt(aesjs.utils.hex.toBytes(encrypted))));
 }
 
-async function removeItem(key: string): Promise<void> {
-  await AsyncStorage.removeItem(key);
-  try {
-    await SecureStore.deleteItemAsync(secureKey(key));
-  } catch (error) {
-    logError('sessionStorage.remove', error);
+// The key of the previous write. setItem writes the new key before the new ciphertext, so if the app
+// is killed in between, the stored ciphertext still opens with this one.
+const prevKey = (key: string) => `${secureKey(key)}.prev`;
+
+// Writes run one at a time, so two writes never pair one write's key with the other's ciphertext.
+let queue: Promise<unknown> = Promise.resolve();
+function serial<T>(task: () => Promise<T>): Promise<T> {
+  const run = queue.then(task, task);
+  queue = run.catch(() => undefined);
+  return run;
+}
+
+/** A Keystore read can fail for a moment (busy, device just unlocked): retried, then thrown, never treated as no session. */
+async function readSecure(name: string): Promise<string | null> {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await SecureStore.getItemAsync(name);
+    } catch (error) {
+      if (attempt >= 2) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 150 * 2 ** attempt));
+    }
   }
 }
 
-/**
- * A value that cannot be read back (no key after a restore or reinstall, a Keystore error, the
- * plain-text session from before this storage existed) counts as no session: it is removed and
- * the app continues as a guest. Never logs values.
- */
-async function getItem(key: string): Promise<string | null> {
-  const encrypted = await AsyncStorage.getItem(key);
-  if (encrypted === null) return null;
+/** The decrypted session, or null if this key does not open it. Supabase always stores JSON. */
+function open(keyHex: string, encrypted: string): string | null {
   try {
-    const keyHex = await SecureStore.getItemAsync(secureKey(key));
-    if (keyHex === null) throw new Error('missing key');
     const value = decrypt(keyHex, encrypted);
-    // Supabase always stores JSON; a wrong key decrypts to bytes that do not parse.
     JSON.parse(value);
     return value;
   } catch {
-    logInfo('sessionStorage', 'Unreadable stored session removed.');
-    await removeItem(key).catch((error: unknown) => logError('sessionStorage.remove', error));
     return null;
   }
 }
 
-async function setItem(key: string, value: string): Promise<void> {
-  const keyBytes = getRandomBytes(32);
-  const encrypted = encrypt(keyBytes, value);
-  await SecureStore.setItemAsync(secureKey(key), aesjs.utils.hex.fromBytes(keyBytes));
-  await AsyncStorage.setItem(key, encrypted);
+async function remove(key: string): Promise<void> {
+  await AsyncStorage.removeItem(key);
+  for (const name of [secureKey(key), prevKey(key)]) {
+    try {
+      await SecureStore.deleteItemAsync(name);
+    } catch (error) {
+      logError('sessionStorage.remove', error);
+    }
+  }
 }
+
+const removeItem = (key: string) => serial(() => remove(key));
+
+/**
+ * A value that cannot be opened (no key after a restore or reinstall, the plain-text session from
+ * before this storage existed) counts as no session: it is removed and the app continues as a guest.
+ * A Keystore read that keeps failing is thrown instead, so the session stays for the next try.
+ * Never logs values.
+ */
+const getItem = (key: string) =>
+  serial(async (): Promise<string | null> => {
+    const encrypted = await AsyncStorage.getItem(key);
+    if (encrypted === null) return null;
+    const keyHex = await readSecure(secureKey(key));
+    const current = keyHex === null ? null : open(keyHex, encrypted);
+    if (current !== null) return current;
+    const prevHex = await readSecure(prevKey(key));
+    const previous = prevHex === null ? null : open(prevHex, encrypted);
+    if (previous !== null && prevHex !== null) {
+      await SecureStore.setItemAsync(secureKey(key), prevHex).catch((error: unknown) => logError('sessionStorage.repair', error));
+      return previous;
+    }
+    logInfo('sessionStorage', 'Unreadable stored session removed.');
+    await remove(key).catch((error: unknown) => logError('sessionStorage.remove', error));
+    return null;
+  });
+
+const setItem = (key: string, value: string) =>
+  serial(async (): Promise<void> => {
+    const keyBytes = getRandomBytes(32);
+    const encrypted = encrypt(keyBytes, value);
+    const oldHex = await SecureStore.getItemAsync(secureKey(key)).catch(() => null);
+    if (oldHex !== null) await SecureStore.setItemAsync(prevKey(key), oldHex);
+    await SecureStore.setItemAsync(secureKey(key), aesjs.utils.hex.fromBytes(keyBytes));
+    await AsyncStorage.setItem(key, encrypted);
+  });
 
 export const encryptedSessionStorage = { getItem, setItem, removeItem };
 

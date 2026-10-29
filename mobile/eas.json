@@ -20,6 +20,15 @@
         "buildType": "apk"
       }
     },
+    "staging": {
+      "autoIncrement": true,
+      "distribution": "internal",
+      "channel": "staging",
+      "environment": "preview",
+      "android": {
+        "buildType": "apk"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "channel": "production",

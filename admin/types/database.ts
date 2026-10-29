@@ -1647,6 +1647,29 @@ export type Database = {
           update_url: string
         }[]
       }
+      get_comment_reactor_counts: {
+        Args: { p_comment_id: string }
+        Returns: {
+          total: number
+          type: Database["public"]["Enums"]["reaction_type"]
+        }[]
+      }
+      get_comment_reactors: {
+        Args: {
+          p_before_ts?: string
+          p_before_user?: string
+          p_comment_id: string
+          p_limit?: number
+          p_type?: Database["public"]["Enums"]["reaction_type"]
+        }
+        Returns: {
+          avatar_key: string
+          nickname: string
+          reacted_at: string
+          type: Database["public"]["Enums"]["reaction_type"]
+          user_id: string
+        }[]
+      }
       get_comments: {
         Args: {
           p_after_id?: string
@@ -1787,6 +1810,29 @@ export type Database = {
           target_type: Database["public"]["Enums"]["content_type"]
           type: string
           unread_count: number
+        }[]
+      }
+      get_post_reactor_counts: {
+        Args: { p_post_id: string }
+        Returns: {
+          total: number
+          type: Database["public"]["Enums"]["reaction_type"]
+        }[]
+      }
+      get_post_reactors: {
+        Args: {
+          p_before_ts?: string
+          p_before_user?: string
+          p_limit?: number
+          p_post_id: string
+          p_type?: Database["public"]["Enums"]["reaction_type"]
+        }
+        Returns: {
+          avatar_key: string
+          nickname: string
+          reacted_at: string
+          type: Database["public"]["Enums"]["reaction_type"]
+          user_id: string
         }[]
       }
       get_profile_details: {

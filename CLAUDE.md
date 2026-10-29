@@ -38,6 +38,7 @@ The PRD at `UNM Freedom Confessions V1 PRD.md` (repo root). Read it before start
 - Reuse before creating. Small modular files. Comment only non-obvious logic.
 - Performance first: cached feed (persisted TanStack Query), skeleton loading, no spinners on filter switches, filter locally, keyset pagination.
 - Security first: validate inputs (Zod on the client, the DB re-validates), no secrets in the app, RLS and RPCs are the only write path.
+- Exception: supabase/functions/storage-cleanup reads the platform-provided SUPABASE_SERVICE_ROLE_KEY from its runtime environment; the key itself is never in the repo.
 - `PersistQueryClientProvider` wraps the whole app, outside any auth gate. Auth bootstrap never blocks rendering.
 - DB error codes map to user-facing text only in `mobile/lib/errors.ts`.
 - Realtime only through `hooks/usePostgresChanges` (UUID topic per subscription, foreground only, resubscribes on sign-in/out). A payload is a signal to refetch, never rendered directly (it has no nickname).

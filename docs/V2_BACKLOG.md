@@ -34,9 +34,9 @@ Add a dedicated "child safety" report reason (the `reports.reason` check, `lib/r
 
 Add a `terms_version` column and ask existing users to confirm they are 18 or older on their next launch. In V1 only `user_flags.terms_accepted_at` is stored, so people who accepted the earlier wording are not asked again.
 
-## Storage cleanup processor
+## Storage cleanup processor (built in Module 15; live after dry run)
 
-Storage cleanup processor (storage_cleanup_queue has no consumer; avatars/ and post-images/ files of removed content and deleted accounts are not physically deleted yet).
+Built in Module 15: the nightly `storage-cleanup` Edge Function (runbook: `docs/STORAGE_CLEANUP.md`). Live after dry run: it is not deployed yet, then it runs a week in dry run; mark this item done once `CLEANUP_DRY_RUN` is `false`. Original note: storage_cleanup_queue has no consumer; avatars/ and post-images/ files of removed content and deleted accounts are not physically deleted yet.
 
 ## Remove a profile picture in the admin panel (done in 12c-2)
 

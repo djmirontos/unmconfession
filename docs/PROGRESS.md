@@ -1183,3 +1183,35 @@ App only: no database change. The profile page (`app/user/[id].tsx`) has a "Post
 **Notes:**
 - My Posts (`PostCounts`) keeps its display-only stack. It shows my own posts including pending and removed ones, and the functions only list published content.
 - Listings have no reactions of their own; listing comments use the comment functions.
+
+## Module 15: nightly storage cleanup (2026-10-29)
+
+**Database** (`20261029190000_storage_cleanup_functions.sql`, applied by hand in the SQL editor):
+- `storage_cleanup_queue` gains `attempts` and `last_attempt_at`.
+- Four functions callable only with the service role:
+  - `cleanup_peek_batch`: read-only, for the dry run.
+  - `cleanup_claim_batch`: counts an attempt on each row and skips locked rows.
+  - `cleanup_mark_done`.
+  - `cleanup_queue_stats`: counts only.
+- `_cleanup_path_ok` allows only `avatars/<uuid>/c_<12 hex>.jpg` and `post-images/<uuid>/<file name>`. Rows that don't match are parked as dead (`attempts = 99`), and rows that fail 5 times are parked too.
+
+**Edge Function** (`supabase/functions/storage-cleanup/`, Deno, supabase-js pinned to `npm:@supabase/supabase-js@2.117.3`):
+- `index.ts`:
+  - POST only (405 otherwise). The `x-cleanup-secret` header must equal `CLEANUP_SECRET` in constant time; a missing or wrong header gets an empty 401, and a missing secret gets a generic 500 with a "not configured" log line. No CORS.
+  - Dry run (the default unless `CLEANUP_DRY_RUN` is exactly `false`): peeks one batch and returns counts, deleting and marking nothing.
+  - Live: at most 5 claimed batches or about 25 s. Each path is checked again, files are removed in chunks of 100, rows of chunks without an error are marked done, and failed rows stay queued.
+  - Returns and logs counts only (`mode, claimed, deleted, failed, skipped, pending, dead`), plus the per-bucket counts in a dry run. Errors are logged as their class and Postgres code only.
+- `logic.ts`: pure helpers (`isAllowedPath`, `groupByBucket`, `chunk`, `constantTimeEqual`, `parseDryRun`, `parseBatch`, `countByBucket`).
+- `logic.test.ts`: 12 node:test cases; run with `node --test supabase/functions/storage-cleanup/logic.test.ts` (Deno can run it too).
+- The service-role key is read only from the environment variable the platform provides. This is the one approved exception, noted in CLAUDE.md.
+- The repo has no `supabase/config.toml`, so JWT checking is turned off at deploy time (`--no-verify-jwt` or the dashboard switch).
+
+**Runbook:** `docs/STORAGE_CLEANUP.md` (deploy, secrets, the pg_cron + pg_net schedule at 03:43 UTC, the dry-run week, stop and rotate, what the numbers mean).
+
+**Verified:**
+- `logic.test.ts` 12/12.
+- The handler parses, and a scratch copy passed a strict typecheck against the supabase-js types (the app's 2.118.0, with a Deno shim). Not run in Deno, which isn't installed.
+- Mobile, admin and site checks are unchanged and pass.
+- Nothing deployed or scheduled.
+
+**Left (manual):** deploy, set the secrets and the Vault value, schedule it, watch a week of dry runs, then set `CLEANUP_DRY_RUN=false`. The backlog item is marked done once it is live.

@@ -21,6 +21,7 @@ import { ChipGroup } from '@/components/ui/ChipGroup';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useBlockUser } from '@/hooks/useBlockUser';
 import { usePostListActions } from '@/hooks/usePostListActions';
+import { useProfileDetails } from '@/hooks/useProfileDetails';
 import { type Profile, useMembership } from '@/hooks/useProfile';
 import { useTheme } from '@/hooks/useTheme';
 import { blockedByMeKey, useBlockedByMe, useUserPosts, useUserProfile } from '@/hooks/useUserProfile';
@@ -28,6 +29,7 @@ import { authorLabel } from '@/lib/authorLabel';
 import { afterUnblock, atNickname, blockedUsersKey, unblockUser } from '@/lib/blocks';
 import { getErrorMessage } from '@/lib/errors';
 import type { FeedPost } from '@/lib/posts';
+import { buildDetailLines } from '@/lib/profileDetails';
 import { getProfileViewState, isValidUserId } from '@/lib/profileView';
 import { useAuthStore } from '@/stores/authStore';
 import { usePickerOpen } from '@/stores/reactionPickerStore';
@@ -45,6 +47,26 @@ function ProfileHead({ userId, nickname, avatarKey }: { userId: string; nickname
       <Text accessibilityRole="header" numberOfLines={1} className="text-2xl font-bold text-text">
         {authorLabel(nickname)}
       </Text>
+    </View>
+  );
+}
+
+/**
+ * Their optional details, as plain text (no links or markdown). Nothing while loading, on an error,
+ * or when they keep them hidden: the rest of the page never depends on it.
+ */
+function DetailsCard({ userId }: { userId: string }) {
+  const details = useProfileDetails(userId);
+  const lines = buildDetailLines(details.data);
+  if (lines.length === 0) return null;
+  return (
+    <View className="mb-4 gap-2 rounded-2xl border border-hairline bg-surface1 p-4" accessibilityLabel="Profile details">
+      {lines.map((line) => (
+        <View key={line.label} className="gap-0.5">
+          <Text className="text-xs font-bold uppercase tracking-widest text-text-dim">{line.label}</Text>
+          <Text className="text-base text-text">{line.value}</Text>
+        </View>
+      ))}
     </View>
   );
 }
@@ -212,6 +234,7 @@ function ProfileTabs({ user }: { user: Profile }) {
   const head = (
     <View className="pb-3">
       <ProfileHead userId={user.id} nickname={user.nickname} avatarKey={user.avatar_key} />
+      <DetailsCard userId={user.id} />
       <View className="items-center">
         <ChipGroup options={TABS} value={tab} onChange={choose} accessibilityLabel="Show" />
       </View>

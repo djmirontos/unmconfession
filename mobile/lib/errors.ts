@@ -1,5 +1,7 @@
 import { isAuthError, isAuthRetryableFetchError } from '@supabase/supabase-js';
 
+import { getDetailsErrorMessage } from '@/lib/profileDetails';
+
 const JOINED_WITH_GOOGLE = 'Joined with Google? Use Continue with Google.';
 
 // Codes raised by the DB (`raise exception '<code>'`) and by Supabase Auth (`AuthError.code`).
@@ -104,6 +106,17 @@ export function getErrorMessage(error: unknown): string {
   if (code && MESSAGES[code]) return MESSAGES[code];
   if (isNetworkError(error)) return NETWORK;
   return FALLBACK;
+}
+
+/** Profile details (set_my_profile_details): the texts live in lib/profileDetails.ts; account and network wording comes from here. */
+export function getProfileDetailsErrorMessage(error: unknown): string {
+  const code = isNetworkError(error) ? 'network' : getErrorCode(error);
+  return getDetailsErrorMessage(code, {
+    banned: MESSAGES.banned,
+    suspended: MESSAGES.suspended,
+    nickname_required: MESSAGES.nickname_required,
+    network: NETWORK,
+  });
 }
 
 // Profile picture: account states and photo problems keep their own text, anything else is one line.

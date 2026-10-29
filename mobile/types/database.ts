@@ -805,6 +805,47 @@ export type Database = {
           },
         ]
       }
+      profile_details: {
+        Row: {
+          about: string | null
+          college: string | null
+          course: string | null
+          hobbies: string | null
+          show_details: boolean
+          updated_at: string
+          user_id: string
+          year_level: string | null
+        }
+        Insert: {
+          about?: string | null
+          college?: string | null
+          course?: string | null
+          hobbies?: string | null
+          show_details?: boolean
+          updated_at?: string
+          user_id: string
+          year_level?: string | null
+        }
+        Update: {
+          about?: string | null
+          college?: string | null
+          course?: string | null
+          hobbies?: string | null
+          show_details?: boolean
+          updated_at?: string
+          user_id?: string
+          year_level?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_details_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_key: string
@@ -1256,6 +1297,9 @@ export type Database = {
         }[]
       }
       _nickname_flagged: { Args: { p: string }; Returns: string }
+      _profile_clean: { Args: { p: string }; Returns: string }
+      _profile_text_contact: { Args: { p: string }; Returns: boolean }
+      _profile_text_flagged: { Args: { p: string }; Returns: string }
       _re_escape: { Args: { p: string }; Returns: string }
       _validate_nickname: { Args: { p: string }; Returns: undefined }
       admin_delete_account: {
@@ -1700,6 +1744,17 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_my_profile_details: {
+        Args: never
+        Returns: {
+          about: string
+          college: string
+          course: string
+          hobbies: string
+          show_details: boolean
+          year_level: string
+        }[]
+      }
       get_my_settings: {
         Args: never
         Returns: {
@@ -1732,6 +1787,16 @@ export type Database = {
           target_type: Database["public"]["Enums"]["content_type"]
           type: string
           unread_count: number
+        }[]
+      }
+      get_profile_details: {
+        Args: { p_user: string }
+        Returns: {
+          about: string
+          college: string
+          course: string
+          hobbies: string
+          year_level: string
         }[]
       }
       get_replies: {
@@ -1800,6 +1865,10 @@ export type Database = {
       is_staff: { Args: never; Returns: boolean }
       mark_notifications_read: {
         Args: { p_keys?: string[] }
+        Returns: undefined
+      }
+      mod_clear_profile_details: {
+        Args: { p_reason?: string; p_user: string }
         Returns: undefined
       }
       mod_dashboard: {
@@ -2035,6 +2104,17 @@ export type Database = {
       }
       set_listing_closed: {
         Args: { p_closed: boolean; p_listing_id: string }
+        Returns: undefined
+      }
+      set_my_profile_details: {
+        Args: {
+          p_about: string
+          p_college: string
+          p_course: string
+          p_hobbies: string
+          p_show: boolean
+          p_year_level: string
+        }
         Returns: undefined
       }
       set_nickname: {

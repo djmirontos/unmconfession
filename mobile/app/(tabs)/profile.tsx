@@ -133,6 +133,7 @@ function AccountGroup({ nickname }: { nickname: string | null }) {
   return (
     <SettingsGroup title="Account">
       <SettingsRow first icon="at-outline" label="Nickname" value={nicknameValue} onPress={() => router.push('/change-nickname')} />
+      <SettingsRow icon="person-circle-outline" label="About you" onPress={() => router.push('/about-you')} />
       <SettingsRow icon="document-text-outline" label="My Posts" onPress={() => router.push('/my-posts')} />
       <SettingsRow
         icon="notifications-outline"

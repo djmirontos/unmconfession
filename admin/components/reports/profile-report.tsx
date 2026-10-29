@@ -9,8 +9,8 @@ import { ReportActions } from '@/components/reports/report-actions';
 import { ReportHistory } from '@/components/reports/report-history';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent } from '@/components/ui/card';
-import { RemoveAvatarButton } from '@/components/users/remove-avatar';
-import { avatarReasonFromReports } from '@/lib/moderation/avatar';
+import { ClearDetailsButton, RemoveAvatarButton } from '@/components/users/profile-tools';
+import { reasonFromReports } from '@/lib/moderation/avatar';
 import type { ReportDetail, UserRow } from '@/lib/moderation/data';
 
 type Props = {
@@ -19,6 +19,9 @@ type Props = {
   id: string;
   reports: ReportDetail[];
   canRemove: boolean;
+  /** The member's details as "Label: value" lines (mod_get_reports body), or null. */
+  details: string | null;
+  canClear: boolean;
   now: number;
   nextHref: string;
 };
@@ -27,7 +30,7 @@ type Props = {
  * A reported profile (picture or nickname): the account card, the reports and the actions.
  * Suspending or banning happens on the user page, so the reasons and the history stay in one place.
  */
-export function ProfileReport({ user, id, reports, canRemove, now, nextHref }: Props) {
+export function ProfileReport({ user, id, reports, canRemove, details, canClear, now, nextHref }: Props) {
   const open = reports.filter((r) => r.status === 'open');
   const reasons = [...new Set(open.map((r) => r.reason))];
   const actions = (
@@ -40,13 +43,25 @@ export function ProfileReport({ user, id, reports, canRemove, now, nextHref }: P
       cascades={false}
       nextHref={nextHref}
       leading={
-        user && canRemove ? (
-          <RemoveAvatarButton
-            user={{ id: user.id, nickname: user.nickname }}
-            defaultReason={avatarReasonFromReports(reasons)}
-            successMessage="Profile picture removed. The reports are still open."
-            size="lg"
-          />
+        user && (canRemove || canClear) ? (
+          <>
+            {canRemove ? (
+              <RemoveAvatarButton
+                user={{ id: user.id, nickname: user.nickname }}
+                defaultReason={reasonFromReports(reasons)}
+                successMessage="Profile picture removed. The reports are still open."
+                size="lg"
+              />
+            ) : null}
+            {canClear ? (
+              <ClearDetailsButton
+                user={{ id: user.id, nickname: user.nickname }}
+                defaultReason={reasonFromReports(reasons)}
+                successMessage="Profile details cleared. The reports are still open."
+                size="lg"
+              />
+            ) : null}
+          </>
         ) : undefined
       }
     />
@@ -83,6 +98,15 @@ export function ProfileReport({ user, id, reports, canRemove, now, nextHref }: P
                   <UserRound className="size-4" aria-hidden="true" /> Open the user page to suspend or ban
                 </Link>
               </div>
+            </CardContent>
+          </Card>
+        ) : null}
+        {details ? (
+          <Card>
+            <CardContent className="space-y-2">
+              <h2 className="text-sm font-semibold">Profile details (may be hidden from members)</h2>
+              {/* Member text: plain React text only, line breaks kept. */}
+              <p className="text-sm whitespace-pre-wrap break-words">{details}</p>
             </CardContent>
           </Card>
         ) : null}

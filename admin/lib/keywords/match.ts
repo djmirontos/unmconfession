@@ -4,6 +4,7 @@
 //   contains  strpos(lower(text), lower(term)) > 0
 //   regex     text ~* term
 // Nicknames: public._nickname_flagged (migration 8b, 20261026110000_nickname_keywords.sql).
+// Profile details: public._profile_text_flagged (20261029150000_profile_details.sql).
 // Every regex here is compiled inside try/catch and only ever runs on the short preview text.
 
 import type { MatchType } from '@/lib/keywords/schemas';
@@ -98,6 +99,25 @@ export function matchNickname(term: string, matchType: MatchType, nickname: stri
     case 'regex': {
       // The database skips a pattern it cannot run instead of refusing the name.
       const r = regexResult(term, nickname.toLowerCase());
+      return r.kind === 'invalid' ? { kind: 'invalid' } : r;
+    }
+  }
+}
+
+/**
+ * Profile details (_profile_text_flagged): the content rules, also tried with leet digits read as
+ * letters on both the text and the term; a broken pattern is skipped.
+ */
+export function matchProfile(term: string, matchType: MatchType, text: string): MatchResult {
+  switch (matchType) {
+    case 'contains':
+      return result(text.toLowerCase().includes(term.toLowerCase()) || unleet(text).includes(unleet(term)));
+    case 'word': {
+      const plain = matchContent(term, 'word', text);
+      return plain.kind === 'match' ? plain : matchContent(unleet(term), 'word', unleet(text));
+    }
+    case 'regex': {
+      const r = regexResult(term, text);
       return r.kind === 'invalid' ? { kind: 'invalid' } : r;
     }
   }

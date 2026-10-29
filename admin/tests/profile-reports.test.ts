@@ -5,8 +5,8 @@ import { describe, expect, it } from 'vitest';
 
 import { messageFor, removeAvatarErrorCode } from '@/lib/errors';
 import {
-  AVATAR_REASON_MAX,
-  avatarReasonFromReports,
+  PROFILE_REASON_MAX,
+  reasonFromReports,
   avatarUrl,
   canRemoveAvatar,
   isCustomAvatarKey,
@@ -56,11 +56,11 @@ describe('Remove avatar', () => {
     expect(removeAvatarSchema.safeParse({ user: U1 }).success).toBe(true);
     expect(removeAvatarSchema.safeParse({ user: U1, reason: 'Reported: Spam' }).success).toBe(true);
     expect(removeAvatarSchema.safeParse({ user: 'x' }).success).toBe(false);
-    expect(removeAvatarSchema.safeParse({ user: U1, reason: 'a'.repeat(AVATAR_REASON_MAX + 1) }).success).toBe(false);
+    expect(removeAvatarSchema.safeParse({ user: U1, reason: 'a'.repeat(PROFILE_REASON_MAX + 1) }).success).toBe(false);
   });
   it('prefills the reason from the report reasons', () => {
-    expect(avatarReasonFromReports(['Spam', 'Bullying or harassment'])).toBe('Reported: Spam, Bullying or harassment');
-    expect(avatarReasonFromReports([])).toBe('');
+    expect(reasonFromReports(['Spam', 'Bullying or harassment'])).toBe('Reported: Spam, Bullying or harassment');
+    expect(reasonFromReports([])).toBe('');
   });
   it('maps its errors to avatar wording', () => {
     expect(messageFor(removeAvatarErrorCode('forbidden'))).toMatch(/Only an admin/);

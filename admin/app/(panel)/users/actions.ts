@@ -4,9 +4,9 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 
 import { requireAdmin, requireStaff } from '@/lib/auth';
-import { codeFromError, removeAvatarErrorCode, renameErrorCode } from '@/lib/errors';
+import { clearDetailsErrorCode, codeFromError, removeAvatarErrorCode, renameErrorCode } from '@/lib/errors';
 import { formatExact } from '@/lib/format';
-import { removeAvatarSchema } from '@/lib/moderation/avatar';
+import { clearDetailsSchema, removeAvatarSchema } from '@/lib/moderation/avatar';
 import { fetchUser, fetchUsersPage, type Page, type UserRow } from '@/lib/moderation/data';
 import { refreshPanel } from '@/lib/moderation/mutations';
 import {
@@ -26,7 +26,7 @@ import { type ActionResult, fail, ok } from '@/lib/result';
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
 
-// Moderators and admins: status changes and removing a profile picture (the database limits
+// Moderators and admins: status changes, removing a profile picture and clearing profile details (the database limits
 // moderators to regular users).
 // Admins only: role, nickname, identity, email lookup, account deletion (requireAdmin() here
 // and again in the database).
@@ -99,6 +99,21 @@ export async function removeAvatar(input: unknown): Promise<ActionResult> {
     ...(parsed.data.reason ? { p_reason: parsed.data.reason } : {}),
   });
   if (error) return fail(removeAvatarErrorCode(codeFromError(error)));
+  refreshPanel();
+  return ok(undefined);
+}
+
+/** Empties the member's profile details (the show switch stays). Open reports stay open. */
+export async function clearProfileDetails(input: unknown): Promise<ActionResult> {
+  await requireStaff();
+  const parsed = clearDetailsSchema.safeParse(input);
+  if (!parsed.success) return fail(parsed.error.issues.some((i) => i.path[0] === 'reason') ? 'reason_too_long' : 'invalid_input');
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('mod_clear_profile_details', {
+    p_user: parsed.data.user,
+    ...(parsed.data.reason ? { p_reason: parsed.data.reason } : {}),
+  });
+  if (error) return fail(clearDetailsErrorCode(codeFromError(error)));
   refreshPanel();
   return ok(undefined);
 }

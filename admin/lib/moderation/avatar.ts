@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// Profile pictures. Pure: the loaders, the pages and the tests share it.
+// Profile pictures and profile details. Pure: the loaders, the pages and the tests share it.
 
 /** A member's own uploaded picture (avatars/<user id>/<key>.jpg); any other key is an app preset. */
 export const CUSTOM_AVATAR_KEY = /^c_[0-9a-f]{12}$/;
@@ -13,22 +13,33 @@ export function avatarUrl(userId: string, key: string | null | undefined, supaba
   return `${new URL(supabaseUrl).origin}/storage/v1/object/public/avatars/${userId}/${key}.jpg`;
 }
 
-/** Mirrors mod_remove_avatar: a custom picture, not deleted, and moderators only act on regular users. */
-export function canRemoveAvatar(
-  viewer: { isAdmin: boolean },
-  target: { role: 'user' | 'moderator' | 'admin'; deleted: boolean; avatarKey: string | null },
-): boolean {
-  return !target.deleted && isCustomAvatarKey(target.avatarKey) && (target.role === 'user' || viewer.isAdmin);
+type Viewer = { isAdmin: boolean };
+type Target = { role: 'user' | 'moderator' | 'admin'; deleted: boolean };
+
+// mod_remove_avatar and mod_clear_profile_details: moderators act on regular users only.
+const mayActOn = (viewer: Viewer, target: Target) => !target.deleted && (target.role === 'user' || viewer.isAdmin);
+
+/** Mirrors mod_remove_avatar: a custom picture on a live account. */
+export function canRemoveAvatar(viewer: Viewer, target: Target & { avatarKey: string | null }): boolean {
+  return mayActOn(viewer, target) && isCustomAvatarKey(target.avatarKey);
 }
 
-export const AVATAR_REASON_MAX = 300;
+/** Mirrors mod_clear_profile_details: some details text on a live account. */
+export function canClearDetails(viewer: Viewer, target: Target, details: string | null): boolean {
+  return mayActOn(viewer, target) && !!details?.trim();
+}
 
-export const removeAvatarSchema = z.object({
+/** Reason limit for both profile tools (kept in the moderation log). */
+export const PROFILE_REASON_MAX = 300;
+
+const profileToolSchema = z.object({
   user: z.uuid(),
-  reason: z.string().trim().max(AVATAR_REASON_MAX).optional(),
+  reason: z.string().trim().max(PROFILE_REASON_MAX).optional(),
 });
+export const removeAvatarSchema = profileToolSchema;
+export const clearDetailsSchema = profileToolSchema;
 
-/** Default reason in the Remove avatar dialog when opened from a profile report. */
-export function avatarReasonFromReports(reasons: readonly string[]): string {
-  return reasons.length > 0 ? `Reported: ${reasons.join(', ')}`.slice(0, AVATAR_REASON_MAX) : '';
+/** Default reason in the profile tool dialogs when opened from a profile report. */
+export function reasonFromReports(reasons: readonly string[]): string {
+  return reasons.length > 0 ? `Reported: ${reasons.join(', ')}`.slice(0, PROFILE_REASON_MAX) : '';
 }

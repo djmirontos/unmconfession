@@ -15,7 +15,7 @@ export const CATEGORIES = [
   'gambling',
   'other',
 ] as const;
-export const SCOPES = ['post', 'comment', 'listing', 'nickname'] as const;
+export const SCOPES = ['post', 'comment', 'listing', 'nickname', 'profile'] as const;
 
 export type MatchType = (typeof MATCH_TYPES)[number];
 export type Category = (typeof CATEGORIES)[number];
@@ -33,7 +33,13 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   gambling: 'Gambling',
   other: 'Other',
 };
-export const SCOPE_LABELS: Record<Scope, string> = { post: 'Posts', comment: 'Comments', listing: 'Listings', nickname: 'Nicknames' };
+export const SCOPE_LABELS: Record<Scope, string> = {
+  post: 'Posts',
+  comment: 'Comments',
+  listing: 'Listings',
+  nickname: 'Nicknames',
+  profile: 'Profile details',
+};
 
 /** The add / edit form, shared by the client and the Server Actions. created_by is never part of it. */
 export const keywordInputSchema = z.object({

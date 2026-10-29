@@ -16,7 +16,7 @@ import { FULLSCREEN_BELOW_MD, TAP_BELOW_MD } from '@/components/moderation/mobil
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { messageFor } from '@/lib/errors';
-import { matchContent, matchNickname, type MatchResult } from '@/lib/keywords/match';
+import { matchContent, matchNickname, matchProfile, type MatchResult } from '@/lib/keywords/match';
 import { checkKeyword } from '@/lib/keywords/safety';
 import {
   CATEGORIES,
@@ -51,13 +51,16 @@ function PreviewOutcome({ result }: { result: MatchResult }) {
   }
 }
 
+type PreviewContext = 'content' | 'nickname' | 'profile';
+const PREVIEW_MATCH: Record<PreviewContext, typeof matchContent> = { content: matchContent, nickname: matchNickname, profile: matchProfile };
+
 /** "Try it": the mirrored database rules on a short sample text. */
 function Preview({ term, matchType, scopes }: { term: string; matchType: MatchType; scopes: readonly Scope[] }) {
   const [sample, setSample] = useState('');
-  const [context, setContext] = useState<'content' | 'nickname'>(scopes.includes('nickname') && scopes.length === 1 ? 'nickname' : 'content');
+  const [context, setContext] = useState<PreviewContext>(scopes.length === 1 && (scopes[0] === 'nickname' || scopes[0] === 'profile') ? scopes[0] : 'content');
   const id = useId();
   const t = term.trim();
-  const result = t && sample ? (context === 'nickname' ? matchNickname(t, matchType, sample) : matchContent(t, matchType, sample)) : null;
+  const result = t && sample ? PREVIEW_MATCH[context](t, matchType, sample) : null;
 
   return (
     <section className="space-y-2 rounded-lg border bg-muted/40 p-3" aria-labelledby={`${id}-title`}>
@@ -68,11 +71,12 @@ function Preview({ term, matchType, scopes }: { term: string; matchType: MatchTy
         <select
           aria-label="Preview as"
           value={context}
-          onChange={(e) => setContext(e.target.value === 'nickname' ? 'nickname' : 'content')}
+          onChange={(e) => setContext(e.target.value === 'nickname' || e.target.value === 'profile' ? e.target.value : 'content')}
           className={`${SELECT} sm:w-44 sm:shrink-0`}
         >
           <option value="content">Post / comment / listing</option>
           <option value="nickname">Nickname</option>
+          <option value="profile">Profile details</option>
         </select>
         <Input
           aria-label="Sample text"
@@ -90,6 +94,11 @@ function Preview({ term, matchType, scopes }: { term: string; matchType: MatchTy
       {context === 'nickname' ? (
         <p className="text-xs text-muted-foreground">
           Nicknames: the digits 0 1 3 4 5 7 read as o i e a s t; &ldquo;_&rdquo; and &ldquo;.&rdquo; split words; a broken pattern is skipped.
+        </p>
+      ) : context === 'profile' ? (
+        <p className="text-xs text-muted-foreground">
+          Profile details: the post rules, also with the digits 0 1 3 4 5 7 read as o i e a s t; a broken pattern is skipped. Links,
+          &ldquo;@&rdquo;, phone numbers and contact-app names are refused separately.
         </p>
       ) : matchType === 'regex' ? (
         <p className="text-xs text-muted-foreground">

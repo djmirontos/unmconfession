@@ -11,7 +11,7 @@ import { UserAvatar } from '@/components/moderation/user-avatar';
 import { RoleBadge } from '@/components/panel/role-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { RemoveAvatarButton } from '@/components/users/remove-avatar';
+import { RemoveAvatarButton } from '@/components/users/profile-tools';
 import { UserActions } from '@/components/users/user-actions';
 import { UserContent, UserContentFilters, UserContentSkeleton } from '@/components/users/user-content';
 import { requireStaff } from '@/lib/auth';

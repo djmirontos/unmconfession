@@ -44,11 +44,11 @@ describe('keyword form schema', () => {
     expect(keywordInputSchema.safeParse({ ...valid, term: 'x'.repeat(TERM_MAX) }).success).toBe(true);
     expect(keywordInputSchema.safeParse({ ...valid, term: 'x'.repeat(TERM_MAX + 1) }).success).toBe(false);
   });
-  it('needs at least one scope, only the four allowed values, no duplicates', () => {
+  it('needs at least one scope, only the five allowed values, no duplicates', () => {
     expect(keywordInputSchema.safeParse({ ...valid, applies_to: [] }).success).toBe(false);
-    expect(keywordInputSchema.safeParse({ ...valid, applies_to: ['post', 'profile'] }).success).toBe(false);
+    expect(keywordInputSchema.safeParse({ ...valid, applies_to: ['post', 'user'] }).success).toBe(false);
     expect(keywordInputSchema.safeParse({ ...valid, applies_to: ['post', 'post'] }).success).toBe(false);
-    expect(keywordInputSchema.safeParse({ ...valid, applies_to: ['post', 'comment', 'listing', 'nickname'] }).success).toBe(true);
+    expect(keywordInputSchema.safeParse({ ...valid, applies_to: ['post', 'comment', 'listing', 'nickname', 'profile'] }).success).toBe(true);
   });
   it('refuses unknown match types and categories', () => {
     expect(keywordInputSchema.safeParse({ ...valid, match_type: 'glob' }).success).toBe(false);
@@ -255,7 +255,7 @@ describe('keyword filters → query', () => {
     }
   });
   it('bad URL values fall back to "all"', () => {
-    expect(keywordFiltersSchema.parse({ category: 'rude', scope: 'profile', match: 'glob', state: 'maybe' })).toEqual({});
+    expect(keywordFiltersSchema.parse({ category: 'rude', scope: 'user', match: 'glob', state: 'maybe' })).toEqual({});
   });
   it('escapes LIKE wildcards in the search', () => {
     expect(likePattern('a\\b')).toBe('%a\\\\b%');
@@ -272,7 +272,7 @@ describe('phone filter sheet', () => {
     expect(activeFilterCount(keywordFiltersSchema.parse({ category: 'spam', scope: 'post', match: 'word', state: 'active' }))).toBe(4);
   });
   it('bad URL values do not count', () => {
-    expect(activeFilterCount(keywordFiltersSchema.parse({ category: 'rude', scope: 'profile' }))).toBe(0);
+    expect(activeFilterCount(keywordFiltersSchema.parse({ category: 'rude', scope: 'user' }))).toBe(0);
   });
   it('"Clear" removes the sheet filters and keeps the search and anything else', () => {
     expect(clearSheetFilters('category=spam&scope=post&match=regex&state=active&q=shabu')).toBe('q=shabu');

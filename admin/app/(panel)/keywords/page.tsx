@@ -37,7 +37,7 @@ export default async function KeywordsPage({ searchParams }: PageProps<'/keyword
     <>
       <PageHeader
         title="Keywords"
-        description="Terms that hold a post, comment or listing for review, and terms refused in nicknames. Changes apply to new content right away."
+        description="Terms that hold a post, comment or listing for review, and terms refused in nicknames and profile details. Changes apply to new content right away."
       />
       <KeywordFilters activeCount={activeFilterCount(filters)} />
       {rows === null ? (

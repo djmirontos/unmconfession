@@ -13,9 +13,9 @@ import { kindLabel, TypeBadge } from '@/components/review/hold-badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { requireStaff } from '@/lib/auth';
-import { canRemoveAvatar } from '@/lib/moderation/avatar';
+import { canClearDetails, canRemoveAvatar } from '@/lib/moderation/avatar';
 import { isTopLevelComment, loadContent } from '@/lib/moderation/content-data';
-import { fetchReportDetails, fetchUser } from '@/lib/moderation/data';
+import { fetchProfileReportBody, fetchReportDetails, fetchUser } from '@/lib/moderation/data';
 import { reportFilterSchema, reportTargetSchema } from '@/lib/review/schemas';
 import { requestNow } from '@/lib/request-time';
 
@@ -53,6 +53,7 @@ export default async function ReportItemPage({ params, searchParams }: PageProps
     const [user, reports] = await Promise.all([fetchUser(id), fetchReportDetails(type, id)]);
     if (!user && reports.length === 0) notFound();
     const open = reports.filter((r) => r.status === 'open');
+    const details = await fetchProfileReportBody(id, open.map((r) => r.createdAt).sort()[0]);
     return (
       <div className={`space-y-6 ${ACTION_BAR_SPACE_TWO_ROWS}`}>
         <div className="flex flex-wrap items-center gap-3">
@@ -67,6 +68,8 @@ export default async function ReportItemPage({ params, searchParams }: PageProps
           id={id}
           reports={reports}
           canRemove={user ? canRemoveAvatar(staff, user) : false}
+          details={details}
+          canClear={user ? canClearDetails(staff, user, details) : false}
           now={requestNow()}
           nextHref={nextReportHref(type, id, open, filter)}
         />

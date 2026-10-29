@@ -87,6 +87,18 @@ export async function fetchReportsPage(cursor?: KeysetCursor): Promise<Page<Repo
   return page(await reportsRpc(PAGE, cursor), toReportRow, (r) => ({ ts: r.first_reported_at, id: r.target_id }), PAGE);
 }
 
+/**
+ * The details text (mod_get_reports body) of a reported profile, or null when it has none or no open
+ * report. There is no single-row RPC: the page starts just before the first open report and finds the row.
+ */
+export async function fetchProfileReportBody(id: string, firstOpenAt: string | undefined): Promise<string | null> {
+  if (!firstOpenAt) return null;
+  const before = new Date(Date.parse(firstOpenAt) - 1).toISOString();
+  const rows = await reportsRpc(WINDOW, { ts: before, id: '00000000-0000-0000-0000-000000000000' });
+  const row = rows.find((r) => r.target_type === 'profile' && r.target_id === id);
+  return row?.body ?? null;
+}
+
 export type ReportDetail = {
   id: string;
   reason: string;

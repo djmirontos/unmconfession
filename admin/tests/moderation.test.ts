@@ -419,7 +419,7 @@ describe('every Module 7d page and action checks access on the server', () => {
   it('user actions: staff actions call requireStaff(), admin-only ones call requireAdmin()', () => {
     const actions = firstStatements('users/actions.ts');
     const adminOnly = ['setUserRole', 'renameUser', 'revealIdentity', 'deleteAccount', 'findUserByEmail'];
-    const staff = ['loadMoreUsers', 'suspendUser', 'banUser', 'restoreUser', 'removeAvatar'];
+    const staff = ['loadMoreUsers', 'suspendUser', 'banUser', 'restoreUser', 'removeAvatar', 'clearProfileDetails'];
     expect(Object.keys(actions).sort()).toEqual([...adminOnly, ...staff].sort());
     for (const name of adminOnly) expect(actions[name], name).toBe('await requireAdmin();');
     for (const name of staff) expect(actions[name], name).toBe('await requireStaff();');

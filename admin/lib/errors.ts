@@ -41,6 +41,9 @@ const MESSAGES: Record<string, string> = {
   no_custom_avatar: 'This user has no custom profile picture. It may already have been removed.',
   avatar_forbidden: "Only an admin can remove a moderator's or admin's profile picture.",
   avatar_account_deleted: 'This account was deleted, so its picture cannot be changed.',
+  // Profile details (mod_clear_profile_details); clearDetailsErrorCode gives forbidden its own text.
+  details_forbidden: "Only an admin can clear a moderator's or admin's profile details.",
+  no_details: 'This member has no profile details to clear.',
   // Keywords
   invalid_regex: 'This regular expression is not valid.',
   keyword_exists: 'That term already exists for this match type.',
@@ -108,6 +111,11 @@ export function removeAvatarErrorCode(code: string): string {
   if (code === 'forbidden') return 'avatar_forbidden';
   if (code === 'account_deleted') return 'avatar_account_deleted';
   return code;
+}
+
+/** mod_clear_profile_details codes; account_deleted keeps the generic wording. */
+export function clearDetailsErrorCode(code: string): string {
+  return code === 'forbidden' ? 'details_forbidden' : code;
 }
 
 export function messageFor(code: string): string {

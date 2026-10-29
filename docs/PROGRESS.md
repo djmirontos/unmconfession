@@ -1149,3 +1149,37 @@ App only: no database change. The profile page (`app/user/[id].tsx`) has a "Post
 - The Privacy sentence on account deletion does not list profile details among the erased data, although the database deletes them; it was left unchanged as instructed.
 - The profile list in Settings gains an "About you" row, beyond the Account rows listed in CLAUDE.md.
 - No details editor on the admin user page (not requested).
+
+## Module 14: who reacted sheet (2026-10-29)
+
+**Database** (`20261029170000_reactors.sql`, applied by hand in the SQL editor):
+- `get_post_reactors` / `get_comment_reactors` return the list, newest first, keyset on `(reacted_at, user_id)`, at most 50 per call.
+- `get_post_reactor_counts` / `get_comment_reactor_counts` return the counts per type.
+- Signed-in members only. People I blocked or muted, banned members, deleted accounts and unpublished content are left out of the lists and the counts.
+- Two indexes for the newest-first order.
+- **Hardening:** `comment_reactions` had full table privileges for `anon` and `authenticated` (row-level security already stopped writes). It is now read-only (select only), like `reactions`.
+- Types regenerated; mobile and admin copies identical.
+
+**App:**
+- `lib/reactors.ts` (pure, `npm run test:reactors`, 6 tests): `buildReactorTabs` (All first with the sum, then the types in server order, empty ones left out), `nextCursor` (30 per page), "You" for my own row, and the row's screen-reader label.
+- `hooks/useReactors.ts`: `useOpenReactors` (guests get the sign-in sheet, new "Sign in to see who reacted" copy), `useReactorCounts` and `useReactors` (infinite, keyset).
+  - Keys are `['reactors', type, id, …]`. They aren't persisted and are cleared on sign-out.
+  - They are refetched after my own reaction on that item is saved (`lib/reactionSync.ts`, `lib/commentReactionSync.ts`) and after a block or unblock.
+  - Queries run only while the sheet is open and I'm signed in.
+- `components/reactions/ReactorsSheet.tsx`, mounted once at the root (`stores/reactorsSheetStore.ts`):
+  - Title "Reactions" and the note "Signed-in members can see who reacted."
+  - Scrollable tabs (All, then each reaction icon with its count; radio role, 44 px).
+  - Rows with avatar, nickname or "You", and the reaction icon. Tapping a row closes the sheet and opens the profile through `useOpenProfile` (my own row opens the Profile tab).
+  - States: skeleton rows, "No reactions yet", error with Retry, a spinner while loading more, a retry banner if loading more fails, and "That's everyone." at the end. Every new opening starts on All.
+- Entry points: `TopReactions` takes an optional `onPress` (button role, "See who reacted", hit slop to 44 px). It is wired in the post action bar (`PostActions`, which covers Feed, Trending, polls, post detail and profile posts) and in comments and replies (`CommentItem`, which covers post and listing comments). The stack sits outside the card's open-post pressable, so tapping it never opens the post.
+- Legal (app and site, word for word, date unchanged): Privacy gains "When you react, your nickname and picture can be seen by signed-in members in the list of reactions."
+
+**Verified:**
+- Mobile: typecheck, lint and all tests (5 + 11 + 8 + 9 + 10 + 7 + 8 + 12 + 6).
+- Admin: typecheck, lint, build and 375 tests with the new types.
+- Site: typecheck, lint and build; legal parity true.
+- Secret check passed. Not checked on a device.
+
+**Notes:**
+- My Posts (`PostCounts`) keeps its display-only stack. It shows my own posts including pending and removed ones, and the functions only list published content.
+- Listings have no reactions of their own; listing comments use the comment functions.

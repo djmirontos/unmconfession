@@ -38,13 +38,17 @@ Add a `terms_version` column and ask existing users to confirm they are 18 or ol
 
 Storage cleanup processor (storage_cleanup_queue has no consumer; avatars/ and post-images/ files of removed content and deleted accounts are not physically deleted yet).
 
-## Remove a profile picture in the admin panel
+## Remove a profile picture in the admin panel (done in 12c-2)
 
-`mod_remove_avatar(p_user, p_reason)` (migration `20261029100000_custom_avatars.sql`) resets a member's custom picture to the default preset, queues the file for cleanup and writes a `remove_avatar` moderation action. The admin panel has no button for it yet. It checks `is_staff()`, so it only works for a signed-in staff account through the API; the SQL editor has no `auth.uid()` and is refused.
+Done: the reported-profile page and the user page have a Remove avatar button, and the moderation log labels `remove_avatar` "Removed profile picture". Original note: `mod_remove_avatar(p_user, p_reason)` (migration `20261029100000_custom_avatars.sql`) resets a member's custom picture to the default preset, queues the file for cleanup and writes a `remove_avatar` moderation action. The admin panel has no button for it yet. It checks `is_staff()`, so it only works for a signed-in staff account through the API; the SQL editor has no `auth.uid()` and is refused.
 
-## 12c-2: Report a profile (before the preview and Play builds)
+## 12c-2: Report a profile (done 2026-10-29)
 
-Report profile: needs a new report target type `profile` in the DB, `report_content`, `mod_get_reports` / `mod_get_report_details`, and the admin panel. In the same step: an admin panel button for `mod_remove_avatar` and a label for the `remove_avatar` action in the moderation log. Must be done BEFORE building the preview / Play versions.
+Done in Module 12c-2 (migration `20261029130000_report_profiles.sql`, app and admin panel); see PROGRESS. Original note: Report profile: needs a new report target type `profile` in the DB, `report_content`, `mod_get_reports` / `mod_get_report_details`, and the admin panel. In the same step: an admin panel button for `mod_remove_avatar` and a label for the `remove_avatar` action in the moderation log. Must be done BEFORE building the preview / Play versions.
+
+## Moderator tool to force a nickname change
+
+Moderator tool to force a nickname change (only admins can rename via admin_set_nickname today).
 
 ## 12d: Optional profile details
 

@@ -1080,3 +1080,29 @@ App only: no database change. The profile page (`app/user/[id].tsx`) has a "Post
 - `useUserListings` (`hooks/useUserProfile.ts`) and `components/profile/UserListings.tsx`: the full `ListingCard` with its comment count (the Lost & Found card, for both kinds), tap opens `listing/[id]`, no author link back to the same profile (`CurrentProfileContext`). Skeletons, "No listings yet", error with Retry, pull to refresh, load more and "That's everything.".
 
 **Verified:** typecheck, lint and all mobile tests (5 + 11 + 8 + 9 + 10 + 7 + 8). The keyset filter was checked live on `feed_posts` in 12c; `feed_listings` returned no rows to a guest, so its paging was not checked live. Not checked on a device. No new pure helper, so no new test. Site and admin untouched.
+
+## Module 12c-2: report a profile and moderator handling (2026-10-29)
+
+**Database** (`20261029130000_report_profiles.sql`, applied by hand in the SQL editor): `content_type` gains `profile`. `report_content('profile', <user id>, …)` refuses your own profile (`own_content`) and deleted accounts or profiles without a nickname (`not_found`); same reasons, daily limit and silent duplicate as other reports. `mod_get_reports` lists reported profiles (title `profile`, no body or images, status `removed` for a deleted account) and returns `avatar_key` as a new last column. Types regenerated; `mobile/types/database.ts` and `admin/types/database.ts` are identical.
+
+**App:**
+- The public profile header has Report next to Block (normal state only; 44 px, "Report this profile"). It opens the existing `ReportSheet` with target `profile` and the user's id: same reasons, optional note and success toast; the sheet title reads "Report this profile".
+- `getReportErrorMessage(error, target)` in `lib/errors.ts`: for a profile, `own_content` is "You can't report your own profile." and `not_found` is "This profile isn't available."; the daily limit keeps its report wording.
+- No mobile code switches on the content type exhaustively, so nothing else changed.
+
+**Admin panel:**
+- `lib/review/schemas.ts`: `REPORT_TARGET_TYPES` (content types plus `profile`), `reportTargetSchema`, `reportFilterSchema` and the `isContentType` guard. Content-only loaders (review queue, `mod_list_content`) narrow with the guard; `keysetPage` now leaves out rows its mapper returns null for (the cursor still uses the last raw row). No casts.
+- Reports list: profile rows show the Profile label, the picture (custom from the public `avatars` URL, otherwise the panel's initial), the nickname, count, reasons and first/last reported, with no preview text. A "Profiles" filter chip on the reports page.
+- `/reports/profile/<id>` (`components/reports/profile-report.tsx`): never calls `mod_get_content`; the account comes from `mod_search_users` (`fetchUser`) and the reports from `mod_get_report_details('profile', id)` (reasons, notes, reporter nicknames). It shows the picture, role and status, a link to the user page for suspend or ban, and the action bar: Remove avatar (custom pictures only, when allowed) and the existing Mark handled / Dismiss reports, then the next reported item.
+- Remove avatar (`components/users/remove-avatar.tsx`, `removeAvatar` in `app/(panel)/users/actions.ts`): a confirm dialog with an optional reason (prefilled "Reported: <reasons>" from a report; up to 300 characters), `requireStaff()` then zod then `mod_remove_avatar(user, reason)`, then `refreshPanel()`. Errors: `forbidden` becomes "Only an admin can remove a moderator's or admin's profile picture.", plus `no_custom_avatar`, `account_deleted` and `not_found` (all in `lib/errors.ts`). It does not resolve reports.
+- User page: the picture at 96 px, a "Profile picture" fact and the Remove avatar button (`canRemoveAvatar` in `lib/moderation/avatar.ts`: a custom picture, not deleted, and moderators only on regular users, the same rule as the database). The user list shows custom pictures too.
+- Moderation log: `remove_avatar` reads "Removed profile picture"; `user` targets already show as "Account" with a link to the user page and the reason.
+- Images: the CSP `img-src` already allows the project's Supabase origin, and the panel uses plain `<img>` (no `next/image` remote patterns), so no config change.
+
+**Verified:**
+- Mobile: typecheck, lint and all tests (5 + 11 + 8 + 9 + 10 + 7 + 8).
+- Admin: typecheck, lint, build and tests (367, including the new `tests/profile-reports.test.ts`). Two source-scan counts changed on purpose: the report page builds its Back link once (1, was 2), and it has three branches that reserve room for the action bar (3, was 2).
+- Secret check passed.
+- Not checked on a device or against the live panel. Site untouched.
+
+**Deviations / notes:** a profile row in the reports list opens its report page, not the user page directly, because that is where Mark handled and Dismiss live. The report page links to the user page. The removed file is only queued for cleanup; nothing processes the queue yet (V2 backlog).

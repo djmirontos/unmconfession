@@ -1106,3 +1106,46 @@ App only: no database change. The profile page (`app/user/[id].tsx`) has a "Post
 - Not checked on a device or against the live panel. Site untouched.
 
 **Deviations / notes:** a profile row in the reports list opens its report page, not the user page directly, because that is where Mark handled and Dismiss live. The report page links to the user page. The removed file is only queued for cleanup; nothing processes the queue yet (V2 backlog).
+
+## Module 12d: optional profile details (2026-10-29)
+
+**Database** (`20261029150000_profile_details.sql`, applied by hand in the SQL editor):
+- A private `profile_details` table: college 60, course 80, a fixed year list, hobbies 100 and about 150 characters, plus `show_details` (default off).
+- Reached only through `set_my_profile_details` / `get_my_profile_details` / `get_profile_details` (signed-in only; nothing for hidden, banned, deleted or blocked members) and the staff tool `mod_clear_profile_details` (logged as `clear_details`).
+- Text with links, "@", 9+ digits or contact-app names is refused (`details_contact`), and so are words in the new `profile` keyword scope (`details_flagged`). The existing post and nickname keywords were copied into that scope.
+- The details are deleted when the account is deleted. `mod_get_reports` puts the details in the body of profile report rows.
+- Types regenerated; mobile and admin copies identical.
+
+**App:**
+- `lib/profileDetails.ts` (pure, `npm run test:details`, 9 tests): `YEAR_LEVELS`, the limits, normalize and validate (length and year only; the server alone decides on contact info and keywords), `detailsChanged`, `getDetailsErrorMessage` and `buildDetailLines`. `lib/errors.ts` `getProfileDetailsErrorMessage` passes in the shared banned / suspended / nickname / no-connection wording, so DB codes still only become text through `lib/errors.ts`.
+- `hooks/useProfileDetails.ts`: `useMyProfileDetails`, `useSaveProfileDetails` (sets my cached copy, refetches my public copy), `useProfileDetails(userId)`. Keys `['profile-details', …]`, not persisted, cleared on sign-out (`clearMemberCaches`) and refetched after block or unblock.
+- `app/about-you.tsx` (Profile → Account → About you, after Nickname):
+  - The "Show on my profile" switch, College or department, Course, Year level (chips: Not set plus the 7 values), Hobbies (no autocapitalize), and About me (multiline).
+  - Live counters and per-field length hints, plus the helper text.
+  - Save is disabled while saving or when nothing changed. Skeleton while loading, error with Retry, and the toast "Profile details saved".
+  - The app has no discard-changes prompt anywhere, so none was added.
+- Public profile (`app/user/[id].tsx`): a plain-text details card under the avatar and nickname, in the normal state only. It is hidden while loading, on an error or when empty. Your own id still opens the Profile tab.
+- Legal (app and site, word for word, date unchanged):
+  - Privacy: "Optional profile details you add (college, course, year level, hobbies and a short bio) are visible only to signed-in members, and only while you keep them switched on."
+  - Rules: "These rules also apply to your profile details."
+
+**Admin panel:**
+- The profile report page shows "Profile details (may be hidden from members)" as plain pre-wrapped text, plus Clear details. Clear details is shown only when there are details and the viewer may act; it has a confirm dialog with an optional 300-character reason prefilled with "Reported: …", calls `clearProfileDetails` (`requireStaff()`, zod, `mod_clear_profile_details`, `refreshPanel()`), and leaves the reports open.
+- The page reads the body by calling `mod_get_reports` from just before the first open report (`fetchProfileReportBody`), because there is no single-row RPC.
+- Remove avatar and Clear details share one dialog (`components/users/profile-tools.tsx`, formerly `remove-avatar.tsx`).
+- Errors: `forbidden` → "Only an admin can clear a moderator's or admin's profile details.", `no_details` → "This member has no profile details to clear.", and `account_deleted` keeps its generic text.
+- Log label `clear_details` → "Cleared profile details".
+- Keywords: scope `profile` ("Profile details") in the schema, the form, the filter and the table chips, and a "Profile details" option in the preview (`matchProfile` mirrors `_profile_text_flagged`). Existing keywords are untouched.
+
+**Verified:**
+- Mobile: typecheck, lint and all tests (5 + 11 + 8 + 9 + 10 + 7 + 8 + 9).
+- Admin: typecheck, lint, build and 375 tests (new `tests/profile-details.test.ts`). Keyword tests that used `profile` as an example of an unknown scope now use `user`, and the staff-action source scan lists `clearProfileDetails`.
+- Site: typecheck, lint and build; legal parity true.
+- Secret check passed. Not checked on a device or against the live panel.
+
+**Deviations / notes:**
+- Fields are free text with a year list, as in the migration, not the pick lists in the old backlog note.
+- `get_profile_details` hides details for muted members too (`user_blocks` has no `kind` filter there).
+- The Privacy sentence on account deletion does not list profile details among the erased data, although the database deletes them; it was left unchanged as instructed.
+- The profile list in Settings gains an "About you" row, beyond the Account rows listed in CLAUDE.md.
+- No details editor on the admin user page (not requested).

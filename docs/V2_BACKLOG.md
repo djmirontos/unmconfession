@@ -50,9 +50,13 @@ Done in Module 12c-2 (migration `20261029130000_report_profiles.sql`, app and ad
 
 Moderator tool to force a nickname change (only admins can rename via admin_set_nickname today).
 
-## 12d: Optional profile details
+## 12d: Optional profile details (done 2026-10-29)
 
-College/department (pick list), year level, course (pick list), hobbies (fixed list, at most 5) and About me (at most 150 characters). All empty and hidden by default, with a "Show on my profile" switch in Profile settings; visible to signed-in members only. About me blocks links, phone numbers, emails and handles, goes through the keyword filter, can be reported, and moderators can clear it. Add one sentence each to the Privacy Policy and the Rules when built.
+Done in Module 12d (migration `20261029150000_profile_details.sql`, app, admin panel, legal text); see PROGRESS. Built as free text with a fixed year list instead of pick lists. Original note: College/department (pick list), year level, course (pick list), hobbies (fixed list, at most 5) and About me (at most 150 characters). All empty and hidden by default, with a "Show on my profile" switch in Profile settings; visible to signed-in members only. About me blocks links, phone numbers, emails and handles, goes through the keyword filter, can be reported, and moderators can clear it. Add one sentence each to the Privacy Policy and the Rules when built.
+
+## Review the profile keyword scope
+
+Review the profile keyword scope (44 existing keywords were copied to it) and add the words your community needs.
 
 ## Module 13: badges
 

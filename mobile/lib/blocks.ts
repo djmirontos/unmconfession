@@ -74,6 +74,7 @@ export function afterBlock(queryClient: QueryClient, userId: string, authorId: s
   void queryClient.invalidateQueries({ queryKey: blockedUsersKey(userId) });
   void queryClient.invalidateQueries({ queryKey: ['blocked-by-me'] });
   void queryClient.invalidateQueries({ queryKey: ['profile-details'] });
+  void queryClient.invalidateQueries({ queryKey: ['reactors'] });
 }
 
 /** After an unblock: their content comes back with the refetch. */
@@ -81,4 +82,5 @@ export function afterUnblock(queryClient: QueryClient): void {
   invalidateAuthoredLists(queryClient);
   void queryClient.invalidateQueries({ queryKey: ['blocked-by-me'] });
   void queryClient.invalidateQueries({ queryKey: ['profile-details'] });
+  void queryClient.invalidateQueries({ queryKey: ['reactors'] });
 }

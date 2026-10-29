@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { memo } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { REACTIONS, type ReactionType } from '@/lib/reactions';
 
@@ -15,7 +15,12 @@ type Props = {
   compact?: boolean;
   /** The surface behind the stack, so the ring separates the emoji cleanly. */
   ring?: 'surface1' | 'bg';
+  /** Opens the "who reacted" sheet; without it the stack is display only (My Posts). */
+  onPress?: () => void;
 };
+
+// Touch target at least 44 px tall without moving anything.
+const MIN_TARGET = 44;
 
 /** Width the stack and count need, for callers that hide it when the row is tight. */
 export function topReactionsWidth(count: number, total: number, compact = false): number {
@@ -27,18 +32,14 @@ export function topReactionsWidth(count: number, total: number, compact = false)
 }
 
 /** Facebook-style stack of the most used reactions (first on top), then the total. Nothing at 0. */
-function TopReactionsImpl({ types, total, compact = false, ring = 'surface1' }: Props) {
+function TopReactionsImpl({ types, total, compact = false, ring = 'surface1', onPress }: Props) {
   if (types.length === 0 || total <= 0) return null;
   const size = SIZE[compact ? 'compact' : 'default'];
   const outer = size + RING * 2;
   const names = types.map((t) => REACTIONS[t].label).join(', ');
-
-  return (
-    <View
-      className="flex-row items-center gap-1"
-      accessible
-      accessibilityLabel={`${total} ${total === 1 ? 'reaction' : 'reactions'}: ${names}`}
-    >
+  const summary = `${total} ${total === 1 ? 'reaction' : 'reactions'}: ${names}`;
+  const stack = (
+    <>
       <View className="flex-row items-center">
         {types.map((t, i) => (
           <View
@@ -58,7 +59,28 @@ function TopReactionsImpl({ types, total, compact = false, ring = 'surface1' }: 
         ))}
       </View>
       <Text className={`${compact ? 'text-xs' : 'text-sm'} font-bold text-text-dim`}>{total}</Text>
-    </View>
+    </>
+  );
+
+  if (!onPress) {
+    return (
+      <View className="flex-row items-center gap-1" accessible accessibilityLabel={summary}>
+        {stack}
+      </View>
+    );
+  }
+  const slop = Math.max(0, Math.ceil((MIN_TARGET - outer) / 2));
+  return (
+    <Pressable
+      onPress={onPress}
+      hitSlop={{ top: slop, bottom: slop, left: 4, right: 4 }}
+      accessibilityRole="button"
+      accessibilityLabel="See who reacted"
+      accessibilityHint={summary}
+      className="flex-row items-center gap-1 rounded-full active:opacity-70"
+    >
+      {stack}
+    </Pressable>
   );
 }
 

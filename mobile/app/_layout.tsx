@@ -7,6 +7,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SignInSheet } from '@/components/auth/SignInSheet';
+import { ReactorsSheet } from '@/components/reactions/ReactorsSheet';
 import { ForceUpdateGate } from '@/components/layout/ForceUpdateGate';
 import { ThemeRoot } from '@/components/layout/ThemeRoot';
 import { ReactionPickerOverlay } from '@/components/reactions/ReactionPickerOverlay';
@@ -34,6 +35,7 @@ export default function RootLayout() {
       <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
         <ThemeRoot>
           <RootNavigator />
+          <ReactorsSheet />
           <SignInSheet />
           <Toast />
           <ReactionPickerOverlay />

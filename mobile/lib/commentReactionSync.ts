@@ -39,6 +39,8 @@ async function sendReaction(commentId: string, type: Reaction): Promise<void> {
     logError('rpc.set_comment_reaction', error, { commentId, type });
     throw error;
   }
+  // The "who reacted" sheet for this comment (reactorsKey in hooks/useReactors.ts).
+  void queryClient.invalidateQueries({ queryKey: ['reactors', 'comment', commentId] });
 }
 
 // Comments with a reaction in flight, and when each last changed locally. Realtime

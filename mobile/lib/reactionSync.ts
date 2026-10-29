@@ -41,6 +41,8 @@ async function sendReaction(postId: string, type: Reaction): Promise<void> {
     logError('rpc.set_reaction', error, { postId, type });
     throw error;
   }
+  // The "who reacted" sheet for this post (reactorsKey in hooks/useReactors.ts).
+  void queryClient.invalidateQueries({ queryKey: ['reactors', 'post', postId] });
 }
 
 // Requests per post run one at a time; while one runs only the latest wanted reaction is kept.

@@ -5,6 +5,7 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { ReactionButton } from '@/components/reactions/ReactionButton';
 import { TopReactions, topReactionsWidth } from '@/components/reactions/TopReactions';
 import type { PostAction } from '@/hooks/useComingSoonAction';
+import { useOpenReactors } from '@/hooks/useReactors';
 import { useIsSharing } from '@/hooks/useShareCard';
 import { useTheme } from '@/hooks/useTheme';
 import type { ReactionType } from '@/lib/reactions';
@@ -82,6 +83,7 @@ export function PostActions({
   // Space between Comments and Share; the stack is left out when it would not fit (no wrapping).
   const [room, setRoom] = useState(0);
   const needed = topReactionsWidth(topReactions.length, reactionCount);
+  const openReactors = useOpenReactors();
   return (
     <View className="-mx-3 h-9 flex-row items-center">
       <ReactionButton
@@ -97,7 +99,9 @@ export function PostActions({
         onPress={onComment ?? (() => onAction('comment'))}
       />
       <View className="min-w-0 flex-1 flex-row justify-end" onLayout={(e) => setRoom(e.nativeEvent.layout.width)}>
-        {needed > 0 && room >= needed ? <TopReactions types={topReactions} total={reactionCount} /> : null}
+        {needed > 0 && room >= needed ? (
+          <TopReactions types={topReactions} total={reactionCount} onPress={() => openReactors({ type: 'post', id: postId })} />
+        ) : null}
       </View>
       <ShareButton postId={postId} onPress={onShare ?? (() => onAction('share'))} />
     </View>

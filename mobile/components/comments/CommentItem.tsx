@@ -8,6 +8,7 @@ import { ProfileLink } from '@/components/profile/ProfileLink';
 import { ReactionButton } from '@/components/reactions/ReactionButton';
 import { TopReactions } from '@/components/reactions/TopReactions';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useOpenReactors } from '@/hooks/useReactors';
 import { authorLabel, isDeletedAuthor } from '@/lib/authorLabel';
 import type { ThreadComment } from '@/lib/comments';
 import { setCommentReaction } from '@/lib/commentReactionSync';
@@ -28,6 +29,7 @@ type Props = {
 function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = false }: Props) {
   const sending = comment.state === 'sending';
   const name = authorLabel(comment.nickname);
+  const openReactors = useOpenReactors();
   return (
     <View className={`flex-row gap-3 ${isReply ? 'py-2' : 'py-3'} ${sending ? 'opacity-60' : ''}`}>
       <ProfileLink userId={comment.authorId} nickname={comment.nickname} height={isReply ? 24 : 32}>
@@ -68,7 +70,13 @@ function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = fal
               count={comment.reactionCount}
               onChange={(next) => setCommentReaction(comment.id, comment.myReaction, next)}
             />
-            <TopReactions compact ring="bg" types={comment.topReactions} total={comment.reactionCount} />
+            <TopReactions
+              compact
+              ring="bg"
+              types={comment.topReactions}
+              total={comment.reactionCount}
+              onPress={() => openReactors({ type: 'comment', id: comment.id })}
+            />
             {onReply ? (
               <Pressable
                 onPress={() => onReply(comment)}

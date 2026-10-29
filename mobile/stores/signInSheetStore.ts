@@ -10,6 +10,7 @@ export type ParticipationAction =
   | 'block'
   | 'share'
   | 'profile'
+  | 'reactors'
   | 'default';
 
 type SignInSheetState = {

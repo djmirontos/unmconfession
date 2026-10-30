@@ -98,6 +98,7 @@ export type Database = {
         Row: {
           app_name: string
           audit_retention_days: number
+          campus_voice_reactions: number
           id: number
           logo_path: string | null
           min_app_version: string
@@ -112,6 +113,7 @@ export type Database = {
         Insert: {
           app_name?: string
           audit_retention_days?: number
+          campus_voice_reactions?: number
           id?: number
           logo_path?: string | null
           min_app_version?: string
@@ -126,6 +128,7 @@ export type Database = {
         Update: {
           app_name?: string
           audit_retention_days?: number
+          campus_voice_reactions?: number
           id?: number
           logo_path?: string | null
           min_app_version?: string
@@ -146,6 +149,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      badges: {
+        Row: {
+          code: string
+          description: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          code: string
+          description: string
+          name: string
+          sort_order: number
+        }
+        Update: {
+          code?: string
+          description?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       comment_reactions: {
         Row: {
@@ -969,20 +993,26 @@ export type Database = {
       }
       storage_cleanup_queue: {
         Row: {
+          attempts: number
           bucket: string
           id: number
+          last_attempt_at: string | null
           path: string
           queued_at: string
         }
         Insert: {
+          attempts?: number
           bucket: string
           id?: never
+          last_attempt_at?: string | null
           path: string
           queued_at?: string
         }
         Update: {
+          attempts?: number
           bucket?: string
           id?: never
+          last_attempt_at?: string | null
           path?: string
           queued_at?: string
         }
@@ -1017,6 +1047,39 @@ export type Database = {
             columns: ["post_id"]
             isOneToOne: true
             referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_badges: {
+        Row: {
+          badge_code: string
+          earned_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_code: string
+          earned_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_code?: string
+          earned_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_badges_badge_code_fkey"
+            columns: ["badge_code"]
+            isOneToOne: false
+            referencedRelation: "badges"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "user_badges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1285,6 +1348,10 @@ export type Database = {
       _bump_reaction: { Args: { b: Json; d: number; t: string }; Returns: Json }
       _can_upload_avatar: { Args: never; Returns: boolean }
       _check_images: { Args: { p_images: Json; p_uid: string }; Returns: Json }
+      _cleanup_path_ok: {
+        Args: { p_bucket: string; p_path: string }
+        Returns: boolean
+      }
       _moderation_decision: {
         Args: {
           p_text: string
@@ -1364,7 +1431,32 @@ export type Database = {
         }[]
       }
       assert_active_member: { Args: never; Returns: string }
+      award_badges: { Args: never; Returns: undefined }
       change_nickname: { Args: { p_nickname: string }; Returns: undefined }
+      cleanup_claim_batch: {
+        Args: { p_limit?: number }
+        Returns: {
+          bucket: string
+          id: number
+          path: string
+        }[]
+      }
+      cleanup_mark_done: { Args: { p_ids: number[] }; Returns: number }
+      cleanup_peek_batch: {
+        Args: { p_limit?: number }
+        Returns: {
+          bucket: string
+          id: number
+          path: string
+        }[]
+      }
+      cleanup_queue_stats: {
+        Args: never
+        Returns: {
+          dead: number
+          pending: number
+        }[]
+      }
       create_comment: {
         Args: {
           p_body: string
@@ -1876,6 +1968,14 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_top_badges: {
+        Args: { p_users: string[] }
+        Returns: {
+          code: string
+          name: string
+          user_id: string
+        }[]
+      }
       get_trending: {
         Args: { p_limit?: number }
         Returns: {
@@ -1906,6 +2006,15 @@ export type Database = {
         }
       }
       get_unread_notification_count: { Args: never; Returns: number }
+      get_user_badges: {
+        Args: { p_user: string }
+        Returns: {
+          code: string
+          description: string
+          earned_at: string
+          name: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       is_nickname_available: { Args: { p_nickname: string }; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }

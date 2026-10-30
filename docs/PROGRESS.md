@@ -1258,3 +1258,39 @@ App only: no database change. The profile page (`app/user/[id].tsx`) has a "Post
 - The old backlog plan called the night badge "Night Owl"; it shipped as Nocturnal.
 - The plan said badges are hidden for suspended and banned users. As built, they are hidden for banned and deleted accounts; a suspended member keeps showing their badges.
 - There is no admin screen yet for the Campus Voice threshold or for revoking badges (backlog).
+
+## Module 13b: Campus Hero (2026-10-30)
+
+**Database** (`20261030140000_campus_hero.sql`):
+- `item_returns` table (RLS on, no policies, no API grants; read only through the functions). It links a Lost & Found listing to a finder and an owner.
+- **The owner always confirms**, so nobody can award themselves:
+  - On a **lost** listing the author is the owner. They pick the commenter who helped, and the return is confirmed at once.
+  - On a **found** listing the author is the finder. They pick the commenter who claims the item, and that member must confirm the request. An unanswered request expires after 14 days.
+  - Confirming closes the listing.
+- **Limits:** both accounts at least 3 days old, the counterpart must have a published comment on the listing, no block either way, one pending or confirmed return per listing, and at most 3 returns started per member per 24 h.
+- **Notifications:** `return_request` (to the owner) and `return_confirmed` (to the finder), both pointing at the listing and carrying the other member as the actor.
+- **RPCs:** `get_return_candidates`, `start_item_return`, `respond_item_return`, `cancel_item_return` and `get_listing_return`.
+- **Badge:** `campus_hero` (Campus Hero) = confirmed returns with 3 different owners. It has sort order 5, so for non-staff members it is the badge `get_top_badges` picks for the inline chip. `award_badges()` gained the campus_hero block and ran once on apply.
+- Types regenerated; mobile and admin copies identical.
+
+**App:**
+- `lib/itemReturns.ts` (pure; `npm run test:returns`, 9 tests): row mappers, `returnView()` (none / author can start / finder waiting / owner asked / confirmed per role) and all the wording.
+- `hooks/useListingReturn.ts`: the return and candidate queries and the start / respond / cancel mutations. Every action refreshes the return, the listing, all listing lists, My Posts and the notifications. The caches are cleared on sign-out.
+- `components/listings/ReturnSection.tsx` on the listing screen, Lost & Found only, for members who take part. Guests and everyone else see nothing.
+  - The author's button: "I got my item back" on a lost post, "I returned this item" on a found post.
+  - The candidate sheet (`ReturnCandidatesSheet.tsx`): skeleton, error with Retry, the empty text with the 3-day note.
+  - A confirm dialog before anything is sent.
+  - Banners: waiting (with Cancel request), the owner's Yes / No, and confirmed.
+  - Buttons lock while a request runs, so a double tap cannot send twice.
+- `lib/errors.ts` `getReturnErrorMessage`: own texts for not_found, forbidden, invalid_user, not_commenter, account_too_new, already_returned and expired. The rate limit, account state and no-connection errors keep the shared wording.
+- Notifications: the two new types with their wording, the other member's avatar with a hand or check icon, and a tap that opens the listing.
+- `lib/badges.ts`: `campus_hero` uses the trophy icon in the accent colour.
+
+**Verified:**
+- Mobile: typecheck, lint and all tests.
+- Admin: typecheck, lint and tests with the new types.
+- Device-tested by Daryl and passed.
+
+**Notes:**
+- No staff tool exists yet to void a fraudulent return or revoke a badge (SQL only).
+- Declined and cancelled return rows are kept (no purge yet).

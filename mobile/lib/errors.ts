@@ -83,8 +83,22 @@ const FALLBACK = 'Something went wrong. Please try again.';
 export const SESSION_ENDED = 'Please sign in again.';
 const NETWORK = 'No connection. Check your internet and try again.';
 
-// Known codes: every MESSAGES key, plus the profile details codes (their text lives in lib/profileDetails.ts).
-const DB_CODE = new RegExp(`\\b(${[...Object.keys(MESSAGES), ...DETAILS_ERROR_CODES].join('|')})\\b`);
+// Known codes: every MESSAGES key, the profile details codes (their text lives in lib/profileDetails.ts)
+// and the item return codes below.
+// Item returns (Campus Hero): these texts are used only by getReturnErrorMessage, so a word like
+// "expired" in another error still gets that error's usual text.
+const RETURN_MESSAGES: Record<string, string> = {
+  not_found: 'This post or request is no longer available.',
+  forbidden: 'Only the person who posted this can do that.',
+  invalid_user: 'That member cannot be picked for this return.',
+  not_commenter: 'That member has not commented on this post.',
+  account_too_new: 'Both accounts must be at least 3 days old.',
+  already_returned: 'This post already has a return.',
+  expired: 'This request has expired.',
+};
+
+const KNOWN_CODES = new Set([...Object.keys(MESSAGES), ...DETAILS_ERROR_CODES, ...Object.keys(RETURN_MESSAGES)]);
+const DB_CODE = new RegExp(`\\b(${[...KNOWN_CODES].join('|')})\\b`);
 
 /** Extracts a known error code from an Auth or Postgrest error, if any. */
 export function getErrorCode(error: unknown): string | null {
@@ -179,6 +193,12 @@ const PROFILE_REPORT_MESSAGES: Record<string, string> = {
   own_content: "You can't report your own profile.",
   not_found: "This profile isn't available.",
 };
+
+/** Item returns: their own codes first, then the usual wording (rate limit, account state, no connection). */
+export function getReturnErrorMessage(error: unknown): string {
+  const code = getErrorCode(error);
+  return (code && RETURN_MESSAGES[code]) || getErrorMessage(error);
+}
 
 export function getReportErrorMessage(error: unknown, target?: string): string {
   const code = getErrorCode(error);

@@ -20,6 +20,7 @@
     "test:details": "node --no-warnings --test tests/profileDetails.test.mjs",
     "test:reactors": "node --test tests/reactors.test.mjs",
     "test:badges": "node --test tests/badges.test.mjs",
+    "test:returns": "node --no-warnings --test tests/itemReturns.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

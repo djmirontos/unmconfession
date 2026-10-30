@@ -17,7 +17,8 @@ const AVATAR = 44;
 
 function Leading({ group }: { group: NotificationGroup }) {
   const { colors } = useTheme();
-  if (group.type === 'comment' || group.type === 'reaction' || group.type === 'comment_reaction' || group.type === 'reply') {
+  const isReturn = group.type === 'return_request' || group.type === 'return_confirmed';
+  if (group.type === 'comment' || group.type === 'reaction' || group.type === 'comment_reaction' || group.type === 'reply' || isReturn) {
     const isReaction = group.type === 'reaction' || group.type === 'comment_reaction';
     const reaction = isReaction && group.reaction_type ? REACTIONS[group.reaction_type] : null;
     return (
@@ -38,6 +39,10 @@ function Leading({ group }: { group: NotificationGroup }) {
         ) : group.type === 'comment' || group.type === 'reply' ? (
           <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-accent">
             <Ionicons name="chatbubble" size={12} color={colors.onAccent} />
+          </View>
+        ) : isReturn ? (
+          <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-accent">
+            <Ionicons name={group.type === 'return_confirmed' ? 'checkmark' : 'hand-left'} size={12} color={colors.onAccent} />
           </View>
         ) : null}
       </View>

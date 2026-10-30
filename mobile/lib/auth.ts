@@ -108,7 +108,7 @@ async function signOutLocally() {
 
 /** Caches that belong to the signed-in person; also cleared on every SIGNED_OUT. */
 export function clearMemberCaches() {
-  for (const key of ['profile', 'notifications', 'notifications-unread', 'trending', 'polls', 'listings', 'my-settings', 'profile-details', 'reactors', 'badges', 'top-badges']) {
+  for (const key of ['profile', 'notifications', 'notifications-unread', 'trending', 'polls', 'listings', 'my-settings', 'profile-details', 'reactors', 'badges', 'top-badges', 'item-return', 'item-return-candidates']) {
     queryClient.removeQueries({ queryKey: [key] });
   }
 }

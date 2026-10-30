@@ -21,6 +21,8 @@ const NOTIFICATION_TYPES = [
   'content_approved',
   'content_rejected',
   'content_removed',
+  'return_request',
+  'return_confirmed',
 ] as const;
 
 // RPC table columns are typed non-null by the generator; the real nulls are narrowed here.
@@ -141,6 +143,10 @@ export function describeNotification(n: NotificationGroup): string {
       return `Your ${targetWord(n)} was rejected`;
     case 'content_removed':
       return `Your ${targetWord(n)} was removed`;
+    case 'return_request':
+      return `${actor} says they returned your item. Tap to confirm.`;
+    case 'return_confirmed':
+      return `${actor} confirmed you returned their item.`;
   }
 }
 

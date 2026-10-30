@@ -426,6 +426,75 @@ export type Database = {
           },
         ]
       }
+      item_returns: {
+        Row: {
+          created_at: string
+          finder_id: string
+          id: string
+          initiated_by: string
+          listing_id: string
+          owner_id: string
+          resolved_at: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          finder_id: string
+          id?: string
+          initiated_by: string
+          listing_id: string
+          owner_id: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          finder_id?: string
+          id?: string
+          initiated_by?: string
+          listing_id?: string
+          owner_id?: string
+          resolved_at?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_returns_finder_id_fkey"
+            columns: ["finder_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_returns_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_returns_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "feed_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_returns_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_returns_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       keywords: {
         Row: {
           active: boolean
@@ -1432,6 +1501,7 @@ export type Database = {
       }
       assert_active_member: { Args: never; Returns: string }
       award_badges: { Args: never; Returns: undefined }
+      cancel_item_return: { Args: { p_return: string }; Returns: undefined }
       change_nickname: { Args: { p_nickname: string }; Returns: undefined }
       cleanup_claim_batch: {
         Args: { p_limit?: number }
@@ -1823,6 +1893,18 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_listing_return: {
+        Args: { p_listing: string }
+        Returns: {
+          created_at: string
+          other_avatar_key: string
+          other_id: string
+          other_nickname: string
+          return_id: string
+          role: string
+          status: string
+        }[]
+      }
       get_listings: {
         Args: {
           p_before_id?: string
@@ -1967,6 +2049,14 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_return_candidates: {
+        Args: { p_listing: string }
+        Returns: {
+          avatar_key: string
+          nickname: string
+          user_id: string
+        }[]
       }
       get_top_badges: {
         Args: { p_users: string[] }
@@ -2250,6 +2340,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      respond_item_return: {
+        Args: { p_accept: boolean; p_return: string }
+        Returns: undefined
+      }
       set_comment_reaction: {
         Args: {
           p_comment_id: string
@@ -2290,6 +2384,13 @@ export type Database = {
           p_type: Database["public"]["Enums"]["reaction_type"]
         }
         Returns: undefined
+      }
+      start_item_return: {
+        Args: { p_listing: string; p_user: string }
+        Returns: {
+          return_id: string
+          status: string
+        }[]
       }
       vote_poll: {
         Args: { p_option_id: string; p_post_id: string }

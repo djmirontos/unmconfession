@@ -7,7 +7,7 @@ import { badgeStyle, chunkIds, idsToFetch, isStaffBadge, resultsById, TOP_BADGES
 const row = (code, earned_at = '2026-10-29T16:30:00Z') => ({ code, name: code, description: `${code} description`, earned_at });
 
 test('known earned codes have their own icon and tone, and are not staff', () => {
-  for (const code of ['first_circle', 'campus_voice', 'campus_regular', 'nocturnal']) {
+  for (const code of ['campus_hero', 'first_circle', 'campus_voice', 'campus_regular', 'nocturnal']) {
     const style = badgeStyle(code);
     assert.equal(style.staff, false, code);
     assert.notEqual(style.icon, 'ribbon-outline', code);
@@ -26,6 +26,7 @@ test('staff icons are distinct: admin filled shield-checkmark, moderator outline
 });
 
 test('earned badges keep their own icons', () => {
+  assert.deepEqual(badgeStyle('campus_hero'), { icon: 'trophy', tone: 'accent', staff: false });
   assert.equal(badgeStyle('first_circle').icon, 'star');
   assert.equal(badgeStyle('campus_voice').icon, 'megaphone');
   assert.equal(badgeStyle('campus_regular').icon, 'calendar');
@@ -33,7 +34,7 @@ test('earned badges keep their own icons', () => {
 });
 
 test('an unknown code falls back to a neutral style instead of failing', () => {
-  assert.deepEqual(badgeStyle('campus_hero'), { icon: 'ribbon-outline', tone: 'textDim', staff: false });
+  assert.deepEqual(badgeStyle('trusted_seller'), { icon: 'ribbon-outline', tone: 'textDim', staff: false });
   assert.deepEqual(badgeStyle(''), { icon: 'ribbon-outline', tone: 'textDim', staff: false });
   // Inherited object keys are not badge codes.
   assert.equal(badgeStyle('toString').icon, 'ribbon-outline');
@@ -112,8 +113,8 @@ test('resultsById answers every asked id: its badge, or null for no badge', () =
 });
 
 test('toTopBadges drops incomplete rows and keeps unknown codes', () => {
-  assert.deepEqual(toTopBadges([{ user_id: uid(1), code: 'campus_hero', name: 'Campus Hero' }, { user_id: null, code: 'admin', name: 'Admin' }]), [
-    { userId: uid(1), code: 'campus_hero', name: 'Campus Hero' },
+  assert.deepEqual(toTopBadges([{ user_id: uid(1), code: 'trusted_seller', name: 'Trusted Seller' }, { user_id: null, code: 'admin', name: 'Admin' }]), [
+    { userId: uid(1), code: 'trusted_seller', name: 'Trusted Seller' },
   ]);
   assert.deepEqual(toTopBadges(null), []);
 });

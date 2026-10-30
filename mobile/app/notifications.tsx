@@ -69,6 +69,8 @@ export default function NotificationsScreen() {
       switch (g.type) {
         case 'comment':
         case 'reaction':
+        case 'return_request':
+        case 'return_confirmed':
           return openTarget();
         case 'comment_reaction':
         case 'reply':

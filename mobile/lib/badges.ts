@@ -13,6 +13,7 @@ export type Badge = { code: string; name: string; description: string; earnedAt:
 export type BadgeStyle = { icon: IconName; tone: keyof ThemeColors; staff: boolean };
 
 const STYLES: Record<string, BadgeStyle> = {
+  campus_hero: { icon: 'trophy', tone: 'accent', staff: false },
   first_circle: { icon: 'star', tone: 'accent', staff: false },
   campus_voice: { icon: 'megaphone', tone: 'success', staff: false },
   campus_regular: { icon: 'calendar', tone: 'navy', staff: false },

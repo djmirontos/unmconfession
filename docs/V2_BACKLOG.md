@@ -58,12 +58,14 @@ Done in Module 12d (migration `20261029150000_profile_details.sql`, app, admin p
 
 Review the profile keyword scope (44 existing keywords were copied to it) and add the words your community needs.
 
-## Module 13: badges (13a and 13b done 2026-10-30)
+## Module 13: badges (13a, 13b and 13c done 2026-10-30)
 
-Badges: Campus Hero (13b, done 2026-10-30), Trusted Seller (13c), Community Guardian (13d); admin screen to edit the Campus Voice threshold and to revoke a badge.
+Badges: Campus Hero (13b, done 2026-10-30), Trusted Seller (13c, done 2026-10-30), Community Guardian (13d); admin screen to edit the Campus Voice threshold and to revoke a badge.
 
 - Staff tool to void a fraudulent return and revoke a badge (today: SQL only).
 - Purge old declined/cancelled item_returns rows.
-- Badge 13c Trusted Seller and 13d Community Guardian still to do.
+- Staff tool to void a fraudulent sale (today: SQL only).
+- Purge old declined/cancelled item_sales rows.
+- Badge 13d Community Guardian still to do.
 
 Original plan: Campus Hero, Trusted Seller, Campus Voice, Night Owl, Campus Regular, First Circle, Community Guardian, plus Moderator / Admin labels from the role. Order: 13a badge engine and automatic badges (Regular, Voice, First Circle, Night Owl, staff labels); 13b owner-confirm button and Campus Hero; 13c buyer-confirm button and Trusted Seller; 13d Community Guardian. Server-side only; the Campus Voice threshold lives in `app_settings`; badges are hidden for suspended and banned users. Full details are in the project doc v2-badges-plan.

@@ -1294,3 +1294,43 @@ App only: no database change. The profile page (`app/user/[id].tsx`) has a "Post
 **Notes:**
 - No staff tool exists yet to void a fraudulent return or revoke a badge (SQL only).
 - Declined and cancelled return rows are kept (no purge yet).
+
+## Module 13c: Trusted Seller and up to 3 badge icons (2026-10-30)
+
+**Database** (`20261030160000_trusted_seller.sql`):
+- `item_sales` table (RLS on, no policies, no API grants; read only through the functions).
+- **The buyer always confirms:** the seller (listing author) picks the buyer from the people who commented on a Buy & Sell listing, and the buyer must confirm. An unanswered request expires after 14 days. Confirming closes the listing.
+- **Limits** (the same as Campus Hero): both accounts at least 3 days old, the buyer must have a published comment on the listing, no block either way, one pending or confirmed sale per listing, and at most 3 sales started per seller per 24 h. Free items (price 0) are refused (`free_item`), so they never count.
+- **Notifications:** `sale_request` (to the buyer) and `sale_confirmed` (to the seller), both pointing at the listing and carrying the other member as the actor.
+- **RPCs:** `get_sale_candidates`, `start_item_sale`, `respond_item_sale`, `cancel_item_sale` and `get_listing_sale`.
+- **Badge:** `trusted_seller` (Trusted Seller) = confirmed sales to 5 different buyers, sort order 7. `award_badges()` gained the trusted_seller block and ran once on apply.
+- **`get_top_badges`** now returns up to 3 badges per author in priority order: the staff label first, then Campus Hero, Trusted Seller, First Circle, Campus Voice and Campus Regular. It never returns Nocturnal.
+- Types regenerated; mobile and admin copies identical.
+
+**App:**
+- `lib/itemSales.ts` (pure; `npm run test:sales`, 7 tests): `toSale`, `saleView()` (none / seller can start / seller waiting / buyer asked / confirmed per role) and all the wording.
+- `hooks/useListingSale.ts`: the sale and candidate queries and the start / respond / cancel mutations. The caches are cleared on sign-out.
+- `components/listings/SaleSection.tsx` on Buy & Sell listings, for members who take part. Guests and everyone else see nothing.
+  - The seller's "Mark as sold to a buyer" button: hidden when the price is 0 and while a sale is pending or confirmed.
+  - The "Who bought it?" picker and a confirm dialog.
+  - Banners: the seller's waiting banner with Cancel request, the buyer's Yes / No, and confirmed.
+  - The existing manual "mark as sold" control is unchanged and separate.
+- **Shared with returns:** the Lost & Found return UI was moved onto the same pieces, with the same behaviour and wording:
+  - `CandidatesSheet` (renamed from `ReturnCandidatesSheet`), `DealBanner`.
+  - `useSingleFlight` (one request at a time, double-tap block, toast and inline error).
+  - `useDealRefresh` (refreshes the deal, the listing, all listing lists, My Posts and the notifications after each action).
+- `lib/errors.ts` `getSaleErrorMessage`: own texts for not_found, forbidden, invalid_user, not_commenter, account_too_new, already_sold, free_item and expired. The rate limit, account state and no-connection errors keep the shared wording.
+- Notifications: the two sale types with their wording, the other member's avatar with a cart or check icon, and a tap that opens the listing.
+- **Badges:**
+  - `trusted_seller` uses the storefront icon in the accent colour.
+  - Each author maps to a list of up to 3 badges in the server's order (cached 5 minutes; an empty list is a cached "no badge"). It is still one batched call per page.
+  - `BadgeChip` shows up to 3 icons after the nickname, each opening the sheet for its own badge. The tap areas are 44 pt tall and never overlap. The nickname truncates before the icons.
+
+**Verified:**
+- Mobile: typecheck, lint and all tests.
+- Admin: typecheck, lint and tests with the new types.
+- Device-tested by Daryl and passed.
+
+**Notes:**
+- No staff tool exists yet to void a fraudulent sale (SQL only).
+- Declined and cancelled sale rows are kept (no purge yet).

@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 
 import { EmptyState, ErrorState, RefreshErrorBanner } from '@/components/feed/ListStates';
+import { FEED_BG, FEED_CONTENT_STYLE, FEED_ITEM_STYLE, FeedCards } from '@/components/feed/feedCards';
 import { PostCard } from '@/components/feed/PostCard';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
@@ -58,7 +59,7 @@ export function PostListView({ query, active, ranked = false, empty }: Props) {
 
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<FeedPost>) => (
-      <View className="pb-3">
+      <View style={FEED_ITEM_STYLE}>
         <PostCard
           post={item}
           onOpen={openPost}
@@ -85,51 +86,55 @@ export function PostListView({ query, active, ranked = false, empty }: Props) {
 
   // First load only: skeletons. Afterwards the cached list stays on screen.
   if (!query.data) {
-    return (
+    return query.isError ? (
       <View className="flex-1 p-4">
-        {query.isError ? (
-          <ErrorState message={getErrorMessage(query.error)} onRetry={() => void refetch()} />
-        ) : (
-          <SkeletonList item={PostCardSkeleton} count={3} />
-        )}
+        <ErrorState message={getErrorMessage(query.error)} onRetry={() => void refetch()} />
       </View>
+    ) : (
+      <FeedCards>
+        <View className={`flex-1 ${FEED_BG}`} style={FEED_CONTENT_STYLE}>
+          <SkeletonList item={PostCardSkeleton} count={3} />
+        </View>
+      </FeedCards>
     );
   }
 
   return (
-    <View className="flex-1">
-      <FlashList
-        ref={listRef}
-        data={query.data}
-        onScroll={backToTop.onScroll}
-        scrollEventThrottle={backToTop.scrollEventThrottle}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        getItemType={getItemType}
-        ListHeaderComponent={
-          query.isRefetchError ? (
-            <View className="pb-3">
-              <RefreshErrorBanner onRetry={() => void refetch()} />
-            </View>
-          ) : null
-        }
-        ListEmptyComponent={<EmptyState icon={empty.icon} title={empty.title} />}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={VIEWABILITY}
-        scrollEnabled={!pickerOpen}
-        contentContainerStyle={{ padding: 16 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={pulling}
-            onRefresh={onRefresh}
-            tintColor={colors.accent}
-            colors={[colors.accent]}
-            progressBackgroundColor={colors.surface1}
-          />
-        }
-      />
-      <BackToTopButton visible={backToTop.visible} onPress={backToTop.scrollToTop} />
-      {menu}
-    </View>
+    <FeedCards>
+      <View className={`flex-1 ${FEED_BG}`}>
+        <FlashList
+          ref={listRef}
+          data={query.data}
+          onScroll={backToTop.onScroll}
+          scrollEventThrottle={backToTop.scrollEventThrottle}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          getItemType={getItemType}
+          ListHeaderComponent={
+            query.isRefetchError ? (
+              <View className="px-4 pt-2.5" style={FEED_ITEM_STYLE}>
+                <RefreshErrorBanner onRetry={() => void refetch()} />
+              </View>
+            ) : null
+          }
+          ListEmptyComponent={<EmptyState icon={empty.icon} title={empty.title} />}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={VIEWABILITY}
+          scrollEnabled={!pickerOpen}
+          contentContainerStyle={FEED_CONTENT_STYLE}
+          refreshControl={
+            <RefreshControl
+              refreshing={pulling}
+              onRefresh={onRefresh}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+              progressBackgroundColor={colors.surface1}
+            />
+          }
+        />
+        <BackToTopButton visible={backToTop.visible} onPress={backToTop.scrollToTop} />
+        {menu}
+      </View>
+    </FeedCards>
   );
 }

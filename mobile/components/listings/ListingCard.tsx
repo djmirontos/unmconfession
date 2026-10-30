@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { PostCounts } from '@/components/feed/PostActions';
 import { AuthorLine } from '@/components/feed/AuthorLine';
+import { cardClass, cardGap, cardOuterGap, useFlushCards } from '@/components/feed/feedCards';
 import { CardTag } from '@/components/feed/CardTag';
 import { PostBody } from '@/components/feed/PostBody';
 import { PostImages } from '@/components/feed/PostImages';
@@ -28,10 +29,11 @@ type Props = {
 
 function ListingCardImpl({ listing, onOpen, showCommentCount = false, headerAccessory, footer }: Props) {
   const condition = CONDITIONS.find((c) => c === listing.condition);
+  const flush = useFlushCards();
   const eventLine = listing.kind === 'lost_found' ? formatEventLine(listing.lostFoundType, listing.eventDate, listing.location) : null;
 
   const content = (
-    <View className="gap-3">
+    <View className={cardGap(flush)}>
       <View className="flex-row items-center gap-2">
         <AuthorLine authorId={listing.authorId} nickname={listing.nickname} avatarKey={listing.avatarKey} time={listing.time} editedAt={listing.editedAt} />
         <CardTag label={typeLabel(listing)} />
@@ -61,7 +63,7 @@ function ListingCardImpl({ listing, onOpen, showCommentCount = false, headerAcce
   );
 
   return (
-    <View className="gap-3 rounded-2xl border border-hairline bg-surface1 p-4">
+    <View className={`${cardOuterGap(flush)} ${cardClass(flush)}`}>
       {onOpen ? (
         <Pressable onPress={() => onOpen(listing.id)} accessibilityRole="button" className="active:opacity-80">
           {content}

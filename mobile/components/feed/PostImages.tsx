@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import { Pressable, View } from 'react-native';
 
+import { useFlushCards } from '@/components/feed/feedCards';
 import { useTheme } from '@/hooks/useTheme';
 import { type PostImage, postImageUrl } from '@/lib/posts';
 import { useImageViewerStore } from '@/stores/imageViewerStore';
@@ -49,6 +50,9 @@ function Tile({ image, index, total, onOpen, style }: TileProps) {
  */
 export function PostImages({ images }: { images: readonly PostImage[] }) {
   const open = useImageViewerStore((s) => s.open);
+  // In a flush feed card the photos span the full card width (past its 16 px padding) with square
+  // corners; elsewhere they keep the rounded frame inside the card.
+  const frame = useFlushCards() ? '-mx-4' : 'rounded-xl';
   if (images.length === 0) return null;
 
   const onOpen = (index: number) =>
@@ -61,7 +65,7 @@ export function PostImages({ images }: { images: readonly PostImage[] }) {
 
   if (total >= 3 && first && second && third) {
     return (
-      <View style={{ aspectRatio: TRIPLE_RATIO }} className="flex-row gap-1 overflow-hidden rounded-xl">
+      <View style={{ aspectRatio: TRIPLE_RATIO }} className={`flex-row gap-1 overflow-hidden ${frame}`}>
         <Tile image={first} index={0} total={total} onOpen={onOpen} style={{ flex: 2 }} />
         <View className="flex-1 gap-1">
           <Tile image={second} index={1} total={total} onOpen={onOpen} style={{ flex: 1 }} />
@@ -75,7 +79,7 @@ export function PostImages({ images }: { images: readonly PostImage[] }) {
     return (
       <View
         style={{ width: '100%', aspectRatio: clamp(first.width / first.height, SINGLE_MIN_RATIO, SINGLE_MAX_RATIO) }}
-        className="overflow-hidden rounded-xl"
+        className={`overflow-hidden ${frame}`}
       >
         <Tile image={first} index={0} total={1} onOpen={onOpen} style={{ flex: 1 }} />
       </View>
@@ -86,7 +90,7 @@ export function PostImages({ images }: { images: readonly PostImage[] }) {
   return (
     <View
       style={{ aspectRatio: ratios.reduce((a, b) => a + b, 0) }}
-      className="flex-row gap-1 overflow-hidden rounded-xl"
+      className={`flex-row gap-1 overflow-hidden ${frame}`}
     >
       {images.map((img, i) => (
         <Tile key={img.path} image={img} index={i} total={total} onOpen={onOpen} style={{ flex: ratios[i] ?? 1 }} />

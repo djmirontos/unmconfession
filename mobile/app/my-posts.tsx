@@ -4,6 +4,7 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { FEED_BG, FEED_GAP, FEED_ITEM_STYLE, FeedCards } from '@/components/feed/feedCards';
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { BackHeader } from '@/components/layout/BackHeader';
 import { MyItemCard, rowTarget } from '@/components/myposts/MyItemCard';
@@ -51,7 +52,7 @@ export default function MyPostsScreen() {
   );
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<MyItem>) => (
-      <View className="pb-3">
+      <View style={FEED_ITEM_STYLE}>
         <MyItemCard item={item} onOpen={openItem} onMore={setMenuItem} />
       </View>
     ),
@@ -62,13 +63,14 @@ export default function MyPostsScreen() {
   const onEndReached = useCallback(() => {
     if (query.hasNextPage && !query.isFetchingNextPage && !query.isFetchNextPageError) void query.fetchNextPage();
   }, [query]);
-  const contentContainerStyle = useMemo(() => ({ padding: 16, paddingBottom: insets.bottom + 16 }), [insets.bottom]);
+  // Flush cards: no side gutter; the strip on top and the safe-area room at the bottom stay.
+  const contentContainerStyle = useMemo(() => ({ paddingTop: FEED_GAP, paddingBottom: insets.bottom + 16 }), [insets.bottom]);
   const refetch = query.refetch;
   const fetchNextPage = query.fetchNextPage;
   const header = useMemo(
     () =>
       query.isRefetchError ? (
-        <View className="pb-3">
+        <View className="px-4 pt-2.5" style={FEED_ITEM_STYLE}>
           <RefreshErrorBanner onRetry={() => void refetch()} />
         </View>
       ) : null,
@@ -78,7 +80,9 @@ export default function MyPostsScreen() {
   const footer = useMemo(
     () =>
       query.isFetchNextPageError ? (
-        <RefreshErrorBanner onRetry={() => void fetchNextPage()} />
+        <View className="px-4">
+          <RefreshErrorBanner onRetry={() => void fetchNextPage()} />
+        </View>
       ) : (
         <ListFooter loadingMore={query.isFetchingNextPage} reachedEnd={reachedEnd} endLabel="That's everything." />
       ),
@@ -93,18 +97,18 @@ export default function MyPostsScreen() {
 
   let body;
   if (!query.data) {
-    body = (
+    body = query.isError ? (
       <View className="p-4">
-        {query.isError ? (
-          <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />
-        ) : (
-          <SkeletonList item={PostCardSkeleton} count={4} />
-        )}
+        <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />
+      </View>
+    ) : (
+      <View className={`flex-1 ${FEED_BG}`} style={{ paddingTop: FEED_GAP }}>
+        <SkeletonList item={PostCardSkeleton} count={4} />
       </View>
     );
   } else {
     body = (
-      <View className="flex-1">
+      <View className={`flex-1 ${FEED_BG}`}>
         <FlashList
           ref={listRef}
           data={items}
@@ -137,7 +141,7 @@ export default function MyPostsScreen() {
   return (
     <View className="flex-1 bg-bg" style={{ paddingTop: insets.top }}>
       <BackHeader title="My Posts" />
-      {body}
+      <FeedCards>{body}</FeedCards>
       <OwnItemMenu item={menuItem} onClose={() => setMenuItem(null)} withShare />
     </View>
   );

@@ -4,8 +4,9 @@ import { type ReactElement, useCallback, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
+import { FEED_BG, FEED_ITEM_STYLE, FEED_UNDER_HEADER_STYLE, FeedCards } from '@/components/feed/feedCards';
 import { ListingCard } from '@/components/listings/ListingCard';
-import { ListingCardSkeleton } from '@/components/skeletons/ListingCardSkeleton';
+import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { useTheme } from '@/hooks/useTheme';
 import { useUserListings } from '@/hooks/useUserProfile';
@@ -24,7 +25,7 @@ export function UserListings({ userId, head }: { userId: string; head: ReactElem
   const openListing = useCallback((id: string) => router.push({ pathname: '/listing/[id]', params: { id } }), [router]);
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<ListingCardData>) => (
-      <View className="pb-3">
+      <View style={FEED_ITEM_STYLE}>
         <ListingCard listing={item} onOpen={openListing} showCommentCount />
       </View>
     ),
@@ -43,54 +44,62 @@ export function UserListings({ userId, head }: { userId: string; head: ReactElem
 
   if (!query.data) {
     return (
-      <View className="flex-1 p-4">
-        {head}
-        {query.isError ? (
-          <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />
-        ) : (
-          <SkeletonList item={ListingCardSkeleton} count={2} />
-        )}
-      </View>
+      <FeedCards>
+        <View className={`flex-1 pt-4 ${FEED_BG}`}>
+          <View className="px-4">{head}</View>
+          {query.isError ? (
+            <View className="px-4">
+              <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />
+            </View>
+          ) : (
+            <SkeletonList item={PostCardSkeleton} count={2} />
+          )}
+        </View>
+      </FeedCards>
     );
   }
 
   return (
-    <FlashList
-      data={listings}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      ListHeaderComponent={
-        <View>
-          {head}
-          {query.isRefetchError ? (
-            <View className="pb-3">
-              <RefreshErrorBanner onRetry={() => void query.refetch()} />
+    <FeedCards>
+      <View className={`flex-1 ${FEED_BG}`}>
+        <FlashList
+          data={listings}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          ListHeaderComponent={
+            <View className="px-4 pt-4">
+              {head}
+              {query.isRefetchError ? (
+                <View style={FEED_ITEM_STYLE}>
+                  <RefreshErrorBanner onRetry={() => void query.refetch()} />
+                </View>
+              ) : null}
             </View>
-          ) : null}
-        </View>
-      }
-      ListEmptyComponent={<EmptyState icon="pricetags-outline" title="No listings yet" />}
-      ListFooterComponent={
-        query.isFetchNextPageError ? (
-          <View className="py-3">
-            <RefreshErrorBanner onRetry={() => void query.fetchNextPage()} />
-          </View>
-        ) : (
-          <ListFooter loadingMore={query.isFetchingNextPage} reachedEnd={!query.hasNextPage && listings.length > 0} endLabel="That's everything." />
-        )
-      }
-      onEndReached={onEndReached}
-      onEndReachedThreshold={0.5}
-      contentContainerStyle={{ padding: 16 }}
-      refreshControl={
-        <RefreshControl
-          refreshing={pulling}
-          onRefresh={onRefresh}
-          tintColor={colors.accent}
-          colors={[colors.accent]}
-          progressBackgroundColor={colors.surface1}
+          }
+          ListEmptyComponent={<EmptyState icon="pricetags-outline" title="No listings yet" />}
+          ListFooterComponent={
+            query.isFetchNextPageError ? (
+              <View className="px-4 py-3">
+                <RefreshErrorBanner onRetry={() => void query.fetchNextPage()} />
+              </View>
+            ) : (
+              <ListFooter loadingMore={query.isFetchingNextPage} reachedEnd={!query.hasNextPage && listings.length > 0} endLabel="That's everything." />
+            )
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.5}
+          contentContainerStyle={FEED_UNDER_HEADER_STYLE}
+          refreshControl={
+            <RefreshControl
+              refreshing={pulling}
+              onRefresh={onRefresh}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+              progressBackgroundColor={colors.surface1}
+            />
+          }
         />
-      }
-    />
+      </View>
+    </FeedCards>
   );
 }

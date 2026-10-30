@@ -10,6 +10,7 @@ module.exports = {
     extend: {
       colors: {
         bg: token('bg'),
+        'feed-bg': token('feed-bg'),
         surface1: token('surface1'),
         surface2: token('surface2'),
         hairline: token('hairline'),

@@ -7,6 +7,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { AnnouncementCard } from '@/components/feed/AnnouncementCard';
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { NewPostsPill } from '@/components/feed/NewPostsPill';
+import { FEED_BG, FEED_CONTENT_STYLE, FEED_ITEM_STYLE, FeedCards } from '@/components/feed/feedCards';
 import { PostCard } from '@/components/feed/PostCard';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
@@ -88,7 +89,7 @@ export function FeedList() {
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FeedPost>) => (
-      <View className="pb-3">
+      <View style={FEED_ITEM_STYLE}>
         <PostCard
           post={item}
           onOpen={openPost}
@@ -138,76 +139,82 @@ export function FeedList() {
   }, [clear, runTopRefresh, reduceMotion]);
 
   const refreshFailed = query.isRefetchError || topRefreshFailed;
+  // The banner and the announcement keep their side margin; only the post cards are flush.
   const header = useMemo(
-    () => (
-      <View className="gap-3 pb-3">
-        {refreshFailed ? <RefreshErrorBanner onRetry={() => void runTopRefresh()} /> : null}
-        {announcement ? <AnnouncementCard announcement={announcement} onClose={() => closeAnnouncement(announcement.id)} /> : null}
-      </View>
-    ),
+    () =>
+      refreshFailed || announcement ? (
+        <View className="gap-3 px-4 pt-2.5" style={FEED_ITEM_STYLE}>
+          {refreshFailed ? <RefreshErrorBanner onRetry={() => void runTopRefresh()} /> : null}
+          {announcement ? <AnnouncementCard announcement={announcement} onClose={() => closeAnnouncement(announcement.id)} /> : null}
+        </View>
+      ) : null,
     [refreshFailed, announcement, closeAnnouncement, runTopRefresh],
   );
 
   // First load only: skeletons. Afterwards cached posts stay on screen.
   if (!query.data) {
-    return (
+    return query.isError ? (
       <View className="flex-1 p-4">
-        {query.isError ? (
-          <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />
-        ) : (
-          <SkeletonList item={PostCardSkeleton} count={4} />
-        )}
+        <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />
       </View>
+    ) : (
+      <FeedCards>
+        <View className={`flex-1 ${FEED_BG}`} style={FEED_CONTENT_STYLE}>
+          <SkeletonList item={PostCardSkeleton} count={4} />
+        </View>
+      </FeedCards>
     );
   }
 
   return (
-    <View className="flex-1">
-      <FlashList
-        ref={listRef}
-        data={posts}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        getItemType={getItemType}
-        ListHeaderComponent={header}
-        ListEmptyComponent={
-          <EmptyState icon="chatbubbles-outline" title="No confessions yet" message="Be the first to say something." />
-        }
-        ListFooterComponent={
-          query.isFetchNextPageError ? (
-            <View className="py-3">
-              <RefreshErrorBanner onRetry={() => void query.fetchNextPage()} />
-            </View>
-          ) : (
-            <ListFooter
-              loadingMore={query.isFetchingNextPage}
-              reachedEnd={!query.hasNextPage && posts.length > 0}
-              endLabel="You're all caught up."
+    <FeedCards>
+      <View className={`flex-1 ${FEED_BG}`}>
+        <FlashList
+          ref={listRef}
+          data={posts}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          getItemType={getItemType}
+          ListHeaderComponent={header}
+          ListEmptyComponent={
+            <EmptyState icon="chatbubbles-outline" title="No confessions yet" message="Be the first to say something." />
+          }
+          ListFooterComponent={
+            query.isFetchNextPageError ? (
+              <View className="px-4 py-3">
+                <RefreshErrorBanner onRetry={() => void query.fetchNextPage()} />
+              </View>
+            ) : (
+              <ListFooter
+                loadingMore={query.isFetchingNextPage}
+                reachedEnd={!query.hasNextPage && posts.length > 0}
+                endLabel="You're all caught up."
+              />
+            )
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.5}
+          onScroll={backToTop.onScroll}
+          scrollEventThrottle={backToTop.scrollEventThrottle}
+          onViewableItemsChanged={onViewableItemsChanged}
+          viewabilityConfig={VIEWABILITY}
+          maintainVisibleContentPosition={KEEP_POSITION}
+          scrollEnabled={!pickerOpen}
+          contentContainerStyle={FEED_CONTENT_STYLE}
+          refreshControl={
+            <RefreshControl
+              refreshing={pulling}
+              onRefresh={onRefresh}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+              progressBackgroundColor={colors.surface1}
             />
-          )
-        }
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        onScroll={backToTop.onScroll}
-        scrollEventThrottle={backToTop.scrollEventThrottle}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={VIEWABILITY}
-        maintainVisibleContentPosition={KEEP_POSITION}
-        scrollEnabled={!pickerOpen}
-        contentContainerStyle={{ padding: 16 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={pulling}
-            onRefresh={onRefresh}
-            tintColor={colors.accent}
-            colors={[colors.accent]}
-            progressBackgroundColor={colors.surface1}
-          />
-        }
-      />
-      {atTop ? null : <NewPostsPill count={pendingCount} onPress={onPillPress} />}
-      <BackToTopButton visible={backToTop.visible} onPress={backToTop.scrollToTop} />
-      {menu}
-    </View>
+          }
+        />
+        {atTop ? null : <NewPostsPill count={pendingCount} onPress={onPillPress} />}
+        <BackToTopButton visible={backToTop.visible} onPress={backToTop.scrollToTop} />
+        {menu}
+      </View>
+    </FeedCards>
   );
 }

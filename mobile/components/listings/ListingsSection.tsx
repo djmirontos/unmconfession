@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
+import { FEED_BG, FEED_CONTENT_STYLE, FEED_GAP, FEED_ITEM_STYLE, FeedCards } from '@/components/feed/feedCards';
 import { ListingCard } from '@/components/listings/ListingCard';
 import { ListingGridCard } from '@/components/listings/ListingGridCard';
 import { ListingCardSkeleton } from '@/components/skeletons/ListingCardSkeleton';
@@ -23,7 +24,8 @@ import { LISTING_SEARCH_MAX, type ListingCardData, type ListingFilters, type Lis
 
 const SEARCH_DEBOUNCE_MS = 400;
 // 16 px sides; 8 px under the filter row so the first row sits right below it.
-const LIST_PADDING = { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 };
+// Buy & Sell grid: unchanged gutters. Lost & Found rows: flush feed cards, no side gutter.
+const GRID_PADDING = { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 16 };
 
 type TypeFilter = 'all' | 'lost' | 'found';
 const TYPE_OPTIONS = [
@@ -97,7 +99,7 @@ export function ListingsSection({ kind, active, onOpen }: Props) {
           <ListingGridCard listing={item} onOpen={onOpen} />
         </View>
       ) : (
-        <View className="pb-3">
+        <View style={FEED_ITEM_STYLE}>
           <ListingCard listing={item} onOpen={onOpen} showCommentCount />
         </View>
       ),
@@ -138,21 +140,24 @@ export function ListingsSection({ kind, active, onOpen }: Props) {
   const showFull = !query.data || (query.isError && query.isPlaceholderData);
   let body;
   if (showFull) {
-    body = (
-      <View className="flex-1 px-4 pt-2">
-        {query.isError ? (
-          <ErrorState message={getErrorMessage(query.error)} onRetry={() => void refetch()} />
-        ) : isGrid ? (
-          <SkeletonList item={ListingCardSkeleton} count={4} columns={2} />
-        ) : (
+    body =
+      query.isError || isGrid ? (
+        <View className="flex-1 px-4 pt-2">
+          {query.isError ? (
+            <ErrorState message={getErrorMessage(query.error)} onRetry={() => void refetch()} />
+          ) : (
+            <SkeletonList item={ListingCardSkeleton} count={4} columns={2} />
+          )}
+        </View>
+      ) : (
+        <View className={`flex-1 ${FEED_BG}`} style={{ paddingTop: FEED_GAP }}>
           <SkeletonList item={PostCardSkeleton} count={3} />
-        )}
-      </View>
-    );
+        </View>
+      );
   } else {
     const empty = emptyCopy(kind, search, type, hideClosed);
     body = (
-      <View className="flex-1" style={query.isPlaceholderData ? { opacity: 0.5 } : undefined}>
+      <View className={`flex-1 ${isGrid ? '' : FEED_BG}`} style={query.isPlaceholderData ? { opacity: 0.5 } : undefined}>
         <FlashList
           ref={listRef}
           data={listings}
@@ -161,7 +166,7 @@ export function ListingsSection({ kind, active, onOpen }: Props) {
           numColumns={isGrid ? 2 : 1}
           ListHeaderComponent={
             query.isRefetchError ? (
-              <View className="pb-3">
+              <View className={isGrid ? 'pb-3' : 'px-4'} style={isGrid ? undefined : FEED_ITEM_STYLE}>
                 <RefreshErrorBanner onRetry={() => void refetch()} />
               </View>
             ) : null
@@ -169,7 +174,7 @@ export function ListingsSection({ kind, active, onOpen }: Props) {
           ListEmptyComponent={<EmptyState icon={empty.icon} title={empty.title} message={empty.message} />}
           ListFooterComponent={
             query.isFetchNextPageError ? (
-              <View className="py-3">
+              <View className={isGrid ? 'py-3' : 'px-4 py-3'}>
                 <RefreshErrorBanner onRetry={() => void query.fetchNextPage()} />
               </View>
             ) : (
@@ -186,7 +191,7 @@ export function ListingsSection({ kind, active, onOpen }: Props) {
           scrollEventThrottle={backToTop.scrollEventThrottle}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          contentContainerStyle={LIST_PADDING}
+          contentContainerStyle={isGrid ? GRID_PADDING : FEED_CONTENT_STYLE}
           refreshControl={
             <RefreshControl
               refreshing={pulling}
@@ -204,7 +209,7 @@ export function ListingsSection({ kind, active, onOpen }: Props) {
   return (
     <View className="flex-1">
       {controls}
-      {body}
+      {isGrid ? body : <FeedCards>{body}</FeedCards>}
       {/* Outside the dimmed wrapper, so it never fades with the previous results. */}
       {showFull ? null : <BackToTopButton visible={backToTop.visible} onPress={backToTop.scrollToTop} />}
     </View>

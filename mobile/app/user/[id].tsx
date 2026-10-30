@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GuestPrompt } from '@/components/auth/GuestPrompt';
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
+import { FEED_BG, FEED_ITEM_STYLE, FEED_UNDER_HEADER_STYLE, FeedCards } from '@/components/feed/feedCards';
 import { PostCard } from '@/components/feed/PostCard';
 import { BadgeRow } from '@/components/badges/BadgeRow';
 import { BackHeader } from '@/components/layout/BackHeader';
@@ -132,7 +133,7 @@ function UserPosts({ userId, head }: { userId: string; head: ReactElement }) {
 
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<FeedPost>) => (
-      <View className="pb-3">
+      <View style={FEED_ITEM_STYLE}>
         <PostCard
           post={item}
           onOpen={openPost}
@@ -158,60 +159,66 @@ function UserPosts({ userId, head }: { userId: string; head: ReactElement }) {
 
   if (!query.data) {
     return (
-      <View className="flex-1 p-4">
-        {head}
-        {query.isError ? (
-          <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />
-        ) : (
-          <SkeletonList item={PostCardSkeleton} count={2} />
-        )}
-      </View>
+      <FeedCards>
+        <View className={`flex-1 pt-4 ${FEED_BG}`}>
+          <View className="px-4">{head}</View>
+          {query.isError ? (
+            <View className="px-4">
+              <ErrorState message={getErrorMessage(query.error)} onRetry={() => void query.refetch()} />
+            </View>
+          ) : (
+            <SkeletonList item={PostCardSkeleton} count={2} />
+          )}
+        </View>
+      </FeedCards>
     );
   }
 
   return (
-    <View className="flex-1">
-      <FlashList
-        data={posts}
-        renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        getItemType={getItemType}
-        ListHeaderComponent={
-          <View>
-            {head}
-            {query.isRefetchError ? (
-              <View className="pb-3">
-                <RefreshErrorBanner onRetry={() => void query.refetch()} />
-              </View>
-            ) : null}
-          </View>
-        }
-        ListEmptyComponent={<EmptyState icon="document-text-outline" title="No posts yet" />}
-        ListFooterComponent={
-          query.isFetchNextPageError ? (
-            <View className="py-3">
-              <RefreshErrorBanner onRetry={() => void query.fetchNextPage()} />
+    <FeedCards>
+      <View className={`flex-1 ${FEED_BG}`}>
+        <FlashList
+          data={posts}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          getItemType={getItemType}
+          ListHeaderComponent={
+            <View className="px-4 pt-4">
+              {head}
+              {query.isRefetchError ? (
+                <View style={FEED_ITEM_STYLE}>
+                  <RefreshErrorBanner onRetry={() => void query.refetch()} />
+                </View>
+              ) : null}
             </View>
-          ) : (
-            <ListFooter loadingMore={query.isFetchingNextPage} reachedEnd={!query.hasNextPage && posts.length > 0} endLabel="That's everything." />
-          )
-        }
-        onEndReached={onEndReached}
-        onEndReachedThreshold={0.5}
-        scrollEnabled={!pickerOpen}
-        contentContainerStyle={{ padding: 16 }}
-        refreshControl={
-          <RefreshControl
-            refreshing={pulling}
-            onRefresh={onRefresh}
-            tintColor={colors.accent}
-            colors={[colors.accent]}
-            progressBackgroundColor={colors.surface1}
-          />
-        }
-      />
-      {menu}
-    </View>
+          }
+          ListEmptyComponent={<EmptyState icon="document-text-outline" title="No posts yet" />}
+          ListFooterComponent={
+            query.isFetchNextPageError ? (
+              <View className="px-4 py-3">
+                <RefreshErrorBanner onRetry={() => void query.fetchNextPage()} />
+              </View>
+            ) : (
+              <ListFooter loadingMore={query.isFetchingNextPage} reachedEnd={!query.hasNextPage && posts.length > 0} endLabel="That's everything." />
+            )
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.5}
+          scrollEnabled={!pickerOpen}
+          contentContainerStyle={FEED_UNDER_HEADER_STYLE}
+          refreshControl={
+            <RefreshControl
+              refreshing={pulling}
+              onRefresh={onRefresh}
+              tintColor={colors.accent}
+              colors={[colors.accent]}
+              progressBackgroundColor={colors.surface1}
+            />
+          }
+        />
+        {menu}
+      </View>
+    </FeedCards>
   );
 }
 

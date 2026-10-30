@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { PollResults } from '@/components/feed/PollResults';
 import { PostActions, PostCounts } from '@/components/feed/PostActions';
+import { cardClass, cardGap, cardOuterGap, useFlushCards } from '@/components/feed/feedCards';
 import { PostBody } from '@/components/feed/PostBody';
 import { PostHeader } from '@/components/feed/PostHeader';
 import { PostImages } from '@/components/feed/PostImages';
@@ -64,10 +65,11 @@ function PostCardImpl({
   rank,
 }: Props) {
   const vote = usePollVote(post.id, post.my_vote);
+  const flush = useFlushCards();
   const accessory =
     headerAccessory ?? (onMore ? <MoreButton onPress={() => onMore(post)} accessibilityLabel="More options for this post" /> : undefined);
   const content = (
-    <View className="gap-3">
+    <View className={cardGap(flush)}>
       <PostHeader
         kind={post.kind}
         number={post.number}
@@ -85,7 +87,7 @@ function PostCardImpl({
   );
 
   return (
-    <View className="gap-3 rounded-2xl border border-hairline bg-surface1 p-4">
+    <View className={`${cardOuterGap(flush)} ${cardClass(flush)}`}>
       {onOpen ? (
         <Pressable
           onPress={() => onOpen(post.id)}
@@ -99,12 +101,14 @@ function PostCardImpl({
         content
       )}
       {post.kind === 'poll' && post.poll_options ? (
-        <PollResults
-          options={post.poll_options}
-          myVote={post.my_vote}
-          endsAt={post.ends_at}
-          onVote={onAction ? vote : undefined}
-        />
+        <View className={flush ? 'pt-1' : undefined}>
+          <PollResults
+            options={post.poll_options}
+            myVote={post.my_vote}
+            endsAt={post.ends_at}
+            onVote={onAction ? vote : undefined}
+          />
+        </View>
       ) : null}
       {onAction ? (
         <PostActions

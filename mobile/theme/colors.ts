@@ -4,6 +4,8 @@ export type ColorScheme = 'light' | 'dark';
 
 export type ThemeColors = {
   bg: string;
+  /** Behind flush feed cards only: the strip between posts, clearly darker than surface1 (cards). */
+  feedBg: string;
   surface1: string;
   surface2: string;
   hairline: string;
@@ -21,6 +23,7 @@ export type ThemeColors = {
 // LyriaHub "Dark Studio": near-black surfaces, one amber accent, hairline borders.
 const dark: ThemeColors = {
   bg: '#0A0A0B',
+  feedBg: '#060608',
   surface1: '#121214',
   surface2: '#1A1A1D',
   hairline: '#2A2A2E',
@@ -38,6 +41,7 @@ const dark: ThemeColors = {
 // danger are deepened so they keep contrast on light backgrounds.
 const light: ThemeColors = {
   bg: '#F7F6F2',
+  feedBg: '#EFEDE8',
   surface1: '#FFFFFF',
   surface2: '#EFEDE7',
   hairline: '#DEDBD3',
@@ -61,6 +65,7 @@ function hexToRgbChannels(hex: string): string {
 function toCssVars(c: ThemeColors) {
   return vars({
     '--color-bg': hexToRgbChannels(c.bg),
+    '--color-feed-bg': hexToRgbChannels(c.feedBg),
     '--color-surface1': hexToRgbChannels(c.surface1),
     '--color-surface2': hexToRgbChannels(c.surface2),
     '--color-hairline': hexToRgbChannels(c.hairline),

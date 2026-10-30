@@ -1334,3 +1334,20 @@ App only: no database change. The profile page (`app/user/[id].tsx`) has a "Post
 **Notes:**
 - No staff tool exists yet to void a fraudulent sale (SQL only).
 - Declined and cancelled sale rows are kept (no purge yet).
+
+## Feed card styling (2026-10-30)
+
+App only: no database or admin change.
+
+- **Feed cards:** post cards, and Lost & Found and listing cards in feeds, are full width with square corners, no borders or shadows.
+  - They are separated by a 3 dp strip in the new `feedBg` theme token (dark `#060608`, light `#EFEDE8`).
+  - The strip colour sits behind the flush lists: Feed, Trending, polls, My Posts, a member's Posts and Listings tabs, and Lost & Found. Cards stay `surface1`.
+- **Spacing inside a feed card:** 12 dp top, 6 dp bottom, 16 dp sides. 8 dp between the header, body and photos (and above a poll), and 4 dp from the body, photos or poll to the action row.
+- **Touch targets and sizes:** the action buttons keep their hit slop (48 pt), and text, avatar and icon sizes are unchanged.
+- **Photos** in feed cards span the full card width with square corners, at the same aspect ratios.
+- **One place for the style:** `components/feed/feedCards.tsx` (the `FeedCards` wrapper, `cardClass`, `cardGap`, `cardOuterGap`, `FEED_GAP`, `FEED_BG`). Lists wrap their content in `FeedCards`; `PostCard`, `ListingCard`, `PostImages` and the skeletons read it.
+- **Unchanged:** detail screens, comments, sheets, the Buy & Sell grid and notification rows keep the rounded style.
+- **Skeletons:** the loading cards use the same shape, gaps and strip, so nothing jumps. The profile Listings tab now uses the post-card skeleton.
+- **After pulling:** clear Metro's cache (`npx expo start -c`), because of the new Tailwind colour class (`bg-feed-bg`).
+
+**Verified:** typecheck, lint and all mobile tests. Device-tested by Daryl and passed.

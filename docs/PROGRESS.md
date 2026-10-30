@@ -1215,3 +1215,46 @@ App only: no database change. The profile page (`app/user/[id].tsx`) has a "Post
 - Nothing deployed or scheduled.
 
 **Left (manual):** deploy, set the secrets and the Vault value, schedule it, watch a week of dry runs, then set `CLEANUP_DRY_RUN=false`. The backlog item is marked done once it is live.
+
+## Module 13a: badges (2026-10-30)
+
+**Database:**
+- `20261030100000_badges.sql`:
+  - Private `badges` and `user_badges` tables (no API access) and four stored badges:
+    - First Circle: one of the first 20 non-staff accounts with a nickname.
+    - Nocturnal: a published post or comment between 00:00 and 03:59 Manila time.
+    - Campus Regular: published posts, comments or reactions on 7 different Manila days.
+    - Campus Voice: a post published 24 h ago or more, still published, with at least `app_settings.campus_voice_reactions` reactions (default 10) and no open report.
+  - Moderator and Admin labels come from `user_flags.role` when read and are never stored.
+  - `award_badges()` is server-side only and idempotent. It runs every 10 minutes from the pg_cron job `unm-award-badges` (and ran once on apply). Badges are not revoked later. Banned and deleted accounts are skipped.
+  - `get_user_badges(p_user)`: signed-in only, ordered, empty for banned or deleted accounts and members the viewer blocked.
+- `20261030120000_top_badges.sql`: `get_top_badges(p_users[])`, one badge per author for chips. A staff label comes first, otherwise the earned badge with the lowest sort order; Nocturnal is never returned. At most 100 ids per call, signed-in only, with the same banned, deleted and blocked filters.
+- Types regenerated; mobile and admin copies identical.
+
+**App:**
+- `lib/badges.ts` (pure; `npm run test:badges`, 15 tests):
+  - Code to icon and theme-token colour: star, megaphone, calendar and moon; admin a filled shield-checkmark, moderator an outlined shield, both accent. Unknown codes get a neutral ribbon.
+  - The row mappers, and the batching helpers `idsToFetch`, `chunkIds` and `resultsById`.
+- `hooks/useUserBadges.ts`: `get_user_badges`, cached 5 minutes.
+- `hooks/useTopBadges.ts`:
+  - `useRegisterTopBadges(ids)` for lists and `useTopBadge(id)` for chips.
+  - Every id asked for within 30 ms goes out as one call per 100 ids, so a feed page of 20 posts is 1 call.
+  - Results, including "no badge", are cached 5 minutes per viewer, not persisted. Guests never call it. A failure is logged as `rpc.get_top_badges` with no ids, and the chips stay absent.
+  - Both badge caches are cleared on sign-out and refetched after a block or unblock.
+- `components/badges/BadgeRow.tsx`: full-name chips on public profiles (under the name) and on your own Profile tab. Two skeleton chips while loading; nothing when empty or on an error.
+- `components/badges/BadgeSheet.tsx`: icon, name, description and "Earned <date>" (Manila time), with a skeleton while the full badge loads.
+- `components/badges/BadgeChip.tsx`: icon only (16 px, 14 px in comments) right after the nickname, labelled "<name> badge", with a 44 pt tap area. Tapping opens the sheet, which then loads the full badge.
+  - Wired through `AuthorLine` (post cards, post detail, Lost & Found cards, listing detail) and `CommentItem` (comments and replies).
+  - Lists register their authors: feed, Trending and polls, listings, comment threads.
+- `AuthorLine`: the avatar and the nickname are now two profile links (as in comments), so the chip between them stays reachable. Tapping the time line now opens the card.
+
+**Verified:**
+- Mobile: typecheck, lint and all tests.
+- Admin: typecheck, lint and tests with the new types.
+- Device-tested by Daryl and passed.
+
+**Deviations / notes:**
+- Buy & Sell grid cards show no author, so they have no chip.
+- The old backlog plan called the night badge "Night Owl"; it shipped as Nocturnal.
+- The plan said badges are hidden for suspended and banned users. As built, they are hidden for banned and deleted accounts; a suspended member keeps showing their badges.
+- There is no admin screen yet for the Campus Voice threshold or for revoking badges (backlog).

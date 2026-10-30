@@ -16,6 +16,7 @@ import { useAppActive } from '@/hooks/useAppActive';
 import { useBackToTop } from '@/hooks/useBackToTop';
 import { useFeed } from '@/hooks/useFeed';
 import { useNewPosts } from '@/hooks/useNewPosts';
+import { useRegisterTopBadges } from '@/hooks/useTopBadges';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
 import { usePostListActions } from '@/hooks/usePostListActions';
 import { useRefetchWhenStale } from '@/hooks/useRefetchWhenStale';
@@ -40,6 +41,8 @@ export function FeedList() {
   const appActive = useAppActive();
   const isFocused = useIsFocused();
   const { query, posts, refreshTop } = useFeed();
+  // Badge chips for every loaded author in one batched call.
+  useRegisterTopBadges(posts.map((p) => p.author_id));
   const { announcement, close: closeAnnouncement, query: announcementQuery } = useAnnouncement();
   // Same rule as the lists: refetch on tab focus or return to the foreground, only when stale.
   useRefetchWhenStale(announcementQuery, true);

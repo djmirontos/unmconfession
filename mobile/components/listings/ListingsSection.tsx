@@ -17,6 +17,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useListings } from '@/hooks/useListings';
 import { useRefetchWhenStale } from '@/hooks/useRefetchWhenStale';
 import { useTheme } from '@/hooks/useTheme';
+import { useRegisterTopBadges } from '@/hooks/useTopBadges';
 import { getErrorMessage } from '@/lib/errors';
 import { LISTING_SEARCH_MAX, type ListingCardData, type ListingFilters, type ListingKind } from '@/lib/listings';
 
@@ -78,6 +79,7 @@ export function ListingsSection({ kind, active, onOpen }: Props) {
     [kind, type, hideClosed, search],
   );
   const { query, listings } = useListings(filters);
+  useRegisterTopBadges(listings.map((l) => l.authorId));
   useRefetchWhenStale(query, active);
   const backToTop = useBackToTop(listRef);
 

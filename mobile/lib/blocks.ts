@@ -75,6 +75,8 @@ export function afterBlock(queryClient: QueryClient, userId: string, authorId: s
   void queryClient.invalidateQueries({ queryKey: ['blocked-by-me'] });
   void queryClient.invalidateQueries({ queryKey: ['profile-details'] });
   void queryClient.invalidateQueries({ queryKey: ['reactors'] });
+  void queryClient.invalidateQueries({ queryKey: ['badges'] });
+  void queryClient.invalidateQueries({ queryKey: ['top-badges'] });
 }
 
 /** After an unblock: their content comes back with the refetch. */
@@ -83,4 +85,6 @@ export function afterUnblock(queryClient: QueryClient): void {
   void queryClient.invalidateQueries({ queryKey: ['blocked-by-me'] });
   void queryClient.invalidateQueries({ queryKey: ['profile-details'] });
   void queryClient.invalidateQueries({ queryKey: ['reactors'] });
+  void queryClient.invalidateQueries({ queryKey: ['badges'] });
+  void queryClient.invalidateQueries({ queryKey: ['top-badges'] });
 }

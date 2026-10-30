@@ -12,6 +12,7 @@ import { BackToTopButton } from '@/components/ui/BackToTopButton';
 import { useAppActive } from '@/hooks/useAppActive';
 import { useBackToTop } from '@/hooks/useBackToTop';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
+import { useRegisterTopBadges } from '@/hooks/useTopBadges';
 import { usePostListActions } from '@/hooks/usePostListActions';
 import { useRefetchWhenStale } from '@/hooks/useRefetchWhenStale';
 import { useTheme } from '@/hooks/useTheme';
@@ -53,6 +54,7 @@ export function PostListView({ query, active, ranked = false, empty }: Props) {
   useRefetchWhenStale(query, active);
 
   usePostCountsRefresh(() => visibleIds.current, appActive && isFocused && active);
+  useRegisterTopBadges(active ? (query.data ?? []).map((p) => p.author_id) : []);
 
   const renderItem = useCallback(
     ({ item, index }: ListRenderItemInfo<FeedPost>) => (

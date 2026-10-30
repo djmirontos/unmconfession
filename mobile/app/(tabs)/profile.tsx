@@ -6,6 +6,7 @@ import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native'
 import { AccountLoadError } from '@/components/auth/AccountLoadError';
 import { TabScreen } from '@/components/layout/TabScreen';
 import { CountBadge } from '@/components/notifications/NotificationBell';
+import { BadgeRow } from '@/components/badges/BadgeRow';
 import { Avatar } from '@/components/profile/Avatar';
 import { AvatarPicker } from '@/components/profile/AvatarPicker';
 import { SettingsGroup, SettingsRow } from '@/components/profile/SettingsRow';
@@ -118,6 +119,7 @@ function ProfileHeader({
             {email}
           </Text>
         ) : null}
+        <BadgeRow userId={profile.id} align="start" />
       </View>
     </View>
   );

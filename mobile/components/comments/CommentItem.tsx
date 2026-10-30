@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
+import { BadgeChip } from '@/components/badges/BadgeChip';
 import { PostBody } from '@/components/feed/PostBody';
 import { MoreButton } from '@/components/myposts/MoreButton';
 import { Avatar } from '@/components/profile/Avatar';
@@ -48,6 +49,7 @@ function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = fal
               {name}
             </Text>
           </ProfileLink>
+          <BadgeChip userId={comment.authorId} nickname={comment.nickname} compact />
           <Text className="flex-1 text-xs text-text-dim">
             {sending ? 'Sending…' : formatRelative(comment.time)}
             {!sending && comment.editedAt ? ' · Edited' : ''}

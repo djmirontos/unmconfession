@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GuestPrompt } from '@/components/auth/GuestPrompt';
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { PostCard } from '@/components/feed/PostCard';
+import { BadgeRow } from '@/components/badges/BadgeRow';
 import { BackHeader } from '@/components/layout/BackHeader';
 import { ReportSheet } from '@/components/moderation/ReportSheet';
 import { Avatar } from '@/components/profile/Avatar';
@@ -234,6 +235,7 @@ function ProfileTabs({ user }: { user: Profile }) {
   const head = (
     <View className="pb-3">
       <ProfileHead userId={user.id} nickname={user.nickname} avatarKey={user.avatar_key} />
+      <BadgeRow userId={user.id} />
       <DetailsCard userId={user.id} />
       <View className="items-center">
         <ChipGroup options={TABS} value={tab} onChange={choose} accessibilityLabel="Show" />

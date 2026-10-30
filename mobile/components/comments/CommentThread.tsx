@@ -26,6 +26,7 @@ import { useBackToTop } from '@/hooks/useBackToTop';
 import { type ThreadRow, useCommentThread } from '@/hooks/useCommentThread';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useTheme } from '@/hooks/useTheme';
+import { useRegisterTopBadges } from '@/hooks/useTopBadges';
 import { authorLabel } from '@/lib/authorLabel';
 import { canEditComment, type CommentTarget, type ThreadComment } from '@/lib/comments';
 import { getErrorMessage } from '@/lib/errors';
@@ -133,6 +134,7 @@ export function CommentThread({
   }, []);
 
   const rows = thread.rows;
+  useRegisterTopBadges(rows.map((r) => (r.kind === 'comment' || r.kind === 'reply' ? r.comment.authorId : null)));
   useEffect(() => {
     if (!revealId) return;
     const index = rows.findIndex((r) => r.key === revealId);

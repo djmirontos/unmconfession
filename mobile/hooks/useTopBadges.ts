@@ -6,8 +6,8 @@ import { logError } from '@/lib/log';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
-// One chip per author (get_top_badges). Under 'top-badges': not persisted, cleared on sign-out
-// (clearMemberCaches), refetched after a block or unblock. "No badge" (null) is cached too.
+// Up to 3 badge icons per author (get_top_badges). Under 'top-badges': not persisted, cleared on sign-out
+// (clearMemberCaches), refetched after a block or unblock. "No badge" (an empty list) is cached too.
 export const topBadgeKey = (viewerId: string, userId: string) => ['top-badges', viewerId, userId] as const;
 const STALE_MS = 5 * 60 * 1000;
 
@@ -15,7 +15,7 @@ const STALE_MS = 5 * 60 * 1000;
 // out together: one get_top_badges call per 100 ids, never one per row.
 const WINDOW_MS = 30;
 
-type Waiter = { resolve: (badge: TopBadge | null) => void; reject: (error: unknown) => void };
+type Waiter = { resolve: (badges: TopBadge[]) => void; reject: (error: unknown) => void };
 const queued = new Map<string, Waiter[]>();
 let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -33,12 +33,12 @@ async function flush(): Promise<void> {
         return;
       }
       const results = resultsById(ids, toTopBadges(data));
-      for (const id of ids) for (const w of batch.get(id) ?? []) w.resolve(results.get(id) ?? null);
+      for (const id of ids) for (const w of batch.get(id) ?? []) w.resolve(results.get(id) ?? []);
     }),
   );
 }
 
-function loadTopBadge(userId: string): Promise<TopBadge | null> {
+function loadTopBadges(userId: string): Promise<TopBadge[]> {
   return new Promise((resolve, reject) => {
     const waiters = queued.get(userId);
     if (waiters) waiters.push({ resolve, reject });
@@ -49,7 +49,7 @@ function loadTopBadge(userId: string): Promise<TopBadge | null> {
 
 const queryOptions = (viewerId: string, userId: string) => ({
   queryKey: topBadgeKey(viewerId, userId),
-  queryFn: (): Promise<TopBadge | null> => loadTopBadge(userId),
+  queryFn: (): Promise<TopBadge[]> => loadTopBadges(userId),
   staleTime: STALE_MS,
   retry: false,
 });
@@ -74,14 +74,16 @@ export function useRegisterTopBadges(authorIds: readonly (string | null | undefi
   }, [signature, viewerId, queryClient]);
 }
 
-/** The chip to show next to this author's nickname, or null (none, unknown yet, failed, or a guest). */
-export function useTopBadge(userId: string | null): TopBadge | null {
+const NONE: readonly TopBadge[] = [];
+
+/** The badge icons next to this author's nickname, in order (up to 3); empty for none, unknown yet, failed, or a guest. */
+export function useTopBadges(userId: string | null): readonly TopBadge[] {
   const viewerId = useAuthStore((s) => s.session?.user.id ?? null);
   const { data } = useQuery({
     queryKey: topBadgeKey(viewerId ?? '', userId ?? ''),
-    queryFn: viewerId && userId ? (): Promise<TopBadge | null> => loadTopBadge(userId) : skipToken,
+    queryFn: viewerId && userId ? (): Promise<TopBadge[]> => loadTopBadges(userId) : skipToken,
     staleTime: STALE_MS,
     retry: false,
   });
-  return data ?? null;
+  return data ?? NONE;
 }

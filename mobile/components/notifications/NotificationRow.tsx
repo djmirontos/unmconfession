@@ -15,10 +15,26 @@ import { formatRelative } from '@/lib/time';
 
 const AVATAR = 44;
 
+/** Returns and sales: the other member's avatar with a small request or confirmed icon. */
+function dealIconFor(type: NotificationGroup['type']): 'hand-left' | 'cart' | 'checkmark' | null {
+  switch (type) {
+    case 'return_request':
+      return 'hand-left';
+    case 'sale_request':
+      return 'cart';
+    case 'return_confirmed':
+    case 'sale_confirmed':
+      return 'checkmark';
+    default:
+      return null;
+  }
+}
+
 function Leading({ group }: { group: NotificationGroup }) {
   const { colors } = useTheme();
-  const isReturn = group.type === 'return_request' || group.type === 'return_confirmed';
-  if (group.type === 'comment' || group.type === 'reaction' || group.type === 'comment_reaction' || group.type === 'reply' || isReturn) {
+  const dealIcon = dealIconFor(group.type);
+  const isDeal = dealIcon !== null;
+  if (group.type === 'comment' || group.type === 'reaction' || group.type === 'comment_reaction' || group.type === 'reply' || isDeal) {
     const isReaction = group.type === 'reaction' || group.type === 'comment_reaction';
     const reaction = isReaction && group.reaction_type ? REACTIONS[group.reaction_type] : null;
     return (
@@ -40,9 +56,9 @@ function Leading({ group }: { group: NotificationGroup }) {
           <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-accent">
             <Ionicons name="chatbubble" size={12} color={colors.onAccent} />
           </View>
-        ) : isReturn ? (
+        ) : dealIcon ? (
           <View className="absolute -bottom-1 -right-1 h-6 w-6 items-center justify-center rounded-full bg-accent">
-            <Ionicons name={group.type === 'return_confirmed' ? 'checkmark' : 'hand-left'} size={12} color={colors.onAccent} />
+            <Ionicons name={dealIcon} size={12} color={colors.onAccent} />
           </View>
         ) : null}
       </View>

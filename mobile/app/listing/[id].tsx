@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, RefreshErrorBanner } from '@/components/feed/Li
 import { BackHeader } from '@/components/layout/BackHeader';
 import { ListingDetails } from '@/components/listings/ListingDetails';
 import { ReturnSection } from '@/components/listings/ReturnSection';
+import { SaleSection } from '@/components/listings/SaleSection';
 import { ContentMenu, type ContentMenuTarget } from '@/components/moderation/ContentMenu';
 import { MoreButton } from '@/components/myposts/MoreButton';
 import { OwnItemMenu } from '@/components/myposts/OwnItemMenu';
@@ -56,8 +57,9 @@ export default function ListingDetailScreen() {
         <View className="gap-4">
           {refetchError ? <RefreshErrorBanner onRetry={() => void refetch()} /> : null}
           <ListingDetails listing={data} onToggleClosed={isOwn ? toggleClosed : undefined} />
-          {/* Lost & Found only; renders nothing for guests and non-participants. */}
+          {/* Lost & Found returns / Buy & Sell sales; each renders nothing for guests, non-participants and the other kind. */}
           <ReturnSection listing={data} />
+          <SaleSection listing={data} />
         </View>
       ) : (
         <View />

@@ -84,7 +84,7 @@ export const SESSION_ENDED = 'Please sign in again.';
 const NETWORK = 'No connection. Check your internet and try again.';
 
 // Known codes: every MESSAGES key, the profile details codes (their text lives in lib/profileDetails.ts)
-// and the item return codes below.
+// and the item return and sale codes below.
 // Item returns (Campus Hero): these texts are used only by getReturnErrorMessage, so a word like
 // "expired" in another error still gets that error's usual text.
 const RETURN_MESSAGES: Record<string, string> = {
@@ -97,7 +97,24 @@ const RETURN_MESSAGES: Record<string, string> = {
   expired: 'This request has expired.',
 };
 
-const KNOWN_CODES = new Set([...Object.keys(MESSAGES), ...DETAILS_ERROR_CODES, ...Object.keys(RETURN_MESSAGES)]);
+// Buyer-confirmed sales (Trusted Seller), likewise used only by getSaleErrorMessage.
+const SALE_MESSAGES: Record<string, string> = {
+  not_found: 'This listing or request is no longer available.',
+  forbidden: 'Only the seller can do that.',
+  invalid_user: 'That member cannot be picked for this sale.',
+  not_commenter: 'That member has not commented on this listing.',
+  account_too_new: 'Both accounts must be at least 3 days old.',
+  already_sold: 'This listing already has a sale.',
+  free_item: 'Free items cannot be marked as sold to a buyer.',
+  expired: 'This request has expired.',
+};
+
+const KNOWN_CODES = new Set([
+  ...Object.keys(MESSAGES),
+  ...DETAILS_ERROR_CODES,
+  ...Object.keys(RETURN_MESSAGES),
+  ...Object.keys(SALE_MESSAGES),
+]);
 const DB_CODE = new RegExp(`\\b(${[...KNOWN_CODES].join('|')})\\b`);
 
 /** Extracts a known error code from an Auth or Postgrest error, if any. */
@@ -198,6 +215,12 @@ const PROFILE_REPORT_MESSAGES: Record<string, string> = {
 export function getReturnErrorMessage(error: unknown): string {
   const code = getErrorCode(error);
   return (code && RETURN_MESSAGES[code]) || getErrorMessage(error);
+}
+
+/** Sales: their own codes first, then the usual wording (rate limit, account state, no connection). */
+export function getSaleErrorMessage(error: unknown): string {
+  const code = getErrorCode(error);
+  return (code && SALE_MESSAGES[code]) || getErrorMessage(error);
 }
 
 export function getReportErrorMessage(error: unknown, target?: string): string {

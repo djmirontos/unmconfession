@@ -1,7 +1,8 @@
-import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { skipToken, useMutation, useQuery } from '@tanstack/react-query';
 
+import { rpcOrThrow, useDealRefresh } from '@/hooks/useDealRefresh';
 import { type Return, type ReturnCandidate, toCandidates, toReturn } from '@/lib/itemReturns';
-import { logError, logInfo } from '@/lib/log';
+import { logError } from '@/lib/log';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -48,28 +49,8 @@ export function useReturnCandidates(listingId: string, enabled: boolean) {
   });
 }
 
-/** After any return action: the return, the listing (closed state), every listing list and the notifications. */
-function useRefreshAfterReturn(listingId: string) {
-  const queryClient = useQueryClient();
-  return () => {
-    void queryClient.invalidateQueries({ queryKey: ['item-return'] });
-    void queryClient.invalidateQueries({ queryKey: ['item-return-candidates'] });
-    void queryClient.invalidateQueries({ queryKey: ['listing', listingId] });
-    void queryClient.invalidateQueries({ queryKey: ['listings'] });
-    void queryClient.invalidateQueries({ queryKey: ['my-item'] });
-    void queryClient.invalidateQueries({ queryKey: ['notifications'] });
-    void queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
-  };
-}
-
-async function rpcOrThrow(label: string, call: PromiseLike<{ error: unknown }>): Promise<void> {
-  const { error } = await call;
-  if (error) {
-    logError(label, error);
-    throw error;
-  }
-  logInfo(label, 'ok');
-}
+const RETURN_KEYS = ['item-return', 'item-return-candidates'] as const;
+const useRefreshAfterReturn = (listingId: string) => useDealRefresh(listingId, RETURN_KEYS);
 
 /** The author picks the other member: confirmed at once on a lost post, a request on a found post. */
 export function useStartReturn(listingId: string) {

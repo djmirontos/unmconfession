@@ -495,6 +495,65 @@ export type Database = {
           },
         ]
       }
+      item_sales: {
+        Row: {
+          buyer_id: string
+          created_at: string
+          id: string
+          listing_id: string
+          resolved_at: string | null
+          seller_id: string
+          status: string
+        }
+        Insert: {
+          buyer_id: string
+          created_at?: string
+          id?: string
+          listing_id: string
+          resolved_at?: string | null
+          seller_id: string
+          status?: string
+        }
+        Update: {
+          buyer_id?: string
+          created_at?: string
+          id?: string
+          listing_id?: string
+          resolved_at?: string | null
+          seller_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_sales_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_sales_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "feed_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_sales_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_sales_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       keywords: {
         Row: {
           active: boolean
@@ -1502,6 +1561,7 @@ export type Database = {
       assert_active_member: { Args: never; Returns: string }
       award_badges: { Args: never; Returns: undefined }
       cancel_item_return: { Args: { p_return: string }; Returns: undefined }
+      cancel_item_sale: { Args: { p_sale: string }; Returns: undefined }
       change_nickname: { Args: { p_nickname: string }; Returns: undefined }
       cleanup_claim_batch: {
         Args: { p_limit?: number }
@@ -1905,6 +1965,18 @@ export type Database = {
           status: string
         }[]
       }
+      get_listing_sale: {
+        Args: { p_listing: string }
+        Returns: {
+          created_at: string
+          other_avatar_key: string
+          other_id: string
+          other_nickname: string
+          role: string
+          sale_id: string
+          status: string
+        }[]
+      }
       get_listings: {
         Args: {
           p_before_id?: string
@@ -2051,6 +2123,14 @@ export type Database = {
         }
       }
       get_return_candidates: {
+        Args: { p_listing: string }
+        Returns: {
+          avatar_key: string
+          nickname: string
+          user_id: string
+        }[]
+      }
+      get_sale_candidates: {
         Args: { p_listing: string }
         Returns: {
           avatar_key: string
@@ -2344,6 +2424,10 @@ export type Database = {
         Args: { p_accept: boolean; p_return: string }
         Returns: undefined
       }
+      respond_item_sale: {
+        Args: { p_accept: boolean; p_sale: string }
+        Returns: undefined
+      }
       set_comment_reaction: {
         Args: {
           p_comment_id: string
@@ -2389,6 +2473,13 @@ export type Database = {
         Args: { p_listing: string; p_user: string }
         Returns: {
           return_id: string
+          status: string
+        }[]
+      }
+      start_item_sale: {
+        Args: { p_buyer: string; p_listing: string }
+        Returns: {
+          sale_id: string
           status: string
         }[]
       }

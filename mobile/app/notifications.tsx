@@ -71,6 +71,8 @@ export default function NotificationsScreen() {
         case 'reaction':
         case 'return_request':
         case 'return_confirmed':
+        case 'sale_request':
+        case 'sale_confirmed':
           return openTarget();
         case 'comment_reaction':
         case 'reply':

@@ -1,26 +1,23 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useRef, useState } from 'react';
-import { Alert, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, View } from 'react-native';
 
-import { ReturnCandidatesSheet } from '@/components/listings/ReturnCandidatesSheet';
+import { CandidatesSheet } from '@/components/listings/CandidatesSheet';
+import { DealBanner } from '@/components/listings/DealBanner';
 import { Button } from '@/components/ui/Button';
 import { FormMessage } from '@/components/ui/FormMessage';
-import { useCancelReturn, useListingReturn, useRespondReturn, useStartReturn } from '@/hooks/useListingReturn';
+import { useCancelReturn, useListingReturn, useRespondReturn, useReturnCandidates, useStartReturn } from '@/hooks/useListingReturn';
 import { useMembership } from '@/hooks/useProfile';
-import { useTheme } from '@/hooks/useTheme';
+import { useSingleFlight } from '@/hooks/useSingleFlight';
 import { getReturnErrorMessage } from '@/lib/errors';
-import { bannerText, confirmText, type ReturnCandidate, returnView, startLabel, startSuccess } from '@/lib/itemReturns';
+import { bannerText, confirmText, PICKER_EMPTY, pickerTitle, type ReturnCandidate, returnView, startLabel, startSuccess } from '@/lib/itemReturns';
 import type { ListingCardData } from '@/lib/listings';
 import { useAuthStore } from '@/stores/authStore';
-import { useToastStore } from '@/stores/toastStore';
 
 /**
  * Confirmed returns on a Lost & Found listing (Campus Hero): the author's button and picker,
  * and the banners for the two participants. Guests and everyone else see nothing here.
  */
 export function ReturnSection({ listing }: { listing: ListingCardData }) {
-  const { colors } = useTheme();
-  const showToast = useToastStore((s) => s.show);
   const { status } = useMembership();
   const userId = useAuthStore((s) => s.session?.user.id ?? null);
   const member = status === 'member' && listing.kind === 'lost_found';
@@ -29,9 +26,8 @@ export function ReturnSection({ listing }: { listing: ListingCardData }) {
   const respond = useRespondReturn(listing.id);
   const cancel = useCancelReturn(listing.id);
   const [picking, setPicking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  // One request at a time, also across a fast double tap before the state re-renders.
-  const inFlight = useRef(false);
+  const candidates = useReturnCandidates(listing.id, picking);
+  const { run, error } = useSingleFlight(getReturnErrorMessage);
 
   const view = returnView({
     member,
@@ -40,52 +36,37 @@ export function ReturnSection({ listing }: { listing: ListingCardData }) {
     lostFoundType: listing.lostFoundType,
     ret: ret.data,
   });
-
-  const run = (call: () => Promise<unknown>, success?: string) => {
-    if (inFlight.current) return;
-    inFlight.current = true;
-    setError(null);
-    call()
-      .then(() => {
-        if (success) showToast(success);
-      })
-      .catch((e: unknown) => setError(getReturnErrorMessage(e)))
-      .finally(() => {
-        inFlight.current = false;
-      });
-  };
-
-  const pick = (candidate: ReturnCandidate) => {
-    if (view.kind !== 'can_start') return;
-    const type = view.type;
-    const text = confirmText(type, candidate.nickname);
-    Alert.alert(text.title, text.message, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: text.action,
-        onPress: () =>
-          run(async () => {
-            await start.mutateAsync(candidate.userId);
-            setPicking(false);
-          }, startSuccess(type, candidate.nickname)),
-      },
-    ]);
-  };
-
   const busy = start.isPending || respond.isPending || cancel.isPending;
 
   if (view.kind === 'none') return null;
 
   if (view.kind === 'can_start') {
+    const type = view.type;
+    const pick = (candidate: ReturnCandidate) => {
+      const text = confirmText(type, candidate.nickname);
+      Alert.alert(text.title, text.message, [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: text.action,
+          onPress: () =>
+            run(async () => {
+              await start.mutateAsync(candidate.userId);
+              setPicking(false);
+            }, startSuccess(type, candidate.nickname)),
+        },
+      ]);
+    };
     return (
       <View className="gap-2">
-        <Button label={startLabel(view.type)} variant="secondary" icon="hand-left-outline" onPress={() => setPicking(true)} disabled={busy} />
-        <FormMessage tone="error" message={picking ? null : error} />
+        <Button label={startLabel(type)} variant="secondary" icon="hand-left-outline" onPress={() => setPicking(true)} disabled={busy} />
         {/* While the sheet is open its own error line shows the failure (the modal covers this one). */}
-        <ReturnCandidatesSheet
-          listingId={listing.id}
-          type={view.type}
+        <FormMessage tone="error" message={picking ? null : error} />
+        <CandidatesSheet
           open={picking}
+          title={pickerTitle(type)}
+          emptyText={PICKER_EMPTY}
+          candidates={candidates}
+          errorText={getReturnErrorMessage}
           busy={busy}
           error={error}
           onPick={pick}
@@ -97,20 +78,8 @@ export function ReturnSection({ listing }: { listing: ListingCardData }) {
     );
   }
 
-  const confirmed = view.kind === 'confirmed_finder' || view.kind === 'confirmed_owner';
   return (
-    <View
-      className={`gap-3 rounded-2xl border p-4 ${confirmed ? 'border-hairline bg-surface1' : 'border-accent bg-accent-dim'}`}
-      accessibilityRole="summary"
-    >
-      <View className="flex-row items-center gap-2">
-        <Ionicons
-          name={confirmed ? 'checkmark-circle' : 'hourglass-outline'}
-          size={20}
-          color={confirmed ? colors.success : colors.accent}
-        />
-        <Text className="flex-1 text-base text-text">{bannerText(view)}</Text>
-      </View>
+    <DealBanner text={bannerText(view) ?? ''} confirmed={view.kind === 'confirmed_finder' || view.kind === 'confirmed_owner'} error={error}>
       {view.kind === 'finder_pending' ? (
         <Button
           label="Cancel request"
@@ -138,7 +107,6 @@ export function ReturnSection({ listing }: { listing: ListingCardData }) {
           />
         </View>
       ) : null}
-      <FormMessage tone="error" message={error} />
-    </View>
+    </DealBanner>
   );
 }

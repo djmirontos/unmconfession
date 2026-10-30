@@ -14,6 +14,7 @@ export type BadgeStyle = { icon: IconName; tone: keyof ThemeColors; staff: boole
 
 const STYLES: Record<string, BadgeStyle> = {
   campus_hero: { icon: 'trophy', tone: 'accent', staff: false },
+  trusted_seller: { icon: 'storefront', tone: 'accent', staff: false },
   first_circle: { icon: 'star', tone: 'accent', staff: false },
   campus_voice: { icon: 'megaphone', tone: 'success', staff: false },
   campus_regular: { icon: 'calendar', tone: 'navy', staff: false },
@@ -41,7 +42,7 @@ export function toBadges(rows: readonly BadgeRow[] | null | undefined): Badge[] 
   );
 }
 
-// ---------------------------------------------------------------- one chip per author (get_top_badges)
+// ---------------------------------------------------------------- icons next to nicknames (get_top_badges, up to 3 per author)
 
 export type TopBadge = { userId: string; code: string; name: string };
 
@@ -71,9 +72,18 @@ export function chunkIds(ids: readonly string[], size = TOP_BADGES_CHUNK): strin
   return out;
 }
 
-/** One answer per asked id: its badge, or null for "no badge" (so it is cached and not asked again). */
-export function resultsById(asked: readonly string[], badges: readonly TopBadge[]): Map<string, TopBadge | null> {
-  const byId = new Map<string, TopBadge | null>(asked.map((id) => [id, null]));
-  for (const badge of badges) if (byId.has(badge.userId)) byId.set(badge.userId, badge);
+/** Icons shown next to a nickname at most (get_top_badges returns up to this many per author). */
+export const TOP_BADGES_PER_USER = 3;
+
+/**
+ * One answer per asked id: its badges in the server's priority order (staff label first), at most
+ * three, or an empty list for "no badge" (so it is cached and not asked again).
+ */
+export function resultsById(asked: readonly string[], badges: readonly TopBadge[]): Map<string, TopBadge[]> {
+  const byId = new Map<string, TopBadge[]>(asked.map((id) => [id, []]));
+  for (const badge of badges) {
+    const list = byId.get(badge.userId);
+    if (list && list.length < TOP_BADGES_PER_USER && !list.some((b) => b.code === badge.code)) list.push(badge);
+  }
   return byId;
 }

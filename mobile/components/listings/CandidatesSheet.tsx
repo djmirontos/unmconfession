@@ -7,9 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { FormMessage } from '@/components/ui/FormMessage';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useBottomInset } from '@/hooks/useBottomInset';
-import { useReturnCandidates } from '@/hooks/useListingReturn';
-import { getReturnErrorMessage } from '@/lib/errors';
-import { type LostFoundType, PICKER_EMPTY, PICKER_NOTE, pickerTitle, type ReturnCandidate } from '@/lib/itemReturns';
+import { PICKER_NOTE, type ReturnCandidate } from '@/lib/itemReturns';
 
 const AVATAR = 40;
 
@@ -22,28 +20,41 @@ function RowSkeleton() {
   );
 }
 
+/** The candidates query as the sheet needs it (from useReturnCandidates or useSaleCandidates). */
+export type CandidatesQuery = {
+  data: ReturnCandidate[] | undefined;
+  isError: boolean;
+  error: unknown;
+  refetch: () => unknown;
+};
+
 type Props = {
-  listingId: string;
-  type: LostFoundType;
   open: boolean;
+  title: string;
+  emptyText: string;
+  candidates: CandidatesQuery;
+  /** Text for a failed candidates load. */
+  errorText: (error: unknown) => string;
   /** A start request is running: rows are locked. */
   busy: boolean;
-  /** The last start_item_return error, shown above Cancel. */
+  /** The last start error, shown above Cancel. */
   error: string | null;
   onPick: (candidate: ReturnCandidate) => void;
   onClose: () => void;
 };
 
-/** Bottom sheet: the members who commented on the post and can be picked for the return. */
-export function ReturnCandidatesSheet({ listingId, type, open, busy, error, onPick, onClose }: Props) {
+/**
+ * Bottom sheet: the members who commented on the listing and can be picked, for a return
+ * (Campus Hero) or a sale (Trusted Seller). Skeleton, error with Retry, empty text with the 3-day note.
+ */
+export function CandidatesSheet({ open, title, emptyText, candidates, errorText, busy, error, onPick, onClose }: Props) {
   const bottomInset = useBottomInset();
   const reduceMotion = useReducedMotion();
-  const candidates = useReturnCandidates(listingId, open);
 
   let body;
   if (!candidates.data) {
     body = candidates.isError ? (
-      <ErrorState message={getReturnErrorMessage(candidates.error)} onRetry={() => void candidates.refetch()} />
+      <ErrorState message={errorText(candidates.error)} onRetry={() => void candidates.refetch()} />
     ) : (
       <View accessibilityLabel="Loading" accessibilityRole="progressbar">
         <RowSkeleton />
@@ -52,7 +63,7 @@ export function ReturnCandidatesSheet({ listingId, type, open, busy, error, onPi
       </View>
     );
   } else if (candidates.data.length === 0) {
-    body = <EmptyState icon="chatbubbles-outline" title={PICKER_EMPTY} message={PICKER_NOTE} />;
+    body = <EmptyState icon="chatbubbles-outline" title={emptyText} message={PICKER_NOTE} />;
   } else {
     body = (
       <ScrollView contentContainerClassName="gap-1 pb-1">
@@ -88,7 +99,7 @@ export function ReturnCandidatesSheet({ listingId, type, open, busy, error, onPi
         >
           <View className="h-1 w-10 self-center rounded-full bg-hairline" />
           <Text accessibilityRole="header" className="px-2 text-lg font-bold text-text">
-            {pickerTitle(type)}
+            {title}
           </Text>
           <View className="shrink">{body}</View>
           <FormMessage tone="error" message={error} />

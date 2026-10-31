@@ -1370,3 +1370,5 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 - Tables with RLS on and no policy are intentional (they are reached only through functions).
 - Leaked-password protection is a Pro-plan feature and stays off on the Free plan.
 - `rls_auto_enable` is a Supabase platform helper, not ours.
+
+**Fixes (2026-10-31):** the reaction icons on posts and comments now update at the same moment as the count. The per-type tally lives in one pure function (`lib/reactionTally.ts`), and the exact counts are re-read for that one item after the server confirms. Single feed photos now span the full card width (the frame stretched with its parent instead of using a fixed 100% width).

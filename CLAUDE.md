@@ -25,7 +25,8 @@ The PRD at `UNM Freedom Confessions V1 PRD.md` (repo root). Read it before start
 - Tabs: Feed, Trending, Create, Buy & Sell (with a Lost & Found toggle), Profile. Announcements show as a pinned card on top of the Feed only when active.
 - Six reactions (Fluent Emoji, license still to be verified), bundled locally. Reactions need sign-in.
 - Dark theme = LyriaHub, light = its opposite. App name and logo are editable in the admin panel (`app_settings`).
-- Not in V1: DMs, push notifications, payments, multiple schools, automatic posting to Facebook.
+- Not in V1: DMs, payments, multiple schools, automatic posting to Facebook.
+- Push notifications (shipped in V2): the database sends generic-text pushes through Expo, with nothing personal in the message. Each kind can be switched on or off in Profile → Notification preferences (reactions off by default), and permission is asked once after onboarding, with an explainer.
 
 ## Engineering rules
 

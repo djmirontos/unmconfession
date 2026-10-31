@@ -79,7 +79,7 @@ Five bottom tabs. The feed is one list for everything, with no categories.
 
 **Announcements.** Posted by official accounts (admin and mods for now). Shown as a pinned card on top of the Feed only while active.
 
-**Notifications (in app only).** Comment or reaction on your post, approved or rejected posts (with reason), new announcement.
+**Notifications (in app, plus push notifications for replies, comments, deals and moderation outcomes).** Comment or reaction on your post, approved or rejected posts (with reason), new announcement.
 
 **Share to Facebook.** A Share button creates an image card (number, text, branding) and opens the phone's share sheet. Automatic posting to the Facebook page is out of V1 because it needs Meta app review.
 
@@ -201,11 +201,14 @@ Speed and data security are the top priorities during development.
 **Not in V1**
 
 - Direct messages.
-- Push notifications (in-app only).
 - Automatic posting to the Facebook page.
 - Multiple schools.
 - Payments.
 - Real name collection.
+
+**Shipped in V2**
+
+- Push notifications: the database sends generic-text pushes through Expo, with nothing personal in the message. Each kind can be switched on or off in Profile → Notification preferences (reactions off by default), and permission is asked once after onboarding, with an explainer.
 
 **Decisions from the team**
 

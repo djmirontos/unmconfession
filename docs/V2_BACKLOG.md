@@ -77,3 +77,13 @@ Upgrade Supabase to Pro before or soon after launch (daily backups, no pausing, 
 ## Duplicate read policies
 
 Merge the duplicate read policies on announcements and user_flags (advisor warning, minor).
+
+## Push notifications follow-ups
+
+- Reactions push is OFF by default (decision made 2026-10-31). Option to revisit after launch: default on with its own cap (for example 6 per hour) so reactions never use up the 20-per-hour limit for comments, replies, deals and moderation.
+- Expo push receipts: dead tokens are only retired by ticket errors, the 60-day expiry, or logout; add a receipts check if undelivered pushes show up.
+- Forced sign-out and account deletion done from another path may leave a token on a phone until the next sign-in or the 60-day expiry (deleting an account through the app erases tokens at once).
+- Reply and comment-reaction pushes open the Notifications list, not the exact thread; improve if the thread can be resolved from the notification.
+- Play Console Data safety form: declare "Device or other IDs" (collected, app functionality, not shared, deletable by logout or account deletion) before the next Play release.
+- Two-phone end-to-end push test.
+- iOS push needs APNs credentials if iOS is ever built.

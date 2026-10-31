@@ -1372,3 +1372,44 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 - `rls_auto_enable` is a Supabase platform helper, not ours.
 
 **Fixes (2026-10-31):** the reaction icons on posts and comments now update at the same moment as the count. The per-type tally lives in one pure function (`lib/reactionTally.ts`), and the exact counts are re-read for that one item after the server confirms. Single feed photos now span the full card width (the frame stretched with its parent instead of using a fixed 100% width).
+
+## Push notifications (2026-10-31, device-tested on one Android phone)
+
+**Database** (`20261031100000_push_notifications.sql`, applied by hand in the SQL editor):
+- Private `push_tokens`, `push_settings` and `push_outbox` tables.
+- `register_push_token`, `unregister_push_token`, `get_push_settings` and `set_push_settings`.
+- An `after insert` trigger on `notifications` sends a generic-text push through Expo (`pg_net`). It checks the member's switches (reactions off by default), blocks and banned or deleted accounts, sends at most 20 per member per hour, and respects the `app_settings.push_enabled` kill switch.
+- `process_push_responses()` runs every 10 minutes (`unm-push-responses`): it retires tokens Expo reports as unregistered and deletes tokens not refreshed in 60 days.
+
+**App** (built, checks pass):
+- `expo-notifications` and `expo-device`.
+- The notification config plugin (indigo `#4F46E5`, default channel `default`) and a speech-bubble notification icon from `npm run branding`.
+- `android.googleServicesFile` from the `GOOGLE_SERVICES_JSON` EAS file variable (`app.config.ts`); the file is gitignored.
+- Registration once per session on a physical device. The explainer is shown once after onboarding and at most once more after the first post or comment if the member said "Not now".
+- Tapped notifications open the same screen as the Notifications list and mark that row read.
+- Push switches in Profile → Notification preferences.
+- Pure logic and 20 tests: `lib/pushNotifications.ts`, `lib/pushPermission.ts`, `lib/notificationTarget.ts`.
+- Version bumped to 1.0.1 (native change). `VIBRATE` is no longer blocked.
+
+**Account deletion** (`20261031120000_push_cleanup_on_delete.sql`, applied): `delete_my_account` now also deletes the member's push tokens, push settings and push send log at once.
+
+**Privacy text** (app and site, word for word, dated 31 October 2026; parity true): the Privacy Policy explains the push token (what it is for, Expo and Google delivery, no nicknames or post text in messages, deleted on log out, account deletion or after 60 days unused). The account-deletion sentence and the site's /delete-account page list push notification tokens among what is erased. No terms re-acceptance.
+
+**Commits (pushed):** database `1b534aa`, app `d08a39d`, admin types `3514ae9`, site `519638f`. The site deploys automatically through Vercel on push.
+
+**Device tests** (one physical Android phone, development build, version 1.0.1), all passed:
+- The permission explainer, then the system dialog.
+- Token registration.
+- A push while the app was closed: the text, icon, sound and vibration were right, the tap opened the post, and the notification was marked read.
+- A push while the app was in the background: the tap opened the Notifications list.
+- A push while the app was open.
+- The master switch off sends nothing, and switching it back on resumes pushes.
+- Log out removes the token and stops pushes.
+- Google sign-in works with the Firebase file.
+- Switching accounts registers the new account's token.
+
+**Not tested yet:** the full two-account flow (a real comment by one member triggering a push to another), which needs a second phone.
+
+**Left:**
+- No preview build or Play AAB has been made with push yet.
+- The Play Console Data safety form: Device or other IDs collected, for app functionality, not shared, deletable.

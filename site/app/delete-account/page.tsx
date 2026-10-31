@@ -20,7 +20,7 @@ const STEPS = [
 const ERASED = [
   'Your account and sign-in, including your email address.',
   'Your nickname. Your avatar is replaced by a default one.',
-  'Your blocked users, notification settings and notifications.',
+  'Your blocked users, notification settings, notifications and push notification tokens.',
 ];
 
 const STAYS = [

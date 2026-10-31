@@ -3,7 +3,7 @@ import type { QueryData } from '@supabase/supabase-js';
 import { LOST_FOUND_TYPES, type LostFoundType } from '@/lib/createSchemas';
 import type { ListingCardData } from '@/lib/listings';
 import { type FeedPost, parseImages, type PostImage } from '@/lib/posts';
-import { topFromBreakdown } from '@/lib/reactions';
+import { breakdownTally, topFromBreakdown } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
 import { parseTimestamp } from '@/lib/time';
 import type { Database } from '@/types/database';
@@ -83,6 +83,7 @@ function toFeedPost(r: PostRow, images: PostImage[]): FeedPost {
     edited_at: r.edited_at,
     // Read from posts, not feed_posts: the same top 3 rule, computed here.
     top_reactions: topFromBreakdown(r.reaction_breakdown),
+    reaction_breakdown: breakdownTally(r.reaction_breakdown),
   };
 }
 

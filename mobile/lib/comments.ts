@@ -2,6 +2,7 @@ import { logError, logInfo } from '@/lib/log';
 import { parseTopReactions, type ReactionType } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
 import { parseTimestamp } from '@/lib/time';
+import type { Tally } from '@/lib/reactionTally';
 import type { Database } from '@/types/database';
 
 export type CommentTarget = 'post' | 'listing';
@@ -30,6 +31,8 @@ export type ThreadComment = {
   myReaction: ReactionType | null;
   /** Most used types, first = most used (up to 3). */
   topReactions: ReactionType[];
+  /** Exact reactions per type when known (realtime rows, after my own tap); thread rows carry only the top 3. */
+  reactionBreakdown?: Tally | null;
   /** Replies: the top-level comment they belong to (one level only). Null for top-level comments. */
   parentId: string | null;
   /** Replies: the exact comment answered (a top-level comment or another reply). */

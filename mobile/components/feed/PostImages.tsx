@@ -51,7 +51,9 @@ function Tile({ image, index, total, onOpen, style }: TileProps) {
 export function PostImages({ images }: { images: readonly PostImage[] }) {
   const open = useImageViewerStore((s) => s.open);
   // In a flush feed card the photos span the full card width (past its 16 px padding) with square
-  // corners; elsewhere they keep the rounded frame inside the card.
+  // corners; elsewhere they keep the rounded frame inside the card. Every frame stretches with its
+  // parent (alignSelf, never a fixed or 100% width): an explicit width would not grow with the
+  // negative margins, leaving the photo short of the right edge.
   const frame = useFlushCards() ? '-mx-4' : 'rounded-xl';
   if (images.length === 0) return null;
 
@@ -65,7 +67,7 @@ export function PostImages({ images }: { images: readonly PostImage[] }) {
 
   if (total >= 3 && first && second && third) {
     return (
-      <View style={{ aspectRatio: TRIPLE_RATIO }} className={`flex-row gap-1 overflow-hidden ${frame}`}>
+      <View style={{ alignSelf: 'stretch', aspectRatio: TRIPLE_RATIO }} className={`flex-row gap-1 overflow-hidden ${frame}`}>
         <Tile image={first} index={0} total={total} onOpen={onOpen} style={{ flex: 2 }} />
         <View className="flex-1 gap-1">
           <Tile image={second} index={1} total={total} onOpen={onOpen} style={{ flex: 1 }} />
@@ -78,7 +80,7 @@ export function PostImages({ images }: { images: readonly PostImage[] }) {
   if (total === 1 && first) {
     return (
       <View
-        style={{ width: '100%', aspectRatio: clamp(first.width / first.height, SINGLE_MIN_RATIO, SINGLE_MAX_RATIO) }}
+        style={{ alignSelf: 'stretch', aspectRatio: clamp(first.width / first.height, SINGLE_MIN_RATIO, SINGLE_MAX_RATIO) }}
         className={`overflow-hidden ${frame}`}
       >
         <Tile image={first} index={0} total={1} onOpen={onOpen} style={{ flex: 1 }} />
@@ -89,7 +91,7 @@ export function PostImages({ images }: { images: readonly PostImage[] }) {
   const ratios = images.map((img) => clamp(img.width / img.height, MIN_RATIO, MAX_RATIO));
   return (
     <View
-      style={{ aspectRatio: ratios.reduce((a, b) => a + b, 0) }}
+      style={{ alignSelf: 'stretch', aspectRatio: ratios.reduce((a, b) => a + b, 0) }}
       className={`flex-row gap-1 overflow-hidden ${frame}`}
     >
       {images.map((img, i) => (

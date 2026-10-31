@@ -1,28 +1,62 @@
+import type { InfiniteData } from '@tanstack/react-query';
+
 import { getReactionErrorMessage } from '@/lib/errors';
 import { createLatestOnlyQueue } from '@/lib/latestOnlyQueue';
 import { logError } from '@/lib/log';
+import type { MyPostsPage } from '@/lib/myPosts';
 import { updateListedPost } from '@/lib/postLists';
 import type { FeedPost } from '@/lib/posts';
 import { queryClient } from '@/lib/queryClient';
-import { approxTopReactions, type ReactionType } from '@/lib/reactions';
+import { breakdownTally, clusterOf, type ReactionType, reactWithCluster } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
 import { useToastStore } from '@/stores/toastStore';
 import type { Database } from '@/types/database';
 
 type Reaction = ReactionType | null;
 
-/** none -> reaction: +1; A -> B: unchanged; reaction -> none: -1 (never below 0). Top 3 approximated. */
+/**
+ * My reaction, the total and the cluster together (lib/reactionTally.ts): exact when the post's
+ * per-type counts are known, a close estimate otherwise; the server's counts follow right after.
+ */
 function withReaction(post: FeedPost, next: Reaction): FeedPost {
-  const prev = post.my_reaction;
-  if (prev === next) return post;
-  const delta = prev === null ? 1 : next === null ? -1 : 0;
-  const reaction_count = Math.max(0, post.reaction_count + delta);
-  return {
+  if (post.my_reaction === next) return post;
+  const r = reactWithCluster(
+    { tally: post.reaction_breakdown ?? null, top: post.top_reactions, total: post.reaction_count, mine: post.my_reaction },
+    next,
+  );
+  return { ...post, my_reaction: next, reaction_count: r.total, top_reactions: r.top, reaction_breakdown: r.tally };
+}
+
+// Bumped on every local change: a server read started before a newer tap must not overwrite it.
+const versions = new Map<string, number>();
+
+/** After the server confirmed my reaction: that one post's exact counts and cluster (not the whole feed). */
+async function reconcile(postId: string): Promise<void> {
+  const version = versions.get(postId);
+  const { data, error } = await supabase.from('posts').select('reaction_count, reaction_breakdown').eq('id', postId).maybeSingle();
+  if (error || !data || versions.get(postId) !== version) return;
+  const tally = breakdownTally(data.reaction_breakdown);
+  if (!tally) return;
+  const exact = (post: FeedPost): FeedPost => ({
     ...post,
-    my_reaction: next,
-    reaction_count,
-    top_reactions: approxTopReactions(post.top_reactions, prev, next, reaction_count),
-  };
+    reaction_count: data.reaction_count,
+    top_reactions: clusterOf(tally),
+    reaction_breakdown: tally,
+  });
+  updateListedPost(queryClient, postId, exact);
+  queryClient.setQueriesData<FeedPost | null>({ queryKey: ['post', postId] }, (post) => (post ? exact(post) : post));
+  // My Posts (my own post reacted to elsewhere): read-only cards, so only the server's counts are written.
+  queryClient.setQueriesData<InfiniteData<MyPostsPage>>({ queryKey: ['my-posts'] }, (data) =>
+    data && data.pages.some((page) => page.items.some((item) => item.feedPost?.id === postId))
+      ? {
+          ...data,
+          pages: data.pages.map((page) => ({
+            ...page,
+            items: page.items.map((item) => (item.feedPost?.id === postId ? { ...item, feedPost: exact(item.feedPost) } : item)),
+          })),
+        }
+      : data,
+  );
 }
 
 /** Patches every cache holding the post: feed pages, Trending, active polls and the post detail. */
@@ -41,6 +75,7 @@ async function sendReaction(postId: string, type: Reaction): Promise<void> {
     logError('rpc.set_reaction', error, { postId, type });
     throw error;
   }
+  void reconcile(postId);
   // The "who reacted" sheet for this post (reactorsKey in hooks/useReactors.ts).
   void queryClient.invalidateQueries({ queryKey: ['reactors', 'post', postId] });
 }
@@ -58,6 +93,7 @@ const queue = createLatestOnlyQueue<Reaction>(sendReaction, (postId, error, last
  * refresh reconciles totals.
  */
 export function setReaction(postId: string, current: Reaction, next: Reaction): void {
+  versions.set(postId, (versions.get(postId) ?? 0) + 1);
   patchCaches(postId, next);
   void queue(postId, current, next);
 }

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import type { Tally } from '@/lib/reactionTally';
 import { parseTopReactions } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
 import { Constants } from '@/types/database';
@@ -38,7 +39,13 @@ const feedPostSchema = z.object({
   top_reactions: z.unknown().transform(parseTopReactions),
 });
 
-export type FeedPost = z.infer<typeof feedPostSchema>;
+export type FeedPost = z.infer<typeof feedPostSchema> & {
+  /**
+   * Exact reactions per type, when known (feed rows carry only the top 3): set after my own tap
+   * is confirmed and in My Posts; cleared when a counts refresh changes the reactions.
+   */
+  reaction_breakdown?: Tally | null;
+};
 export type PostImage = z.infer<typeof imageSchema>;
 export type PollOption = z.infer<typeof pollOptionSchema>;
 

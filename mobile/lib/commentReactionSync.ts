@@ -4,26 +4,42 @@ import { getCommentReactionErrorMessage, getErrorCode } from '@/lib/errors';
 import { createLatestOnlyQueue } from '@/lib/latestOnlyQueue';
 import { logError } from '@/lib/log';
 import { queryClient } from '@/lib/queryClient';
-import { approxTopReactions, type ReactionType } from '@/lib/reactions';
+import { breakdownTally, clusterOf, type ReactionType, reactWithCluster } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
 import { useToastStore } from '@/stores/toastStore';
 import type { Database } from '@/types/database';
 
 type Reaction = ReactionType | null;
 
-/** none -> reaction: +1; A -> B: unchanged; reaction -> none: -1 (never below 0). */
+/** My reaction, the total and the cluster together (lib/reactionTally.ts), as for posts. */
 function withReaction(comment: ThreadComment, next: Reaction): ThreadComment {
-  const prev = comment.myReaction;
-  if (prev === next) return comment;
-  const delta = prev === null ? 1 : next === null ? -1 : 0;
-  const reactionCount = Math.max(0, comment.reactionCount + delta);
-  // Top 3 approximated (see approxTopReactions); realtime rows and refetches bring the exact order.
-  return {
-    ...comment,
-    myReaction: next,
-    reactionCount,
-    topReactions: approxTopReactions(comment.topReactions, prev, next, reactionCount),
-  };
+  if (comment.myReaction === next) return comment;
+  const r = reactWithCluster(
+    { tally: comment.reactionBreakdown ?? null, top: comment.topReactions, total: comment.reactionCount, mine: comment.myReaction },
+    next,
+  );
+  return { ...comment, myReaction: next, reactionCount: r.total, topReactions: r.top, reactionBreakdown: r.tally };
+}
+
+// Bumped on every local change: a server read started before a newer tap must not overwrite it.
+const versions = new Map<string, number>();
+
+/**
+ * After the server confirmed my reaction: that comment's exact counts and cluster. Realtime rows
+ * are ignored while my change settles (commentReactionBusy), so this read closes that gap.
+ */
+async function reconcile(commentId: string): Promise<void> {
+  const version = versions.get(commentId);
+  const { data, error } = await supabase.from('comments').select('reaction_count, reaction_breakdown').eq('id', commentId).maybeSingle();
+  if (error || !data || versions.get(commentId) !== version) return;
+  const tally = breakdownTally(data.reaction_breakdown);
+  if (!tally) return;
+  patchComment(queryClient, commentId, (c) => ({
+    ...c,
+    reactionCount: data.reaction_count,
+    topReactions: clusterOf(tally),
+    reactionBreakdown: tally,
+  }));
 }
 
 /** Patches the comment in every cached thread and replies list. Neither is persisted. */
@@ -39,6 +55,7 @@ async function sendReaction(commentId: string, type: Reaction): Promise<void> {
     logError('rpc.set_comment_reaction', error, { commentId, type });
     throw error;
   }
+  void reconcile(commentId);
   // The "who reacted" sheet for this comment (reactorsKey in hooks/useReactors.ts).
   void queryClient.invalidateQueries({ queryKey: ['reactors', 'comment', commentId] });
 }
@@ -70,6 +87,7 @@ const queue = createLatestOnlyQueue<Reaction>(sendReaction, (commentId, error, l
  * back to the last value the server confirmed.
  */
 export function setCommentReaction(commentId: string, current: Reaction, next: Reaction): void {
+  versions.set(commentId, (versions.get(commentId) ?? 0) + 1);
   patchThreads(commentId, next);
   touchedAt.set(commentId, Date.now());
   const run = queue(commentId, current, next);

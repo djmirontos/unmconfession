@@ -48,7 +48,16 @@ function applyCounts(post: FeedPost, byId: Map<string, PostCounts>, skipPoll: (p
   ) {
     return post;
   }
-  return { ...post, reaction_count, comment_count, poll_options, my_vote, top_reactions };
+  const reactionsChanged = reaction_count !== post.reaction_count || top_reactions !== post.top_reactions;
+  return {
+    ...post,
+    reaction_count,
+    comment_count,
+    poll_options,
+    my_vote,
+    top_reactions,
+    reaction_breakdown: reactionsChanged ? null : post.reaction_breakdown,
+  };
 }
 
 /**

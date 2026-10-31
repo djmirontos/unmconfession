@@ -1,5 +1,6 @@
 import type { ImageSourcePropType } from 'react-native';
 
+import { parseTally, reactAndRank, type Tally, topOf } from '@/lib/reactionTally';
 import { Constants, type Database } from '@/types/database';
 
 export type ReactionType = Database['public']['Enums']['reaction_type'];
@@ -27,28 +28,23 @@ export function topFromBreakdown(breakdown: unknown): ReactionType[] {
     .slice(0, 3);
 }
 
+/** A reaction_breakdown value as exact per-type counts, or null when it is missing or invalid. */
+export const breakdownTally = (value: unknown): Tally | null => parseTally(value, REACTION_TYPES);
+
 /**
- * Optimistic top 3 after my reaction goes prev -> next. Other people's per-type counts are
- * not known on the device, so this approximates and the next refetch (or realtime row)
- * brings the exact order:
- *  - total 0: none;
- *  - added: the type joins at the end if fewer than 3 are shown, otherwise no change;
- *  - changed: the old type is replaced by the new one if the old is shown and the new is not;
- *  - removed (others still react): no change.
+ * My tap on a post or comment: the new total, the cluster (re-ranked like the server) and the
+ * per-type counts (still exact only if they were exact). See lib/reactionTally.ts.
  */
-export function approxTopReactions(
-  top: readonly ReactionType[],
-  prev: ReactionType | null,
+export function reactWithCluster(
+  state: { tally: Tally | null; top: readonly ReactionType[]; total: number; mine: ReactionType | null },
   next: ReactionType | null,
-  total: number,
-): ReactionType[] {
-  if (total <= 0) return [];
-  if (prev === null && next !== null) return top.includes(next) || top.length >= 3 ? [...top] : [...top, next];
-  if (prev !== null && next !== null && prev !== next && top.includes(prev) && !top.includes(next)) {
-    return top.map((t) => (t === prev ? next : t));
-  }
-  return [...top];
+): { tally: Tally | null; top: ReactionType[]; total: number } {
+  const r = reactAndRank(state, next, REACTION_TYPES);
+  return { tally: r.tally, top: r.top.filter(isReactionType), total: r.total };
 }
+
+/** The cluster for exact counts (a reconcile after my tap). */
+export const clusterOf = (tally: Tally): ReactionType[] => topOf(tally, REACTION_TYPES).filter(isReactionType);
 
 // Microsoft Fluent Emoji (3D, MIT), resized to 96 px. Notice: app/licenses.tsx.
 export const REACTIONS: Record<ReactionType, { label: string; image: ImageSourcePropType }> = {

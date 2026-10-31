@@ -22,6 +22,7 @@
     "test:badges": "node --test tests/badges.test.mjs",
     "test:returns": "node --no-warnings --test tests/itemReturns.test.mjs",
     "test:sales": "node --no-warnings --test tests/itemSales.test.mjs",
+    "test:tally": "node --test tests/reactionTally.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

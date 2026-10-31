@@ -22,7 +22,7 @@ import { commentReactionBusy } from '@/lib/commentReactionSync';
 import { getCommentErrorMessage, getErrorCode, getReplyErrorMessage } from '@/lib/errors';
 import { bumpListingCommentCount } from '@/lib/listings';
 import { bumpCommentCount } from '@/lib/postCounts';
-import { topFromBreakdown } from '@/lib/reactions';
+import { breakdownTally, topFromBreakdown } from '@/lib/reactions';
 import { parseTimestamp } from '@/lib/time';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -460,6 +460,7 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
             editedAt: row.edited_at,
             reactionCount: keepReactions ? c.reactionCount : row.reaction_count,
             topReactions: keepReactions ? c.topReactions : topFromBreakdown(row.reaction_breakdown),
+            reactionBreakdown: keepReactions ? c.reactionBreakdown : breakdownTally(row.reaction_breakdown),
             replyCount: row.parent_id ? c.replyCount : row.reply_count,
           }));
         }

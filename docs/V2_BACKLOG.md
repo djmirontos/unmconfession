@@ -34,9 +34,9 @@ Add a dedicated "child safety" report reason (the `reports.reason` check, `lib/r
 
 Add a `terms_version` column and ask existing users to confirm they are 18 or older on their next launch. In V1 only `user_flags.terms_accepted_at` is stored, so people who accepted the earlier wording are not asked again.
 
-## Storage cleanup processor (built in Module 15; live after dry run)
+## Storage cleanup processor (done: live 2026-10-30)
 
-Built in Module 15: the nightly `storage-cleanup` Edge Function (runbook: `docs/STORAGE_CLEANUP.md`). Live after dry run: it is not deployed yet, then it runs a week in dry run; mark this item done once `CLEANUP_DRY_RUN` is `false`. Original note: storage_cleanup_queue has no consumer; avatars/ and post-images/ files of removed content and deleted accounts are not physically deleted yet.
+Done: the nightly `storage-cleanup` Edge Function (Module 15, runbook `docs/STORAGE_CLEANUP.md`) runs live (`CLEANUP_DRY_RUN` = `false`) after a controlled go-live test; see PROGRESS. Original note: storage_cleanup_queue has no consumer; avatars/ and post-images/ files of removed content and deleted accounts are not physically deleted yet.
 
 ## Remove a profile picture in the admin panel (done in 12c-2)
 
@@ -69,3 +69,11 @@ Badges: Campus Hero (13b, done 2026-10-30), Trusted Seller (13c, done 2026-10-30
 - Badge 13d Community Guardian still to do.
 
 Original plan: Campus Hero, Trusted Seller, Campus Voice, Night Owl, Campus Regular, First Circle, Community Guardian, plus Moderator / Admin labels from the role. Order: 13a badge engine and automatic badges (Regular, Voice, First Circle, Night Owl, staff labels); 13b owner-confirm button and Campus Hero; 13c buyer-confirm button and Trusted Seller; 13d Community Guardian. Server-side only; the Campus Voice threshold lives in `app_settings`; badges are hidden for suspended and banned users. Full details are in the project doc v2-badges-plan.
+
+## Supabase Pro plan
+
+Upgrade Supabase to Pro before or soon after launch (daily backups, no pausing, leaked-password protection); until then run a manual `supabase db dump` on a schedule (storage files are not covered).
+
+## Duplicate read policies
+
+Merge the duplicate read policies on announcements and user_flags (advisor warning, minor).

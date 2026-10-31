@@ -1351,3 +1351,22 @@ App only: no database or admin change.
 - **After pulling:** clear Metro's cache (`npx expo start -c`), because of the new Tailwind colour class (`bg-feed-bg`).
 
 **Verified:** typecheck, lint and all mobile tests. Device-tested by Daryl and passed.
+
+## Storage cleanup live (2026-10-30)
+
+The nightly `storage-cleanup` job now deletes for real (`CLEANUP_DRY_RUN` = `false`).
+
+**Verified:** a controlled test deleted one existing avatar file and one queued path whose file was already missing. The live run logged claimed 2, deleted 2, failed 0. The queue emptied, and another member's avatar was untouched.
+
+## Launch hardening (2026-10-30)
+
+Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL editor:
+- **7 foreign-key indexes:** `reactions.user_id`, `comment_reactions.user_id`, `poll_votes.user_id`, `user_blocks.blocked_id`, `notifications.actor_id`, `comments.reply_to_id`, `feed_events.post_id`. No behaviour change; lookups and cascading deletes stay fast as data grows.
+- **Trigger helpers locked:** `comment_reactions_after_write`, `comments_cascade_children` and `profiles_avatar_guard` can no longer be called through the API (EXECUTE revoked from public, anon and authenticated). The triggers keep firing.
+- **`is_nickname_available(text)`:** added to the migrations because it existed in production only (created by hand). The definition is the same, and anon and authenticated may execute it.
+- **`is_staff()` and `is_admin()`:** deliberately stay callable by guests, because row-level policies call them.
+
+**Supabase advisor notes:**
+- Tables with RLS on and no policy are intentional (they are reached only through functions).
+- Leaked-password protection is a Pro-plan feature and stays off on the Free plan.
+- `rls_auto_enable` is a Supabase platform helper, not ours.

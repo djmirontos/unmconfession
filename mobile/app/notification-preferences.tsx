@@ -1,12 +1,13 @@
-import { ScrollView, Switch, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ErrorState, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { BackHeader } from '@/components/layout/BackHeader';
 import { SettingsGroup } from '@/components/profile/SettingsRow';
+import { SwitchRow } from '@/components/profile/SwitchRow';
+import { PushSettingsSection } from '@/components/push/PushSettingsSection';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useMySettings, useSetNotificationPref } from '@/hooks/useMySettings';
-import { useTheme } from '@/hooks/useTheme';
 import { getErrorMessage } from '@/lib/errors';
 import type { MySettings, NotificationPref } from '@/lib/settings';
 import { useToastStore } from '@/stores/toastStore';
@@ -16,42 +17,6 @@ const ROWS: readonly { pref: NotificationPref; label: string; help: string }[] =
   { pref: 'notifyComments', label: 'Comments', help: 'Comments on your posts and listings.' },
   { pref: 'notifyReplies', label: 'Replies', help: 'Replies to your comments.' },
 ];
-
-function PrefRow({
-  label,
-  help,
-  value,
-  disabled,
-  first,
-  onChange,
-}: {
-  label: string;
-  help: string;
-  value: boolean;
-  disabled: boolean;
-  first: boolean;
-  onChange: (on: boolean) => void;
-}) {
-  const { colors } = useTheme();
-  return (
-    <View className={`min-h-16 flex-row items-center gap-3 px-4 py-3 ${first ? '' : 'border-t border-hairline'}`}>
-      <View className="flex-1 gap-0.5">
-        <Text className="text-base font-bold text-text">{label}</Text>
-        <Text className="text-sm text-text-dim">{help}</Text>
-      </View>
-      <Switch
-        value={value}
-        onValueChange={onChange}
-        disabled={disabled}
-        accessibilityLabel={label}
-        accessibilityHint={help}
-        trackColor={{ false: colors.hairline, true: colors.accent }}
-        thumbColor={colors.surface1}
-        ios_backgroundColor={colors.hairline}
-      />
-    </View>
-  );
-}
 
 /** Profile → Notification preferences: three in-app switches. */
 export default function NotificationPreferencesScreen() {
@@ -84,7 +49,7 @@ export default function NotificationPreferencesScreen() {
         {offline ? <RefreshErrorBanner onRetry={() => void settings.refetch()} /> : null}
         <SettingsGroup title="Notify me about">
           {ROWS.map((row, i) => (
-            <PrefRow
+            <SwitchRow
               key={row.pref}
               label={row.label}
               help={row.help}
@@ -108,6 +73,10 @@ export default function NotificationPreferencesScreen() {
       <BackHeader title="Notification preferences" />
       <ScrollView contentContainerClassName="gap-3 p-4" contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}>
         {body}
+        {/* Alerts on the phone itself (push), separate from the in-app list above. */}
+        <View className="pt-4">
+          <PushSettingsSection />
+        </View>
       </ScrollView>
     </View>
   );

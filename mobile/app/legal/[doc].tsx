@@ -26,9 +26,10 @@ const DOCS = {
       'Photo location data (EXIF) is removed before upload. A profile picture you upload is public, like your nickname.',
       'Optional profile details you add (college, course, year level, hobbies and a short bio) are visible only to signed-in members, and only while you keep them switched on.',
       'When you react, your nickname and picture can be seen by signed-in members in the list of reactions.',
+      "If you allow notifications, we store a push token for your phone, linked to your account, so we can send notifications through Expo's push service (and Google's on Android). Notification messages never include nicknames or post text. Turning notifications off in the app stops all messages. The token is deleted when you log out or delete your account, and tokens not used for 60 days are deleted automatically.",
       'Audit logs and rejected posts are kept for 30 days, then deleted.',
       'You can delete your own posts, comments and listings at any time, and you can delete your account yourself in Profile → Delete account.',
-      'Deleting your account: you can do it yourself in Profile → Delete account. Your sign-in, email, nickname, avatar, blocked users, notification settings and notifications are erased. Your profile picture and profile details are removed when you delete your account. Your posts, comments, reactions, poll votes and listings stay on the app, no longer linked to you, and are shown as "Deleted user". Your open listings are closed. Reports you filed stay with the moderators. This cannot be undone.',
+      'Deleting your account: you can do it yourself in Profile → Delete account. Your sign-in, email, nickname, avatar, blocked users, notification settings, notifications and push notification tokens are erased. Your profile picture and profile details are removed when you delete your account. Your posts, comments, reactions, poll votes and listings stay on the app, no longer linked to you, and are shown as "Deleted user". Your open listings are closed. Reports you filed stay with the moderators. This cannot be undone.',
     ],
   },
   rules: {

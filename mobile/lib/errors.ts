@@ -109,11 +109,19 @@ const SALE_MESSAGES: Record<string, string> = {
   expired: 'This request has expired.',
 };
 
+// Push notifications (register_push_token, get/set_push_settings), used only by getPushErrorMessage.
+const PUSH_MESSAGES: Record<string, string> = {
+  invalid_token: 'This phone could not be set up for notifications. Please try again later.',
+  invalid_platform: 'Notifications are not supported on this device.',
+  account_unavailable: 'Notifications are not available for this account.',
+};
+
 const KNOWN_CODES = new Set([
   ...Object.keys(MESSAGES),
   ...DETAILS_ERROR_CODES,
   ...Object.keys(RETURN_MESSAGES),
   ...Object.keys(SALE_MESSAGES),
+  ...Object.keys(PUSH_MESSAGES),
 ]);
 const DB_CODE = new RegExp(`\\b(${[...KNOWN_CODES].join('|')})\\b`);
 
@@ -215,6 +223,12 @@ const PROFILE_REPORT_MESSAGES: Record<string, string> = {
 export function getReturnErrorMessage(error: unknown): string {
   const code = getErrorCode(error);
   return (code && RETURN_MESSAGES[code]) || getErrorMessage(error);
+}
+
+/** Push settings: their own codes first, then the usual wording (signed out, no connection). */
+export function getPushErrorMessage(error: unknown): string {
+  const code = getErrorCode(error);
+  return (code && PUSH_MESSAGES[code]) || getErrorMessage(error);
 }
 
 /** Sales: their own codes first, then the usual wording (rate limit, account state, no connection). */

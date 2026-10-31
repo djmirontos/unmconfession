@@ -18,7 +18,9 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useTheme } from '@/hooks/useTheme';
 import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { getErrorMessage } from '@/lib/errors';
+import { openNotificationDestination } from '@/lib/notificationNav';
 import type { NotificationGroup } from '@/lib/notifications';
+import { notificationDestination } from '@/lib/notificationTarget';
 import { useToastStore } from '@/stores/toastStore';
 
 const keyExtractor = (g: NotificationGroup) => g.group_key;
@@ -56,37 +58,20 @@ export default function NotificationsScreen() {
     (g: NotificationGroup) => {
       markRead([g]);
       if (!g.target_exists) return showToast(UNAVAILABLE);
-      const openPost = (id: string) => router.push({ pathname: '/post/[id]', params: { id } });
-      const openListing = (id: string) => router.push({ pathname: '/listing/[id]', params: { id } });
-      // A post or listing target, if it is still published.
-      const openTarget = () => {
-        if (g.target_status !== 'published') return showToast(UNAVAILABLE);
-        return g.target_type === 'listing' ? openListing(g.target_id) : openPost(g.target_id);
-      };
-      // A comment target: the thread it belongs to.
-      const openParent = () =>
-        g.parent_post_id ? openPost(g.parent_post_id) : g.parent_listing_id ? openListing(g.parent_listing_id) : showToast(UNAVAILABLE);
-      switch (g.type) {
-        case 'comment':
-        case 'reaction':
-        case 'return_request':
-        case 'return_confirmed':
-        case 'sale_request':
-        case 'sale_confirmed':
-          return openTarget();
-        case 'comment_reaction':
-        case 'reply':
-          return openParent();
-        case 'content_approved':
-          return g.target_type === 'comment' ? openParent() : openTarget();
-        case 'content_rejected':
-        case 'content_removed':
-          // Posts and listings: their status screen. Comments: the row's second line already says why.
-          if (g.target_type !== 'comment') {
-            router.push({ pathname: '/post-status', params: { source: g.target_type, id: g.target_id } });
-          }
-          return;
+      // Same destination rules as a tapped push (lib/notificationTarget.ts).
+      const dest = notificationDestination({
+        type: g.type,
+        targetType: g.target_type,
+        targetId: g.target_id,
+        parentPostId: g.parent_post_id,
+        parentListingId: g.parent_listing_id,
+      });
+      // A post or listing target only if it is still published; a comment's thread is opened as is.
+      if ((dest.kind === 'post' || dest.kind === 'listing') && dest.needsPublished && g.target_status !== 'published') {
+        return showToast(UNAVAILABLE);
       }
+      if (dest.kind === 'unavailable') return showToast(UNAVAILABLE);
+      openNotificationDestination(router, dest);
     },
     [markRead, router, showToast],
   );

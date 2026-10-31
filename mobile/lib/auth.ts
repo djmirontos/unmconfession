@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import { getErrorMessage } from '@/lib/errors';
 import { getGoogleIdToken, signOutOfGoogle } from '@/lib/googleSignIn';
 import { logError } from '@/lib/log';
+import { unregisterThisDevice } from '@/lib/pushRegistration';
 import { queryClient } from '@/lib/queryClient';
 import { logOutLocallyFirst } from '@/lib/sessionRules';
 import { encryptedSessionStorage, SUPABASE_SESSION_KEY } from '@/lib/sessionStorage';
@@ -108,7 +109,7 @@ async function signOutLocally() {
 
 /** Caches that belong to the signed-in person; also cleared on every SIGNED_OUT. */
 export function clearMemberCaches() {
-  for (const key of ['profile', 'notifications', 'notifications-unread', 'trending', 'polls', 'listings', 'my-settings', 'profile-details', 'reactors', 'badges', 'top-badges', 'item-return', 'item-return-candidates', 'item-sale', 'item-sale-candidates']) {
+  for (const key of ['profile', 'notifications', 'notifications-unread', 'trending', 'polls', 'listings', 'my-settings', 'profile-details', 'reactors', 'badges', 'top-badges', 'item-return', 'item-return-candidates', 'item-sale', 'item-sale-candidates', 'push-settings']) {
     queryClient.removeQueries({ queryKey: [key] });
   }
 }
@@ -122,6 +123,8 @@ const REVOKE_TIMEOUT_MS = 5000;
 export async function logOut(): Promise<void> {
   // Taken before the local clear: the revocation needs it and the clear removes it.
   const accessToken = useAuthStore.getState().session?.access_token ?? null;
+  // Best effort, never awaited: the request leaves with this session before it is cleared.
+  unregisterThisDevice();
   intentionalSignOut = true;
   try {
     await logOutLocallyFirst({

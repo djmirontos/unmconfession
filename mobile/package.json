@@ -23,6 +23,7 @@
     "test:returns": "node --no-warnings --test tests/itemReturns.test.mjs",
     "test:sales": "node --no-warnings --test tests/itemSales.test.mjs",
     "test:tally": "node --test tests/reactionTally.test.mjs",
+    "test:push": "node --no-warnings --test tests/pushNotifications.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {
@@ -42,12 +43,14 @@
     "expo-constants": "~57.0.14",
     "expo-crypto": "~57.0.4",
     "expo-dev-client": "~57.0.20",
+    "expo-device": "~57.0.2",
     "expo-file-system": "~57.0.7",
     "expo-font": "~57.0.4",
     "expo-image": "~57.0.3",
     "expo-image-manipulator": "~57.0.21",
     "expo-image-picker": "~57.0.20",
     "expo-linking": "~57.0.7",
+    "expo-notifications": "~57.0.24",
     "expo-router": "~57.0.16",
     "expo-secure-store": "~57.0.4",
     "expo-sharing": "~57.0.24",

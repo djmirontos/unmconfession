@@ -103,6 +103,7 @@ export type Database = {
           logo_path: string | null
           min_app_version: string
           moderation_mode: string
+          push_enabled: boolean
           rejected_retention_days: number
           tagline: string
           update_message: string | null
@@ -118,6 +119,7 @@ export type Database = {
           logo_path?: string | null
           min_app_version?: string
           moderation_mode?: string
+          push_enabled?: boolean
           rejected_retention_days?: number
           tagline?: string
           update_message?: string | null
@@ -133,6 +135,7 @@ export type Database = {
           logo_path?: string | null
           min_app_version?: string
           moderation_mode?: string
+          push_enabled?: boolean
           rejected_retention_days?: number
           tagline?: string
           update_message?: string | null
@@ -1018,6 +1021,123 @@ export type Database = {
           nickname?: string | null
         }
         Relationships: []
+      }
+      push_outbox: {
+        Row: {
+          created_at: string
+          id: number
+          notification_id: string | null
+          processed_at: string | null
+          request_id: number | null
+          token_ids: string[]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: never
+          notification_id?: string | null
+          processed_at?: string | null
+          request_id?: number | null
+          token_ids: string[]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: never
+          notification_id?: string | null
+          processed_at?: string | null
+          request_id?: number | null
+          token_ids?: string[]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_outbox_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_settings: {
+        Row: {
+          comments: boolean
+          deals: boolean
+          enabled: boolean
+          moderation: boolean
+          reactions: boolean
+          replies: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          comments?: boolean
+          deals?: boolean
+          enabled?: boolean
+          moderation?: boolean
+          reactions?: boolean
+          replies?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          comments?: boolean
+          deals?: boolean
+          enabled?: boolean
+          moderation?: boolean
+          reactions?: boolean
+          replies?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      push_tokens: {
+        Row: {
+          created_at: string
+          disabled_at: string | null
+          id: string
+          platform: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          disabled_at?: string | null
+          id?: string
+          platform: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          disabled_at?: string | null
+          id?: string
+          platform?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       reactions: {
         Row: {
@@ -2091,6 +2211,17 @@ export type Database = {
           year_level: string
         }[]
       }
+      get_push_settings: {
+        Args: never
+        Returns: {
+          comments: boolean
+          deals: boolean
+          enabled: boolean
+          moderation: boolean
+          reactions: boolean
+          replies: boolean
+        }[]
+      }
       get_replies: {
         Args: {
           p_after_id?: string
@@ -2409,8 +2540,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      process_push_responses: { Args: never; Returns: undefined }
       purge_expired: { Args: never; Returns: Json }
       refresh_trending: { Args: never; Returns: undefined }
+      register_push_token: {
+        Args: { p_platform: string; p_token: string }
+        Returns: undefined
+      }
       report_content: {
         Args: {
           p_id: string
@@ -2462,6 +2598,24 @@ export type Database = {
         }
         Returns: undefined
       }
+      set_push_settings: {
+        Args: {
+          p_comments?: boolean
+          p_deals?: boolean
+          p_enabled?: boolean
+          p_moderation?: boolean
+          p_reactions?: boolean
+          p_replies?: boolean
+        }
+        Returns: {
+          comments: boolean
+          deals: boolean
+          enabled: boolean
+          moderation: boolean
+          reactions: boolean
+          replies: boolean
+        }[]
+      }
       set_reaction: {
         Args: {
           p_post_id: string
@@ -2483,6 +2637,7 @@ export type Database = {
           status: string
         }[]
       }
+      unregister_push_token: { Args: { p_token: string }; Returns: undefined }
       vote_poll: {
         Args: { p_option_id: string; p_post_id: string }
         Returns: undefined

@@ -2,7 +2,7 @@
   "expo": {
     "name": "UNM Freedom Confessions",
     "slug": "unm-freedom-confessions",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/branding/icon.png",
     "scheme": "unmconfessions",
@@ -22,8 +22,7 @@
       "softwareKeyboardLayoutMode": "pan",
       "predictiveBackGestureEnabled": false,
       "blockedPermissions": [
-        "android.permission.SYSTEM_ALERT_WINDOW",
-        "android.permission.VIBRATE"
+        "android.permission.SYSTEM_ALERT_WINDOW"
       ]
     },
     "plugins": [
@@ -42,6 +41,14 @@
       "expo-sharing",
       "@react-native-google-signin/google-signin",
       "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/branding/notification-icon.png",
+          "color": "#4F46E5",
+          "defaultChannel": "default"
+        }
+      ],
       [
         "expo-splash-screen",
         {

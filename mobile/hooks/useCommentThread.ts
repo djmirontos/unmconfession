@@ -22,6 +22,7 @@ import { commentReactionBusy } from '@/lib/commentReactionSync';
 import { getCommentErrorMessage, getErrorCode, getReplyErrorMessage } from '@/lib/errors';
 import { bumpListingCommentCount } from '@/lib/listings';
 import { bumpCommentCount } from '@/lib/postCounts';
+import { askForPush } from '@/lib/pushAsk';
 import { breakdownTally, topFromBreakdown } from '@/lib/reactions';
 import { parseTimestamp } from '@/lib/time';
 import { useAuthStore } from '@/stores/authStore';
@@ -327,6 +328,7 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
       try {
         const item = fromRow(await createComment(target, targetId, body), me);
         storeComment(item);
+        void askForPush('published');
         if (item.state === 'published') bumpTargetCount(1);
         if (item.state === 'pending') showToast('Sent for review');
         return { ok: true, id: item.id };
@@ -357,6 +359,7 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
       try {
         const item = fromRow(await createReply(to.id, body), me);
         storeComment(item);
+        void askForPush('published');
         if (item.state === 'pending') {
           bumpReplyCount(queryClient, parentId, -1);
           bumpTargetCount(-1);

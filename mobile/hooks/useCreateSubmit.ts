@@ -6,6 +6,7 @@ import type { Created, StoredImage } from '@/lib/create';
 import { getErrorCode, getErrorMessage } from '@/lib/errors';
 import { refreshFeedTop } from '@/lib/feed';
 import { logError } from '@/lib/log';
+import { askForPush } from '@/lib/pushAsk';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 
@@ -71,6 +72,8 @@ export function useCreateSubmit() {
 
         onSuccess();
         void queryClient.invalidateQueries({ queryKey: ['my-posts'] });
+        // The one push reminder, if the member said "Not now" before (lib/pushPermission.ts).
+        void askForPush('published');
         if (!created.published) {
           showToast(PENDING_TOAST);
           router.push('/my-posts');

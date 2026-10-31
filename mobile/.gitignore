@@ -24,3 +24,8 @@ npm-debug.*
 .env
 .env*
 !.env.example
+
+# Firebase config for Android push (FCM). Never committed: EAS builds get it from the
+# GOOGLE_SERVICES_JSON file variable, local builds from ./google-services.json.
+google-services.json
+GoogleService-Info.plist

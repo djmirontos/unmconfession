@@ -14,10 +14,12 @@ import { ReactionPickerOverlay } from '@/components/reactions/ReactionPickerOver
 import { ShareCardHost } from '@/components/share/ShareCardHost';
 import { Toast } from '@/components/ui/Toast';
 import { ImageViewer } from '@/components/viewer/ImageViewer';
+import { PushExplainerSheet } from '@/components/push/PushExplainerSheet';
 import { useAppRequirementsSync } from '@/hooks/useAppRequirements';
 import { useAuthBootstrap } from '@/hooks/useAuthBootstrap';
 import { useNotificationsRealtime } from '@/hooks/useNotificationsRealtime';
 import { type MembershipStatus, useMembership } from '@/hooks/useProfile';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { loadGoogleSignIn } from '@/lib/googleSignIn';
 import { persistOptions, queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -37,6 +39,7 @@ export default function RootLayout() {
           <RootNavigator />
           <ReactorsSheet />
           <SignInSheet />
+          <PushExplainerSheet />
           <Toast />
           <ReactionPickerOverlay />
           <ImageViewer />
@@ -76,6 +79,8 @@ function RootNavigator() {
   const { status } = useMembership();
   // Members only (the hook checks): live badge and list for the whole session.
   useNotificationsRealtime();
+  // Push: register this phone or show the explainer once per session; open tapped notifications.
+  usePushNotifications();
   const needsNickname = status === 'needs-nickname';
   const covered = useStartupCover(status);
 

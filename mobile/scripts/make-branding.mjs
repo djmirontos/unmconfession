@@ -74,3 +74,11 @@ await write('adaptive-icon-foreground.png', await centred(logo, 640, TRANSPARENT
 await write('splash-icon.png', sharp(logo).resize(SIZE, SIZE));
 
 await write('favicon.png', sharp(logo).resize(48, 48));
+
+// Android notification icon: a speech bubble with a small tail, solid white on transparent,
+// 96 px with 8 px of padding. Android draws only its alpha, tinted with the plugin colour (app.json).
+const BUBBLE = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">
+  <rect x="8" y="10" width="80" height="58" rx="18" fill="#FFFFFF"/>
+  <path d="M26 62 L22 88 L46 66 Z" fill="#FFFFFF"/>
+</svg>`;
+await write('notification-icon.png', sharp(Buffer.from(BUBBLE)).resize(96, 96));

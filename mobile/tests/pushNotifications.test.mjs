@@ -14,7 +14,9 @@ import {
 
 // lib/pushNotifications.ts imports '@/lib/notificationTarget' (tsconfig paths).
 register('./aliasHook.mjs', import.meta.url);
-const { parsePushData, pushDestination, pushGroupKey, PUSH_TYPES } = await import('../lib/pushNotifications.ts');
+const { isStaffPushType, moderationQueuePath, parsePushData, PUSH_DEFAULTS, pushDestination, pushGroupKey, PUSH_TYPES, toPushSettings } = await import(
+  '../lib/pushNotifications.ts'
+);
 const { notificationDestination } = await import('../lib/notificationTarget.ts');
 
 const NID = '3f1c2a9e-7b6d-4e21-9a0b-5c4d3e2f1a0b';
@@ -73,6 +75,8 @@ const expected = {
   content_approved: { kind: 'post', id: TID, needsPublished: true },
   content_rejected: { kind: 'post-status', source: 'post', id: TID },
   content_removed: { kind: 'post-status', source: 'post', id: TID },
+  staff_report: { kind: 'moderation-queue', queue: 'reports' },
+  staff_held: { kind: 'moderation-queue', queue: 'held' },
 };
 const targetFor = { return_request: 'listing', return_confirmed: 'listing', sale_request: 'listing', sale_confirmed: 'listing', reply: 'comment', comment_reaction: 'comment' };
 
@@ -101,6 +105,71 @@ test('notificationDestination with a known thread (the Notifications list) opens
   });
   assert.deepEqual(notificationDestination({ ...base, type: 'reply', parentPostId: null }), { kind: 'unavailable' });
   assert.deepEqual(notificationDestination({ ...base, type: 'content_rejected', parentPostId: null }), { kind: 'none' });
+});
+
+// ---------------------------------------------------------------- staff alerts
+
+test('staff alerts parse and open their queue, not the item', () => {
+  for (const targetType of ['post', 'comment', 'listing', 'profile']) {
+    const data = parsePushData(valid({ type: 'staff_report', targetType }));
+    assert.deepEqual(data, { nid: NID, type: 'staff_report', targetType, targetId: TID }, targetType);
+    assert.deepEqual(pushDestination(data), { kind: 'moderation-queue', queue: 'reports' });
+  }
+  for (const targetType of ['post', 'comment', 'listing']) {
+    assert.deepEqual(pushDestination(parsePushData(valid({ type: 'staff_held', targetType }))), { kind: 'moderation-queue', queue: 'held' });
+  }
+  assert.equal(moderationQueuePath('reports'), '/moderation/reports');
+  assert.equal(moderationQueuePath('held'), '/moderation/held');
+});
+
+test('malformed staff alerts are rejected', () => {
+  assert.equal(parsePushData(valid({ type: 'staff_report', targetType: null, targetId: null })), null, 'a staff alert names its item');
+  assert.equal(parsePushData(valid({ type: 'staff_held', targetType: null, targetId: null })), null);
+  assert.equal(parsePushData(valid({ type: 'staff_held', targetType: 'profile' })), null, 'nothing holds a profile');
+  assert.equal(parsePushData(valid({ type: 'staff_report', targetId: 'nope' })), null);
+  assert.equal(parsePushData(valid({ type: 'staff_report', nid: 'nope' })), null);
+  assert.equal(parsePushData(valid({ type: 'staff_alert' })), null);
+  assert.equal(parsePushData(valid({ type: 'STAFF_REPORT' })), null);
+});
+
+test('only staff_report may carry a profile target', () => {
+  for (const type of PUSH_TYPES.filter((t) => t !== 'staff_report')) {
+    assert.equal(parsePushData(valid({ type, targetType: 'profile' })), null, type);
+  }
+});
+
+test('staff types never resolve to content or a Notifications row', () => {
+  assert.deepEqual(PUSH_TYPES.filter(isStaffPushType), ['staff_report', 'staff_held']);
+  for (const type of ['staff_report', 'staff_held']) {
+    for (const targetType of ['post', 'listing', 'comment']) {
+      const input = { type, targetType, targetId: TID, parentPostId: PARENT, parentListingId: PARENT };
+      assert.deepEqual(notificationDestination(input), { kind: 'none' }, `${type} ${targetType}`);
+    }
+  }
+  // Their group key is their own id: never merged into a content group.
+  assert.equal(pushGroupKey(parsePushData(valid({ type: 'staff_report' }))), NID);
+});
+
+test('the Notifications list keeps its own type list without the staff alerts', async () => {
+  const fs = await import('node:fs/promises');
+  const source = await fs.readFile(new URL('../lib/notifications.ts', import.meta.url), 'utf8');
+  const list = source.slice(source.indexOf('const NOTIFICATION_TYPES'), source.indexOf('] as const', source.indexOf('const NOTIFICATION_TYPES')));
+  assert.ok(list.includes("'content_removed'"));
+  assert.ok(!list.includes('staff_'), 'list rows of staff types are dropped by the row schema');
+});
+
+// ---------------------------------------------------------------- settings
+
+test('toPushSettings reads a row and fills what is missing with the server defaults', () => {
+  const row = { enabled: false, comments: true, replies: false, deals: true, moderation: false, reactions: true, staff_alerts: false };
+  assert.deepEqual(toPushSettings(row), row);
+  const { staff_alerts: _omitted, ...older } = row;
+  assert.deepEqual(toPushSettings(older), { ...older, staff_alerts: true }, 'an older server without staff_alerts');
+  assert.deepEqual(toPushSettings({ ...row, staff_alerts: null }), { ...row, staff_alerts: true });
+  assert.deepEqual(toPushSettings(undefined), PUSH_DEFAULTS);
+  assert.deepEqual(toPushSettings('x'), PUSH_DEFAULTS);
+  assert.equal(PUSH_DEFAULTS.reactions, false);
+  assert.equal(PUSH_DEFAULTS.staff_alerts, true);
 });
 
 // ---------------------------------------------------------------- permission policy

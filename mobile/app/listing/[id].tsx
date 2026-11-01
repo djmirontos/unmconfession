@@ -19,6 +19,7 @@ import { useListing, useToggleListingClosed } from '@/hooks/useListing';
 import { useMyItem } from '@/hooks/useMyItem';
 import { useShareCard } from '@/hooks/useShareCard';
 import { getErrorMessage } from '@/lib/errors';
+import type { ModTarget } from '@/lib/moderation';
 import { listingShareKey } from '@/lib/share';
 import { useAuthStore } from '@/stores/authStore';
 import { usePickerOpen } from '@/stores/reactionPickerStore';
@@ -47,6 +48,13 @@ export default function ListingDetailScreen() {
       if (blockedId === authorId) router.back();
     },
     [authorId, router],
+  );
+  // A moderator removed this listing from its menu (a removed comment keeps the screen open).
+  const onRemovedByModerator = useCallback(
+    (removed: ModTarget) => {
+      if (removed.type === 'listing' && removed.id === id.toLowerCase()) router.back();
+    },
+    [id, router],
   );
 
   const refetchError = listing.isRefetchError;
@@ -123,7 +131,7 @@ export default function ListingDetailScreen() {
       <BackHeader title={title} right={headerRight} />
       {body}
       <OwnItemMenu item={ownMenuOpen ? (own.data ?? null) : null} onClose={() => setOwnMenuOpen(false)} onDeleted={() => router.back()} />
-      <ContentMenu target={otherMenu} onClose={() => setOtherMenu(null)} onBlocked={onAuthorBlocked} />
+      <ContentMenu target={otherMenu} onClose={() => setOtherMenu(null)} onBlocked={onAuthorBlocked} onRemoved={onRemovedByModerator} />
     </View>
   );
 }

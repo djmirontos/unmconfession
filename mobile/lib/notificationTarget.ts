@@ -48,6 +48,9 @@ export function notificationDestination(n: NotificationTargetInput): Notificatio
     case 'content_rejected':
     case 'content_removed':
       return n.targetType === 'post' || n.targetType === 'listing' ? { kind: 'post-status', source: n.targetType, id: n.targetId } : { kind: 'none' };
+    // Staff alerts never open content from here (a push routes them to the moderation queues).
+    case 'staff_report':
+    case 'staff_held':
     default:
       return { kind: 'none' };
   }

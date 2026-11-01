@@ -107,6 +107,11 @@ function AppStack({ needsNickname }: { needsNickname: boolean }) {
         <Stack.Screen name="my-posts" />
         <Stack.Screen name="blocked-users" />
         <Stack.Screen name="notifications" />
+        <Stack.Screen name="moderation/index" />
+        <Stack.Screen name="moderation/reports" />
+        <Stack.Screen name="moderation/report/[type]/[id]" />
+        <Stack.Screen name="moderation/held" />
+        <Stack.Screen name="moderation/held/[type]/[id]" />
         <Stack.Screen name="change-nickname" />
         <Stack.Screen name="about-you" />
         <Stack.Screen name="notification-preferences" />

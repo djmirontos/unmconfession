@@ -116,12 +116,22 @@ const PUSH_MESSAGES: Record<string, string> = {
   account_unavailable: 'Notifications are not available for this account.',
 };
 
+// Staff Moderation hub (mod_* RPCs), used only by getModerationErrorMessage: elsewhere 'forbidden' means
+// something else (a deal's owner or seller), so it is not added to MESSAGES.
+const MODERATION_MESSAGES: Record<string, string> = {
+  forbidden: 'This area is for moderators only.',
+  reason_required: 'Pick a reason for removing this.',
+  invalid_transition: 'Already handled by another moderator.',
+};
+const ALREADY_HANDLED = 'Already handled by another moderator.';
+
 const KNOWN_CODES = new Set([
   ...Object.keys(MESSAGES),
   ...DETAILS_ERROR_CODES,
   ...Object.keys(RETURN_MESSAGES),
   ...Object.keys(SALE_MESSAGES),
   ...Object.keys(PUSH_MESSAGES),
+  ...Object.keys(MODERATION_MESSAGES),
 ]);
 const DB_CODE = new RegExp(`\\b(${[...KNOWN_CODES].join('|')})\\b`);
 
@@ -229,6 +239,26 @@ export function getReturnErrorMessage(error: unknown): string {
 export function getPushErrorMessage(error: unknown): string {
   const code = getErrorCode(error);
   return (code && PUSH_MESSAGES[code]) || getErrorMessage(error);
+}
+
+/** Moderation hub: its own codes first, then the usual wording; unknown errors get the generic line, never the raw text. */
+export function getModerationErrorMessage(error: unknown): string {
+  const code = getErrorCode(error);
+  return (code && MODERATION_MESSAGES[code]) || getErrorMessage(error);
+}
+
+export type ModerationActionError = { kind: 'already_handled' | 'reason_required' | 'forbidden' | 'other'; message: string };
+
+/**
+ * Remove / Dismiss failures. not_found and invalid_transition mean another moderator got there first
+ * (the item left the open state); reason_required stays on the picker; anything else is a friendly line.
+ */
+export function getModerationActionError(error: unknown): ModerationActionError {
+  const code = getErrorCode(error);
+  if (code === 'not_found' || code === 'invalid_transition') return { kind: 'already_handled', message: ALREADY_HANDLED };
+  if (code === 'reason_required') return { kind: 'reason_required', message: MODERATION_MESSAGES.reason_required ?? FALLBACK };
+  if (code === 'forbidden') return { kind: 'forbidden', message: MODERATION_MESSAGES.forbidden ?? FALLBACK };
+  return { kind: 'other', message: getErrorMessage(error) };
 }
 
 /** Sales: their own codes first, then the usual wording (rate limit, account state, no connection). */

@@ -10,6 +10,7 @@ import { FormMessage } from '@/components/ui/FormMessage';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { usePushPermission } from '@/hooks/usePushPermission';
 import { type PushSettingKey, usePushSettings, useSetPushSetting } from '@/hooks/usePushSettings';
+import { useStaff } from '@/hooks/useStaff';
 import { useTheme } from '@/hooks/useTheme';
 import { getPushErrorMessage } from '@/lib/errors';
 import { askForPush } from '@/lib/pushAsk';
@@ -23,6 +24,9 @@ const TYPES: readonly { setting: Exclude<PushSettingKey, 'enabled'>; label: stri
   { setting: 'moderation', label: 'Moderation', help: 'Decisions about your content.' },
   { setting: 'reactions', label: 'Reactions', help: 'Reactions on your posts and comments. Off by default.' },
 ];
+
+// Moderators and admins only; nobody else sees the row (the server re-checks the role before each alert).
+const STAFF_ROW = { setting: 'staff_alerts', label: 'Moderation alerts', help: 'New reports and items waiting for review' } as const;
 
 /** The phone's permission: a notice with the one action that can change it. */
 function PermissionBanner({ kind, onEnable }: { kind: 'blocked' | 'not-asked'; onEnable: () => void }) {
@@ -51,6 +55,8 @@ function PermissionBanner({ kind, onEnable }: { kind: 'blocked' | 'not-asked'; o
 export function PushSettingsSection() {
   const settings = usePushSettings();
   const setSetting = useSetPushSetting();
+  const { isStaff } = useStaff();
+  const rows = isStaff ? [...TYPES, STAFF_ROW] : TYPES;
   const { permission, refresh } = usePushPermission();
   const [error, setError] = useState<{ message: string; retry: () => void } | null>(null);
   const banner = permission ? permissionBanner(pushHasRuntimePrompt(), permission) : 'none';
@@ -93,7 +99,7 @@ export function PushSettingsSection() {
             first
             onChange={(on) => change('enabled', on)}
           />
-          {TYPES.map((row) => (
+          {rows.map((row) => (
             <SwitchRow
               key={row.setting}
               label={row.label}

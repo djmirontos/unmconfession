@@ -8,7 +8,7 @@ import { logError } from '@/lib/log';
 import { openNotificationDestination } from '@/lib/notificationNav';
 import { markNotificationsRead } from '@/lib/notifications';
 import { askForPush } from '@/lib/pushAsk';
-import { parsePushData, pushDestination, pushGroupKey } from '@/lib/pushNotifications';
+import { isStaffPushType, moderationQueuePath, parsePushData, pushDestination, pushGroupKey } from '@/lib/pushNotifications';
 import { useAuthStore } from '@/stores/authStore';
 
 // Taps already handled (a cold-start tap is reported by both the last response and the listener).
@@ -21,8 +21,8 @@ const checked = new Set<string>();
  *  - once per session per member (signed in with a nickname): register this phone if allowed,
  *    or show the onboarding explainer (lib/pushPermission.ts decides);
  *  - taps (app running, in the background or closed): open the same screen as the Notifications
- *    list, mark that notification read and refresh the list and the badge. Invalid payloads and
- *    taps while signed out are ignored.
+ *    list, mark that notification read and refresh the list and the badge. Staff alerts open their
+ *    moderation queue instead. Invalid payloads and taps while signed out are ignored.
  */
 export function usePushNotifications() {
   const router = useRouter();
@@ -48,14 +48,19 @@ export function usePushNotifications() {
       void Notifications.clearLastNotificationResponseAsync().catch(() => undefined);
       const data = parsePushData(request.content.data);
       if (!data || !useAuthStore.getState().session) return;
-      markNotificationsRead([pushGroupKey(data)])
-        .catch((error: unknown) => logError('push.markRead', error))
-        .finally(() => {
-          void queryClient.invalidateQueries({ queryKey: ['notifications'] });
-          void queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
-        });
+      // Staff alerts are not in the Notifications list, so there is nothing to mark read there.
+      if (!isStaffPushType(data.type)) {
+        markNotificationsRead([pushGroupKey(data)])
+          .catch((error: unknown) => logError('push.markRead', error))
+          .finally(() => {
+            void queryClient.invalidateQueries({ queryKey: ['notifications'] });
+            void queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
+          });
+      }
       const dest = pushDestination(data);
-      if (dest.kind === 'notifications') router.push('/notifications');
+      // A moderation queue checks is_staff() itself (useStaffGuard) and sends anyone else Home.
+      if (dest.kind === 'moderation-queue') router.push(moderationQueuePath(dest.queue));
+      else if (dest.kind === 'notifications') router.push('/notifications');
       else openNotificationDestination(router, dest);
     };
 

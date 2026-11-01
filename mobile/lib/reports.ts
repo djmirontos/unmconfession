@@ -1,22 +1,13 @@
 import { z } from 'zod';
 
 import { logError, logInfo } from '@/lib/log';
+import { REPORT_REASONS, type ReportReason } from '@/lib/reportReasons';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database';
 
+export { REPORT_REASONS, type ReportReason };
+
 export type ReportTarget = Database['public']['Enums']['content_type'];
-
-// Mirrors the reports.reason check constraint; the server re-validates.
-export const REPORT_REASONS = [
-  { value: 'doxxing', label: 'Doxxing / personal info' },
-  { value: 'bullying', label: 'Bullying or harassment' },
-  { value: 'spam', label: 'Spam' },
-  { value: 'prohibited_item', label: 'Prohibited item' },
-  { value: 'inappropriate', label: 'Inappropriate content' },
-  { value: 'other', label: 'Other' },
-] as const;
-
-export type ReportReason = (typeof REPORT_REASONS)[number]['value'];
 
 export const REPORT_NOTE_MAX = 500;
 

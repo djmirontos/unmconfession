@@ -1,18 +1,16 @@
 import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { logError } from '@/lib/log';
+import { type PushSettings, toPushSettings } from '@/lib/pushNotifications';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import type { Database } from '@/types/database';
 
-export type PushSettings = { enabled: boolean; comments: boolean; replies: boolean; deals: boolean; moderation: boolean; reactions: boolean };
+export type { PushSettings };
 export type PushSettingKey = keyof PushSettings;
 
 // Under 'push-settings': not persisted, cleared on sign-out (clearMemberCaches).
 export const pushSettingsKey = (userId: string) => ['push-settings', userId] as const;
-
-// The server's defaults (no row yet): everything on except reactions.
-const DEFAULTS: PushSettings = { enabled: true, comments: true, replies: true, deals: true, moderation: true, reactions: false };
 
 /** Which push notifications the member wants (get_push_settings). */
 export function usePushSettings() {
@@ -26,7 +24,8 @@ export function usePushSettings() {
             logError('rpc.get_push_settings', error);
             throw error;
           }
-          return data[0] ?? DEFAULTS;
+          // No row yet: the server defaults.
+          return toPushSettings(data[0]);
         }
       : skipToken,
     staleTime: 60 * 1000,
@@ -41,6 +40,7 @@ const ARG: Record<PushSettingKey, keyof SetArgs> = {
   deals: 'p_deals',
   moderation: 'p_moderation',
   reactions: 'p_reactions',
+  staff_alerts: 'p_staff_alerts',
 };
 
 /** Flips one switch: optimistic, rolled back on failure; the server's row is kept on success. */
@@ -58,7 +58,7 @@ export function useSetPushSetting() {
         logError('rpc.set_push_settings', error);
         throw error;
       }
-      return data[0] ?? null;
+      return data[0] ? toPushSettings(data[0]) : null;
     },
     onMutate: async ({ setting, on }) => {
       await queryClient.cancelQueries({ queryKey: key });

@@ -20,6 +20,7 @@ import { usePost } from '@/hooks/usePost';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
 import { useShareCard } from '@/hooks/useShareCard';
 import { getErrorMessage } from '@/lib/errors';
+import type { ModTarget } from '@/lib/moderation';
 import type { FeedPost } from '@/lib/posts';
 import { useAuthStore } from '@/stores/authStore';
 import { usePickerOpen } from '@/stores/reactionPickerStore';
@@ -52,6 +53,13 @@ export default function PostDetailScreen() {
       if (blockedId === authorId) router.back();
     },
     [authorId, router],
+  );
+  // A moderator removed this post from its menu (a removed comment keeps the screen open).
+  const onRemovedByModerator = useCallback(
+    (removed: ModTarget) => {
+      if (removed.type === 'post' && removed.id === id.toLowerCase()) router.back();
+    },
+    [id, router],
   );
   // The card's comment button focuses the composer below.
   const [focusRequest, setFocusRequest] = useState(0);
@@ -135,7 +143,7 @@ export default function PostDetailScreen() {
       />
       {body}
       <OwnItemMenu item={menuOpen ? (own.data ?? null) : null} onClose={() => setMenuOpen(false)} onDeleted={() => router.back()} />
-      <ContentMenu target={otherMenu} onClose={() => setOtherMenu(null)} onBlocked={onAuthorBlocked} />
+      <ContentMenu target={otherMenu} onClose={() => setOtherMenu(null)} onBlocked={onAuthorBlocked} onRemoved={onRemovedByModerator} />
     </View>
   );
 }

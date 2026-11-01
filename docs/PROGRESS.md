@@ -1444,3 +1444,41 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 - Steps 2a, 2b, 2c, 3, 4 and 4b were device-tested and passed.
 
 **Left:** the version bump and a new build at release time. Known limits are listed in V2_BACKLOG under "Staff moderation on the phone".
+
+## Onboarding improvements (v1.0.2, 2026-11-01, device-tested)
+
+**Nickname screen** (first Google sign-in, `app/choose-nickname.tsx`; logic in `lib/chooseNickname.ts`):
+- Save is never a dead tap. It explains the first thing missing, in this order:
+  1. The field problem (empty, format or reserved): the message appears under the field and the cursor returns to it.
+  2. The availability check: the button reads "Checking…" and the save continues by itself when the check ends.
+  3. Taken or not allowed: "Taken or not allowed. Try another one."
+  4. The Terms box: "Tick the box to continue" under the box, which is scrolled into view.
+- The same `set_nickname` call and error messages as before.
+- The keyboard's Done key runs Save.
+- Keyboard handling is in JS only: the keyboard closes on a suggestion and on the Terms reminder, and there is extra bottom space. `app.json` `softwareKeyboardLayoutMode` is unchanged ("pan").
+- New wording:
+  - Heading "One last step", with a subtitle saying not to use your real name.
+  - The exit is renamed "Cancel sign-up", with the helper line "This signs you out of this phone." (same `logOut`).
+  - The 18+/Terms checkbox text is unchanged.
+- "Suggest a name":
+  - Builds adjective + noun + 2–3 digits (`lib/nicknameSuggestions.ts`; 40 adjectives and 49 nouns, avoiding first names and rude substrings).
+  - Checks each one with the existing `is_nickname_available`, at most 5 tries per tap, one request at a time.
+  - Offline shows the no-connection message.
+
+**Home "Get started" card** (`components/home/GetStartedCard.tsx`; logic in `lib/getStarted.ts`):
+- Shown to full members with fewer than 3 reactions on posts, in the Feed header below the announcement: "react to 3 confessions", with 0/3 progress.
+- The progress updates live: `reactionSync` adds 1 in place for a new reaction only, not for a removal or a change of type.
+- Reaching 3 while the card is on screen shows "Nice, you're in!" for 4 seconds, then the card is marked completed. A later removed reaction never brings it back.
+- Dismissable.
+- The count is one count-only request on `reactions` (only the member's own rows are readable). It is not saved to the phone and is cleared on logout.
+- Dismissed and completed are stored per user on the phone (`unm-get-started:<userId>`) and removed on account deletion (`forgetDeletedAccount`).
+- No database change.
+
+**Verified:**
+- `tsc`, lint and all `test:*` scripts pass (new: `test:nickname` 16 tests, `test:getstarted` 13 tests).
+- Both steps were device-tested and passed.
+
+**Diagnosis (production, Google profiles without a nickname):**
+- Of the 8 such profiles, 7 were created within about 100 seconds on 2026-10-29: probably a group sign-in or an automated test.
+- Only one is clearly a person who gave up on the nickname screen.
+- Email sign-ups always complete because the nickname is sent in the sign-up data (`handle_new_user`).

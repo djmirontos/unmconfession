@@ -28,6 +28,7 @@ The PRD at `UNM Freedom Confessions V1 PRD.md` (repo root). Read it before start
 - Not in V1: DMs, payments, multiple schools, automatic posting to Facebook.
 - Push notifications (shipped in V2): the database sends generic-text pushes through Expo, with nothing personal in the message. Each kind can be switched on or off in Profile → Notification preferences (reactions off by default), and permission is asked once after onboarding, with an explainer.
 - Staff moderation on the phone (v1.0.2): staff see a Home shield → Moderation hub (`app/moderation/`), the reports and held queues and a staff section in the "…" menu; pure logic in `lib/moderation.ts`, staff check via `useStaff` / `useStaffGuard` (fails closed; every `mod_*` RPC re-checks). Staff push alerts (`staff_report`, `staff_held`) are push-only, hidden from the list and bell, behind the `staff_alerts` switch. Moderators and admins have the same rights here; ban/suspend, profile actions, roles, email/identity tools and audit stay web-only. Privacy rule: no email or auth-identity data ever appears on the phone.
+- Onboarding (v1.0.2): the choose-nickname screen (first Google sign-in) explains what is missing on Save and can suggest a name (rules and copy in `lib/chooseNickname.ts`, words in `lib/nicknameSuggestions.ts`); Home shows a "Get started" card (react to 3 confessions) until done or dismissed, stored per user on the phone (rules in `lib/getStarted.ts`, count bumped in `lib/reactionSync.ts`).
 
 ## Engineering rules
 

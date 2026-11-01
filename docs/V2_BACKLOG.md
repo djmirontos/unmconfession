@@ -105,3 +105,13 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
    - Quiet hours for "Moderation alerts".
    - A tool to void a return or sale and revoke the badge.
    - The Community Guardian badge.
+
+## Onboarding follow-ups (v1.0.2)
+
+1. Offline calls come back as a plain object ("TypeError: Network request failed"), so the existing error mapping shows "Something went wrong" instead of the no-connection message on every screen except nickname suggestions. Fix it centrally in `lib/errors.ts`.
+2. Banned and suspended members still see the "Get started" card: the app has no account status on the phone.
+3. Optional: let Google users without a nickname browse, and ask for the nickname on their first action.
+4. Optional migration: delete abandoned profiles with no nickname and no Terms acceptance after about 30 days. This needs privacy wording.
+5. The Google sign-in button's visibility was discussed and deliberately left as is. If revisited, follow Google's official button branding: the white or dark variant with the multicolour G, not a custom colour.
+6. Measure onboarding with the read-only funnel queries (sign-ups → nickname → first reaction within 1 day) before and after the campaign.
+7. Accent colour themes: 6 options, including #7B7FD4, each with a display colour plus a darker shade for filled areas, for contrast. Pending a read-only audit.

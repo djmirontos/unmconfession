@@ -209,13 +209,14 @@ Speed and data security are the top priorities during development.
 **Shipped in V2**
 
 - Push notifications: the database sends generic-text pushes through Expo, with nothing personal in the message. Each kind can be switched on or off in Profile → Notification preferences (reactions off by default), and permission is asked once after onboarding, with an explainer.
+- Staff moderation on the phone (v1.0.2): moderators and admins get a shield on Home (open-report count) that opens a Moderation hub with the reports queue (Remove / Dismiss), the held-for-review queue (Approve / Reject), and a staff section in the "…" menu (Open in moderation, Remove). Staff also get push alerts for new reports and held items ("Moderation alerts" switch, on by default). Moderators and admins have the same rights on the phone. Ban, suspend, profile actions, role changes, email and identity tools and the audit log stay in the web panel. No email or sign-in identity data is ever shown on the phone.
 
 **Decisions from the team**
 
 - Listings show the seller's nickname.
 - Keyword and prohibited-items list: managed by admin and moderators, starting from a preset list in the app.
 - Reaction icons: Fluent Emoji, license to be verified before bundling.
-- Moderator tools: web panel, mobile friendly.
+- Moderator tools: web panel, mobile friendly. Since v1.0.2 the everyday queue work (reports, held items, removal) can also be done in the app; everything else stays in the panel.
 - Announcements: admin and moderators only.
 - Retention: audit logs and rejected posts are kept for 1 month.
 

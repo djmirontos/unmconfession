@@ -87,3 +87,21 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
 - Play Console Data safety form: declare "Device or other IDs" (collected, app functionality, not shared, deletable by logout or account deletion) before the next Play release.
 - Two-phone end-to-end push test.
 - iOS push needs APNs credentials if iOS is ever built.
+
+## Staff moderation on the phone: follow-ups (v1.0.2)
+
+1. Add an aal2 (TOTP) check to the `admin_*` functions (web-only) in a separate migration.
+2. `mod_get_content` returns no `avatar_key`, so authors show the neutral avatar on the moderation detail screens.
+3. Two counts can be stale after a staff removal until the next refresh:
+   - The comment count on feed cards can be one too high.
+   - The total posts on a profile can be out of date.
+4. Raise the `useStaff` staleTime (to about 30 minutes) to cut the per-member `is_staff` request.
+5. Held-queue paging uses `created_at` only (the same limit as the web panel), so rows with the same timestamp can be skipped or repeated.
+6. Push alerts and app versions:
+   - A staff member on 1.0.1 gets the alert push, but tapping it does nothing until they update.
+   - kenshin and night_owl have no push token until they sign in on a phone.
+7. Possible later:
+   - Staff alerts for profile reports.
+   - Quiet hours for "Moderation alerts".
+   - A tool to void a return or sale and revoke the badge.
+   - The Community Guardian badge.

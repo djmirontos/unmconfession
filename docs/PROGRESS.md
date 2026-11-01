@@ -1413,3 +1413,34 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 **Left:**
 - No preview build or Play AAB has been made with push yet.
 - The Play Console Data safety form: Device or other IDs collected, for app functionality, not shared, deletable.
+
+## Staff moderation on the phone (v1.0.2, 2026-11-01, device-tested)
+
+**Database** (both applied by hand in the SQL editor):
+- `20261101090000_staff_mobile_moderation.sql`: `mod_open_report_count`, `mod_resolve_reports_for`, `mod_app_stats`, `mod_recent_signups` (nickname and date only) and an index on open reports.
+- `20261101120000_staff_alerts.sql`: the push types `staff_report` and `staff_held`, the `push_settings.staff_alerts` switch (default on) and the triggers that create them.
+  - A report alert is sent only for the first open report on an item. Each staff member gets at most one alert per kind every 15 minutes.
+  - The role is checked again when the push is sent.
+  - The alerts are push-only: they are hidden from the Notifications list and the bell, and `purge_staff_alerts` deletes them after 7 days.
+
+**App** (moderators and admins have the same rights):
+- **Home shield** (staff only) with the open-report count, opening the Moderation hub.
+- **Moderation hub:** overview numbers, members by badge, and the latest sign-ups (nickname and date only, no email).
+- **Reports queue:** Remove (with a reason) or Dismiss. Reported profiles can only be dismissed on the phone.
+- **Held-for-review queue:** Approve, or Reject with a reason.
+- **"…" menu:** on posts, comments and listings, staff get a section with Open in moderation and Remove.
+- **Staff push alerts:** a tap opens the matching queue in all three app states. Someone who is no longer staff is sent back to Home.
+- **"Moderation alerts" switch:** in Notification preferences, staff only, follows the master switch.
+- **Errors:** an item another moderator already handled shows "Already handled", not an error.
+- **Tests:** pure logic in `lib/moderation.ts`, `lib/moderationCache.ts` and `lib/pushNotifications.ts`, with tests in `test:moderation` and `test:push`.
+
+**Stays web-only:** ban and suspend, profile actions, role changes, email and identity tools, and the audit log.
+
+**Security decision:** the `mod_*` functions have no TOTP (aal2) check in the database (accepted). Adding one to the `admin_*` functions is deferred (V2_BACKLOG).
+
+**Verified:**
+- `tsc`, lint and all `test:*` scripts pass.
+- Both types files are byte-identical.
+- Steps 2a, 2b, 2c, 3, 4 and 4b were device-tested and passed.
+
+**Left:** the version bump and a new build at release time. Known limits are listed in V2_BACKLOG under "Staff moderation on the phone".

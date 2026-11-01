@@ -1068,6 +1068,7 @@ export type Database = {
           moderation: boolean
           reactions: boolean
           replies: boolean
+          staff_alerts: boolean
           updated_at: string
           user_id: string
         }
@@ -1078,6 +1079,7 @@ export type Database = {
           moderation?: boolean
           reactions?: boolean
           replies?: boolean
+          staff_alerts?: boolean
           updated_at?: string
           user_id: string
         }
@@ -1088,6 +1090,7 @@ export type Database = {
           moderation?: boolean
           reactions?: boolean
           replies?: boolean
+          staff_alerts?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -2220,6 +2223,7 @@ export type Database = {
           moderation: boolean
           reactions: boolean
           replies: boolean
+          staff_alerts: boolean
         }[]
       }
       get_replies: {
@@ -2322,6 +2326,17 @@ export type Database = {
       mark_notifications_read: {
         Args: { p_keys?: string[] }
         Returns: undefined
+      }
+      mod_app_stats: {
+        Args: never
+        Returns: {
+          active_7d: number
+          badge_counts: Json
+          engaged_members: number
+          signups_24h: number
+          signups_7d: number
+          total_members: number
+        }[]
       }
       mod_clear_profile_details: {
         Args: { p_reason?: string; p_user: string }
@@ -2485,6 +2500,15 @@ export type Database = {
           title: string
         }[]
       }
+      mod_open_report_count: { Args: never; Returns: number }
+      mod_recent_signups: {
+        Args: { p_limit?: number }
+        Returns: {
+          created_at: string
+          nickname: string
+          user_id: string
+        }[]
+      }
       mod_remove_avatar: {
         Args: { p_reason?: string; p_user: string }
         Returns: undefined
@@ -2492,6 +2516,14 @@ export type Database = {
       mod_resolve_report: {
         Args: { p_report_id: string; p_status: string }
         Returns: undefined
+      }
+      mod_resolve_reports_for: {
+        Args: {
+          p_id: string
+          p_status: string
+          p_type: Database["public"]["Enums"]["content_type"]
+        }
+        Returns: number
       }
       mod_review: {
         Args: {
@@ -2542,6 +2574,7 @@ export type Database = {
       }
       process_push_responses: { Args: never; Returns: undefined }
       purge_expired: { Args: never; Returns: Json }
+      purge_staff_alerts: { Args: never; Returns: undefined }
       refresh_trending: { Args: never; Returns: undefined }
       register_push_token: {
         Args: { p_platform: string; p_token: string }
@@ -2606,6 +2639,7 @@ export type Database = {
           p_moderation?: boolean
           p_reactions?: boolean
           p_replies?: boolean
+          p_staff_alerts?: boolean
         }
         Returns: {
           comments: boolean
@@ -2614,6 +2648,7 @@ export type Database = {
           moderation: boolean
           reactions: boolean
           replies: boolean
+          staff_alerts: boolean
         }[]
       }
       set_reaction: {

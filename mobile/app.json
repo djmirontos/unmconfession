@@ -2,7 +2,7 @@
   "expo": {
     "name": "UNM Freedom Confessions",
     "slug": "unm-freedom-confessions",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/branding/icon.png",
     "scheme": "unmconfessions",

@@ -1,9 +1,10 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, type Ref, useState } from 'react';
 import { Text, TextInput, type TextInputProps, View } from 'react-native';
 
 import { useTheme } from '@/hooks/useTheme';
 
 type Props = Omit<TextInputProps, 'style'> & {
+  ref?: Ref<TextInput>;
   label: string;
   error?: string;
   hint?: ReactNode;
@@ -23,7 +24,7 @@ type Props = Omit<TextInputProps, 'style'> & {
 const MULTILINE_MIN_H = 128;
 const MULTILINE_PAD_Y = 12;
 
-export function TextField({ label, error, hint, accessory, counter, keyboardGap = 0, onFocus, onBlur, ...input }: Props) {
+export function TextField({ ref, label, error, hint, accessory, counter, keyboardGap = 0, onFocus, onBlur, ...input }: Props) {
   const { colors } = useTheme();
   const [focused, setFocused] = useState(false);
   const border = error ? 'border-danger' : focused ? 'border-accent' : 'border-hairline';
@@ -55,6 +56,7 @@ export function TextField({ label, error, hint, accessory, counter, keyboardGap 
       </View>
       <View className={`flex-row rounded-xl border bg-surface2 px-4 ${box} ${border}`}>
         <TextInput
+          ref={ref}
           {...input}
           accessibilityLabel={input.accessibilityLabel ?? label}
           accessibilityHint={error ?? input.accessibilityHint}

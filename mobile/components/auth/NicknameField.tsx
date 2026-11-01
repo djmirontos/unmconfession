@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
-import { ActivityIndicator, Text, View } from 'react-native';
+import type { Ref } from 'react';
+import { ActivityIndicator, Text, type TextInput, View } from 'react-native';
 
 import { TextField } from '@/components/ui/TextField';
 import { type NicknameStatus, useNicknameAvailability } from '@/hooks/useNicknameAvailability';
 import { useTheme } from '@/hooks/useTheme';
+import { NICKNAME_HINT, NICKNAME_UNAVAILABLE } from '@/lib/chooseNickname';
 
 type Props = {
   value: string;
@@ -13,19 +15,31 @@ type Props = {
   /** Change nickname: the member's current name (not reported as taken). */
   ownNickname?: string | null;
   label?: string;
+  inputRef?: Ref<TextInput>;
+  /** The keyboard's action key ("Done"); the keyboard closes first. */
+  onSubmitEditing?: () => void;
 };
 
 const STATUS_TEXT: Record<NicknameStatus['state'], string> = {
-  idle: '3–20 characters: letters, numbers, underscore or dot.',
+  idle: NICKNAME_HINT,
   invalid: '',
   checking: 'Checking…',
   available: 'Available',
-  unavailable: 'Taken or not allowed. Try another one.',
+  unavailable: NICKNAME_UNAVAILABLE,
   error: 'Could not check right now. We will check again when you continue.',
 };
 
 /** Nickname input with debounced live availability feedback. */
-export function NicknameField({ value, onChangeText, error, editable, ownNickname, label = 'Nickname' }: Props) {
+export function NicknameField({
+  value,
+  onChangeText,
+  error,
+  editable,
+  ownNickname,
+  label = 'Nickname',
+  inputRef,
+  onSubmitEditing,
+}: Props) {
   const { colors } = useTheme();
   const status = useNicknameAvailability(value, ownNickname);
   const message = status.state === 'invalid' ? status.message : STATUS_TEXT[status.state];
@@ -38,6 +52,9 @@ export function NicknameField({ value, onChangeText, error, editable, ownNicknam
 
   return (
     <TextField
+      ref={inputRef}
+      returnKeyType={onSubmitEditing ? 'done' : undefined}
+      onSubmitEditing={onSubmitEditing}
       label={label}
       value={value}
       onChangeText={onChangeText}

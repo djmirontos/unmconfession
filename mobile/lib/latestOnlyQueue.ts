@@ -6,7 +6,8 @@
  * and is dropped when the key goes idle, so later changes elsewhere are respected.
  */
 export function createLatestOnlyQueue<V>(
-  send: (key: string, value: V) => Promise<void>,
+  /** `previous`: the last value the server confirmed for this key before this send. */
+  send: (key: string, value: V, previous: V) => Promise<void>,
   onError: (key: string, error: unknown, lastConfirmed: V) => void,
 ) {
   const confirmed = new Map<string, V>();
@@ -20,7 +21,7 @@ export function createLatestOnlyQueue<V>(
         const target = wanted.get(key) as V;
         wanted.delete(key);
         if (Object.is(confirmed.get(key), target)) continue;
-        await send(key, target);
+        await send(key, target, confirmed.get(key) as V);
         confirmed.set(key, target);
       }
     } catch (error) {

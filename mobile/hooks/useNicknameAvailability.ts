@@ -1,4 +1,4 @@
-import { skipToken, useQuery } from '@tanstack/react-query';
+import { type QueryClient, skipToken, useQuery } from '@tanstack/react-query';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { supabase } from '@/lib/supabase';
 import { nicknameSchema } from '@/lib/validation';
@@ -17,6 +17,25 @@ export async function checkNicknameAvailable(nickname: string): Promise<boolean>
   return data;
 }
 
+const AVAILABILITY_STALE_MS = 15 * 1000;
+
+export const nicknameAvailableKey = (nickname: string) => ['nickname-available', nickname.toLowerCase()] as const;
+
+/**
+ * The same check as the live field, through the same cache entry: answers at once when the field
+ * already checked this name, joins a check that is still running, and fetches otherwise.
+ */
+export function ensureNicknameAvailable(queryClient: QueryClient, nickname: string): Promise<boolean> {
+  return queryClient.fetchQuery({
+    queryKey: nicknameAvailableKey(nickname),
+    queryFn: () => checkNicknameAvailable(nickname),
+    staleTime: AVAILABILITY_STALE_MS,
+    retry: false,
+    // A tap must always get an answer (or an error), never a fetch paused until "online".
+    networkMode: 'always',
+  });
+}
+
 export const SAME_NICKNAME = 'That is already your nickname.';
 
 /**
@@ -31,9 +50,9 @@ export function useNicknameAvailability(raw: string, own?: string | null): Nickn
   const candidate = parsed.success && !isOwn ? parsed.data : null;
 
   const query = useQuery({
-    queryKey: ['nickname-available', candidate?.toLowerCase() ?? ''],
+    queryKey: nicknameAvailableKey(candidate ?? ''),
     queryFn: candidate ? () => checkNicknameAvailable(candidate) : skipToken,
-    staleTime: 15 * 1000,
+    staleTime: AVAILABILITY_STALE_MS,
     retry: false,
   });
 

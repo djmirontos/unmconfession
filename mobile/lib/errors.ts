@@ -150,6 +150,16 @@ function isNetworkError(error: unknown): boolean {
   return error instanceof TypeError && /network request failed|fetch/i.test(error.message);
 }
 
+/**
+ * "Suggest a name": no connection, or the generic text. A PostgREST call that never reached the
+ * server resolves to a plain error object ("TypeError: Network request failed"), not a TypeError.
+ */
+export function getNicknameSuggestionError(error: unknown): string {
+  const message = typeof error === 'object' && error !== null && 'message' in error ? (error as { message: unknown }).message : null;
+  const failedRequest = typeof message === 'string' && /^TypeError: Network request failed/i.test(message);
+  return isNetworkError(error) || failedRequest ? NETWORK : FALLBACK;
+}
+
 /** The one place DB and Auth errors become user-facing text. */
 export function getErrorMessage(error: unknown): string {
   const code = getErrorCode(error);

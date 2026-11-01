@@ -1,6 +1,7 @@
 import type { InfiniteData } from '@tanstack/react-query';
 
 import { getReactionErrorMessage } from '@/lib/errors';
+import { GET_STARTED_COUNT_KEY, isNewReaction } from '@/lib/getStarted';
 import { createLatestOnlyQueue } from '@/lib/latestOnlyQueue';
 import { logError } from '@/lib/log';
 import type { MyPostsPage } from '@/lib/myPosts';
@@ -67,7 +68,7 @@ function patchCaches(postId: string, next: Reaction): void {
   );
 }
 
-async function sendReaction(postId: string, type: Reaction): Promise<void> {
+async function sendReaction(postId: string, type: Reaction, previous: Reaction): Promise<void> {
   // set_reaction removes the reaction for null; the generated types cannot express a nullable enum argument.
   const args = { p_post_id: postId, p_type: type } as unknown as Database['public']['Functions']['set_reaction']['Args'];
   const { error } = await supabase.rpc('set_reaction', args);
@@ -76,6 +77,10 @@ async function sendReaction(postId: string, type: Reaction): Promise<void> {
     throw error;
   }
   void reconcile(postId);
+  // "Get started" progress (hooks/useGetStarted): +1 in place for a brand-new reaction only, no refetch.
+  if (isNewReaction(previous, type)) {
+    queryClient.setQueriesData<number>({ queryKey: [GET_STARTED_COUNT_KEY] }, (n) => (n === undefined ? n : n + 1));
+  }
   // The "who reacted" sheet for this post (reactorsKey in hooks/useReactors.ts).
   void queryClient.invalidateQueries({ queryKey: ['reactors', 'post', postId] });
 }

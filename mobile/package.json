@@ -25,6 +25,8 @@
     "test:tally": "node --test tests/reactionTally.test.mjs",
     "test:push": "node --no-warnings --test tests/pushNotifications.test.mjs",
     "test:moderation": "node --no-warnings --test tests/moderation.test.mjs",
+    "test:nickname": "node --no-warnings --test tests/chooseNickname.test.mjs",
+    "test:getstarted": "node --no-warnings --test tests/getStarted.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

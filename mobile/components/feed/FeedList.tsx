@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/compon
 import { NewPostsPill } from '@/components/feed/NewPostsPill';
 import { FEED_BG, FEED_CONTENT_STYLE, FEED_ITEM_STYLE, FeedCards } from '@/components/feed/feedCards';
 import { PostCard } from '@/components/feed/PostCard';
+import { GetStartedCard } from '@/components/home/GetStartedCard';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { SkeletonList } from '@/components/skeletons/SkeletonList';
 import { BackToTopButton } from '@/components/ui/BackToTopButton';
@@ -16,6 +17,7 @@ import { useAnnouncement } from '@/hooks/useAnnouncement';
 import { useAppActive } from '@/hooks/useAppActive';
 import { useBackToTop } from '@/hooks/useBackToTop';
 import { useFeed } from '@/hooks/useFeed';
+import { useGetStarted } from '@/hooks/useGetStarted';
 import { useNewPosts } from '@/hooks/useNewPosts';
 import { useRegisterTopBadges } from '@/hooks/useTopBadges';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
@@ -45,6 +47,8 @@ export function FeedList() {
   // Badge chips for every loaded author in one batched call.
   useRegisterTopBadges(posts.map((p) => p.author_id));
   const { announcement, close: closeAnnouncement, query: announcementQuery } = useAnnouncement();
+  // Members with fewer than 3 reactions: the "Get started" card under the announcement.
+  const getStarted = useGetStarted();
   // Same rule as the lists: refetch on tab focus or return to the foreground, only when stale.
   useRefetchWhenStale(announcementQuery, true);
   // The reaction picker owns the touch while open; the list must not scroll under it.
@@ -139,16 +143,19 @@ export function FeedList() {
   }, [clear, runTopRefresh, reduceMotion]);
 
   const refreshFailed = query.isRefetchError || topRefreshFailed;
-  // The banner and the announcement keep their side margin; only the post cards are flush.
+  const getStartedView = getStarted.view;
+  const dismissGetStarted = getStarted.dismiss;
+  // The banner and the cards keep their side margin; only the post cards are flush.
   const header = useMemo(
     () =>
-      refreshFailed || announcement ? (
+      refreshFailed || announcement || getStartedView.phase !== 'hidden' ? (
         <View className="gap-3 px-4 pt-2.5" style={FEED_ITEM_STYLE}>
           {refreshFailed ? <RefreshErrorBanner onRetry={() => void runTopRefresh()} /> : null}
           {announcement ? <AnnouncementCard announcement={announcement} onClose={() => closeAnnouncement(announcement.id)} /> : null}
+          {getStartedView.phase !== 'hidden' ? <GetStartedCard view={getStartedView} onDismiss={dismissGetStarted} /> : null}
         </View>
       ) : null,
-    [refreshFailed, announcement, closeAnnouncement, runTopRefresh],
+    [refreshFailed, announcement, closeAnnouncement, runTopRefresh, getStartedView, dismissGetStarted],
   );
 
   // First load only: skeletons. Afterwards cached posts stay on screen.

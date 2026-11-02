@@ -27,9 +27,11 @@ export function TypeBadge({ type }: { type: string }) {
 }
 
 const KIND_LABEL: Record<string, string> = {
-  confession: 'Confession',
+  // The DB value stays 'confession'; staff and members see "Post" (v1.0.3).
+  confession: 'Post',
   shoutout: 'Shoutout',
   poll: 'Poll',
+  qa: 'Q&A',
   sell: 'Buy & Sell',
   lost_found: 'Lost & Found',
   comment: 'Comment',

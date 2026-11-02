@@ -133,4 +133,8 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
 6. `ChipGroup` has a `bleed` option, used only on Create, so the six chips scroll to the screen edges instead of being cut at the padding.
 7. The Q&A composer placeholder "What do you want to ask?" was not specified and can be changed.
 8. Q&A notification wording ("Your question was approved") is still deferred to the database side (see 1).
-
+9. The guest sign-in sheet for an upvote says "Sign in to react"; it should say upvote.
+10. The badges test suite fails during the Manila night window (00:00-03:59) because the Nocturnal badge is awarded to its own test users; make it time-independent.
+11. Upvotes stay when the voter deletes their account (same as reactions; decided).
+12. Answers stay ordered by time; a "Top | Oldest" switch can be added later.
+13. The asker's best-answer pick is postponed.

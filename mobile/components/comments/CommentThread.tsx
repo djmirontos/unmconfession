@@ -231,6 +231,7 @@ export function CommentThread({
               onMore={mine ? setMenuFor : openOtherMenu}
               onReply={startReply}
               isReply={item.kind === 'reply'}
+              qaThread={answers}
             />
           );
           return item.kind === 'reply' ? <View style={{ paddingLeft: REPLY_INDENT }}>{comment}</View> : comment;
@@ -254,7 +255,7 @@ export function CommentThread({
           return <ReplyLink label="Hide replies" onPress={() => setReplies(item.parentId, false)} />;
       }
     },
-    [myId, openOtherMenu, startReply, setReplies, loadMoreReplies, retryReplies],
+    [myId, openOtherMenu, startReply, setReplies, loadMoreReplies, retryReplies, answers],
   );
 
   const listHeader = useMemo(

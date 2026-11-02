@@ -2,6 +2,7 @@ import { logError, logInfo } from '@/lib/log';
 import { parseTopReactions, type ReactionType } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
 import { parseTimestamp } from '@/lib/time';
+import { toMyUpvote, toUpvoteCount } from '@/lib/upvotes';
 import type { Tally } from '@/lib/reactionTally';
 import type { Database } from '@/types/database';
 
@@ -39,6 +40,9 @@ export type ThreadComment = {
   replyToId: string | null;
   /** Top-level comments: published replies. */
   replyCount: number;
+  /** Q&A answers (top-level comments on a Q&A post): upvotes, and whether I upvoted. 0 / false elsewhere. */
+  upvoteCount: number;
+  myUpvote: boolean;
 };
 
 export type CommentCursor = { ts: string; id: string };
@@ -66,6 +70,9 @@ function fromViewRow(c: ViewRow): ThreadComment | null {
     parentId: c.parent_id,
     replyToId: c.reply_to_id,
     replyCount: c.reply_count ?? 0,
+    // Missing on rows from before v1.0.3 (step B): 0 and not upvoted.
+    upvoteCount: toUpvoteCount(c.upvote_count),
+    myUpvote: toMyUpvote(c.my_upvote),
   };
 }
 
@@ -144,6 +151,8 @@ export async function fetchOwnPending(target: CommentTarget, targetId: string, m
     parentId: c.parent_id,
     replyToId: c.reply_to_id,
     replyCount: 0,
+    upvoteCount: 0,
+    myUpvote: false,
   }));
 }
 
@@ -179,6 +188,8 @@ export function fromRow(row: CommentRow, me: Author): ThreadComment {
     parentId: row.parent_id,
     replyToId: row.reply_to_id,
     replyCount: row.reply_count,
+    upvoteCount: 0,
+    myUpvote: false,
   };
 }
 

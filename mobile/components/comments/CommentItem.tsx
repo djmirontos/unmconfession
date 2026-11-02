@@ -2,6 +2,7 @@ import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { BadgeChip } from '@/components/badges/BadgeChip';
+import { UpvoteButton } from '@/components/comments/UpvoteButton';
 import { PostBody } from '@/components/feed/PostBody';
 import { MoreButton } from '@/components/myposts/MoreButton';
 import { Avatar } from '@/components/profile/Avatar';
@@ -14,6 +15,7 @@ import { authorLabel, isDeletedAuthor } from '@/lib/authorLabel';
 import type { ThreadComment } from '@/lib/comments';
 import { setCommentReaction } from '@/lib/commentReactionSync';
 import { formatRelative } from '@/lib/time';
+import { showsUpvote } from '@/lib/upvotes';
 
 type Props = {
   comment: ThreadComment;
@@ -25,12 +27,15 @@ type Props = {
   onReply?: (comment: ThreadComment) => void;
   /** A reply: smaller avatar (the row is indented by the list). */
   isReply?: boolean;
+  /** The thread of a Q&A post: top-level comments (answers) get the upvote instead of the reaction button. */
+  qaThread?: boolean;
 };
 
-function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = false }: Props) {
+function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = false, qaThread = false }: Props) {
   const sending = comment.state === 'sending';
   const name = authorLabel(comment.nickname);
   const openReactors = useOpenReactors();
+  const upvote = showsUpvote(qaThread, comment.parentId);
   return (
     <View className={`flex-row gap-3 ${isReply ? 'py-2' : 'py-3'} ${sending ? 'opacity-60' : ''}`}>
       <ProfileLink userId={comment.authorId} nickname={comment.nickname} height={isReply ? 24 : 32}>
@@ -63,15 +68,20 @@ function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = fal
         </View>
         {/* Same 6-line "Read more" as post cards, keyed by comment id. */}
         <PostBody postId={comment.id} body={comment.body} targetName={null} />
-        {/* Only published comments can be reacted to (the server re-checks). */}
+        {/* Only published comments can be reacted to or upvoted (the server re-checks). Answers keep any
+            reactions from older builds as a read-only summary, with no react button. */}
         {comment.state === 'published' ? (
           <View className="-my-1 -ml-2 flex-row items-center gap-1">
-            <ReactionButton
-              compact
-              myReaction={comment.myReaction}
-              count={comment.reactionCount}
-              onChange={(next) => setCommentReaction(comment.id, comment.myReaction, next)}
-            />
+            {upvote ? (
+              <UpvoteButton comment={comment} own={mine} />
+            ) : (
+              <ReactionButton
+                compact
+                myReaction={comment.myReaction}
+                count={comment.reactionCount}
+                onChange={(next) => setCommentReaction(comment.id, comment.myReaction, next)}
+              />
+            )}
             <TopReactions
               compact
               ring="bg"

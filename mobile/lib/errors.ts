@@ -125,6 +125,15 @@ const MODERATION_MESSAGES: Record<string, string> = {
 };
 const ALREADY_HANDLED = 'Already handled by another moderator.';
 
+/** Shown when a member taps the upvote on their own answer (also the server's own_answer). */
+export const OWN_ANSWER_MESSAGE = "You can't upvote your own answer.";
+
+// set_answer_upvote (Q&A answers).
+const UPVOTE_MESSAGES: Record<string, string> = {
+  own_answer: OWN_ANSWER_MESSAGE,
+  not_found: 'This answer is no longer available.',
+};
+
 const KNOWN_CODES = new Set([
   ...Object.keys(MESSAGES),
   ...DETAILS_ERROR_CODES,
@@ -132,6 +141,7 @@ const KNOWN_CODES = new Set([
   ...Object.keys(SALE_MESSAGES),
   ...Object.keys(PUSH_MESSAGES),
   ...Object.keys(MODERATION_MESSAGES),
+  ...Object.keys(UPVOTE_MESSAGES),
 ]);
 const DB_CODE = new RegExp(`\\b(${[...KNOWN_CODES].join('|')})\\b`);
 
@@ -205,6 +215,13 @@ export function getReactionErrorMessage(error: unknown): string {
 export function getCommentReactionErrorMessage(error: unknown): string {
   if (getErrorCode(error) === 'not_found') return 'This comment is no longer available.';
   return getReactionErrorMessage(error);
+}
+
+/** Q&A answer upvotes: own-answer and gone answers have their own text; account states and the rest as usual. */
+export function getUpvoteErrorMessage(error: unknown): string {
+  const code = getErrorCode(error);
+  const specific = code ? UPVOTE_MESSAGES[code] : undefined;
+  return specific ?? getErrorMessage(error);
 }
 
 // Comment wording for codes that mean something more specific in a thread.

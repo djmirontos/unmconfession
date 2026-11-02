@@ -18,6 +18,8 @@ import {
   fromRow,
   type ThreadComment,
 } from '@/lib/comments';
+import { answerUpvoteBusy } from '@/lib/answerUpvoteSync';
+import { byTime } from '@/lib/commentOrder';
 import { commentReactionBusy } from '@/lib/commentReactionSync';
 import { getCommentErrorMessage, getErrorCode, getReplyErrorMessage } from '@/lib/errors';
 import { bumpListingCommentCount } from '@/lib/listings';
@@ -26,6 +28,7 @@ import { bumpPostCounts } from '@/lib/postCounts';
 import { askForPush } from '@/lib/pushAsk';
 import { breakdownTally, topFromBreakdown } from '@/lib/reactions';
 import { parseTimestamp } from '@/lib/time';
+import { toUpvoteCount } from '@/lib/upvotes';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 
@@ -52,9 +55,6 @@ type Options = {
 const THREAD_STALE_MS = 10 * 1000;
 // Realtime UPDATE of an unloaded comment counts as new only if it went public this recently (an approval).
 const JUST_PUBLISHED_MS = 90 * 1000;
-
-const byTime = (a: ThreadComment, b: ThreadComment) =>
-  parseTimestamp(a.time) - parseTimestamp(b.time) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
 /**
  * One comment thread (post or listing): top-level comments oldest first with keyset
@@ -239,7 +239,15 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
                 ...p,
                 items: p.items.map((c) =>
                   c.id === item.id
-                    ? { ...item, reactionCount: c.reactionCount, myReaction: c.myReaction, topReactions: c.topReactions, replyCount: c.replyCount }
+                    ? {
+                        ...item,
+                        reactionCount: c.reactionCount,
+                        myReaction: c.myReaction,
+                        topReactions: c.topReactions,
+                        replyCount: c.replyCount,
+                        upvoteCount: c.upvoteCount,
+                        myUpvote: c.myUpvote,
+                      }
                     : c,
                 ),
               }))
@@ -319,6 +327,8 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         parentId,
         replyToId,
         replyCount: 0,
+        upvoteCount: 0,
+        myUpvote: false,
       };
     },
     [me],
@@ -459,9 +469,10 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
       const cached = knownIds.current.has(row.id) || (loadedReplies?.items.some((c) => c.id === row.id) ?? false);
       if (cached) {
         // A comment already shown: refresh body / edited_at, the reaction count and top 3 (the row
-        // carries the exact tally) and, for top-level ones, the reply count. Never new, no pill.
+        // carries the exact tally), the upvote count and, for top-level ones, the reply count. Never new, no pill.
         if (event === 'UPDATE') {
           const keepReactions = commentReactionBusy(row.id); // my own change in flight wins
+          const keepUpvotes = answerUpvoteBusy(row.id); // same for my upvote
           patchComment(queryClient, row.id, (c) => ({
             ...c,
             body: row.body,
@@ -470,6 +481,7 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
             topReactions: keepReactions ? c.topReactions : topFromBreakdown(row.reaction_breakdown),
             reactionBreakdown: keepReactions ? c.reactionBreakdown : breakdownTally(row.reaction_breakdown),
             replyCount: row.parent_id ? c.replyCount : row.reply_count,
+            upvoteCount: keepUpvotes ? c.upvoteCount : toUpvoteCount(row.upvote_count),
           }));
         }
         return;

@@ -32,6 +32,7 @@
     "test:legal": "node --no-warnings --test tests/legalParity.test.mjs",
     "test:labels": "node --no-warnings --test tests/postLabels.test.mjs",
     "test:answers": "node --no-warnings --test tests/answers.test.mjs",
+    "test:upvotes": "node --no-warnings --test tests/upvotes.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

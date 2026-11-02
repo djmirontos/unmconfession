@@ -919,6 +919,7 @@ export type Database = {
       }
       posts: {
         Row: {
+          answer_count: number
           author_id: string
           body: string
           comment_count: number
@@ -932,6 +933,7 @@ export type Database = {
           moderated_at: string | null
           moderated_by: string | null
           number: number | null
+          post_type: string
           published_at: string | null
           reaction_breakdown: Json
           reaction_count: number
@@ -940,6 +942,7 @@ export type Database = {
           target_name: string | null
         }
         Insert: {
+          answer_count?: number
           author_id: string
           body: string
           comment_count?: number
@@ -953,6 +956,7 @@ export type Database = {
           moderated_at?: string | null
           moderated_by?: string | null
           number?: number | null
+          post_type?: string
           published_at?: string | null
           reaction_breakdown?: Json
           reaction_count?: number
@@ -961,6 +965,7 @@ export type Database = {
           target_name?: string | null
         }
         Update: {
+          answer_count?: number
           author_id?: string
           body?: string
           comment_count?: number
@@ -974,6 +979,7 @@ export type Database = {
           moderated_at?: string | null
           moderated_by?: string | null
           number?: number | null
+          post_type?: string
           published_at?: string | null
           reaction_breakdown?: Json
           reaction_count?: number
@@ -1519,6 +1525,7 @@ export type Database = {
       }
       feed_posts: {
         Row: {
+          answer_count: number | null
           author_id: string | null
           avatar_key: string | null
           body: string | null
@@ -1533,6 +1540,7 @@ export type Database = {
           nickname: string | null
           number: number | null
           poll_options: Json | null
+          post_type: string | null
           published_at: string | null
           reaction_count: number | null
           target_name: string | null
@@ -1640,6 +1648,46 @@ export type Database = {
       _cleanup_path_ok: {
         Args: { p_bucket: string; p_path: string }
         Returns: boolean
+      }
+      _create_post: {
+        Args: {
+          p_body: string
+          p_ends_at: string
+          p_images: Json
+          p_kind: Database["public"]["Enums"]["post_kind"]
+          p_poll_options: string[]
+          p_post_type: string
+          p_target_name: string
+        }
+        Returns: {
+          answer_count: number
+          author_id: string
+          body: string
+          comment_count: number
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          ends_at: string | null
+          id: string
+          images: Json
+          kind: Database["public"]["Enums"]["post_kind"]
+          moderated_at: string | null
+          moderated_by: string | null
+          number: number | null
+          post_type: string
+          published_at: string | null
+          reaction_breakdown: Json
+          reaction_count: number
+          reject_reason: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          target_name: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       _moderation_decision: {
         Args: {
@@ -1833,6 +1881,7 @@ export type Database = {
           p_target_name?: string
         }
         Returns: {
+          answer_count: number
           author_id: string
           body: string
           comment_count: number
@@ -1846,6 +1895,39 @@ export type Database = {
           moderated_at: string | null
           moderated_by: string | null
           number: number | null
+          post_type: string
+          published_at: string | null
+          reaction_breakdown: Json
+          reaction_count: number
+          reject_reason: string | null
+          status: Database["public"]["Enums"]["content_status"]
+          target_name: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "posts"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      create_qa_post: {
+        Args: { p_body: string; p_images?: Json }
+        Returns: {
+          answer_count: number
+          author_id: string
+          body: string
+          comment_count: number
+          created_at: string
+          deleted_at: string | null
+          edited_at: string | null
+          ends_at: string | null
+          id: string
+          images: Json
+          kind: Database["public"]["Enums"]["post_kind"]
+          moderated_at: string | null
+          moderated_by: string | null
+          number: number | null
+          post_type: string
           published_at: string | null
           reaction_breakdown: Json
           reaction_count: number
@@ -1966,6 +2048,7 @@ export type Database = {
       edit_own_post: {
         Args: { p_body: string; p_post_id: string; p_target_name?: string }
         Returns: {
+          answer_count: number
           author_id: string
           body: string
           comment_count: number
@@ -1979,6 +2062,7 @@ export type Database = {
           moderated_at: string | null
           moderated_by: string | null
           number: number | null
+          post_type: string
           published_at: string | null
           reaction_breakdown: Json
           reaction_count: number
@@ -1996,6 +2080,7 @@ export type Database = {
       get_active_polls: {
         Args: { p_limit?: number }
         Returns: {
+          answer_count: number | null
           author_id: string | null
           avatar_key: string | null
           body: string | null
@@ -2010,6 +2095,7 @@ export type Database = {
           nickname: string | null
           number: number | null
           poll_options: Json | null
+          post_type: string | null
           published_at: string | null
           reaction_count: number | null
           target_name: string | null
@@ -2088,6 +2174,7 @@ export type Database = {
       get_feed: {
         Args: { p_before_id?: string; p_before_ts?: string; p_limit?: number }
         Returns: {
+          answer_count: number | null
           author_id: string | null
           avatar_key: string | null
           body: string | null
@@ -2102,6 +2189,7 @@ export type Database = {
           nickname: string | null
           number: number | null
           poll_options: Json | null
+          post_type: string | null
           published_at: string | null
           reaction_count: number | null
           target_name: string | null
@@ -2331,6 +2419,7 @@ export type Database = {
       get_trending: {
         Args: { p_limit?: number }
         Returns: {
+          answer_count: number | null
           author_id: string | null
           avatar_key: string | null
           body: string | null
@@ -2345,6 +2434,7 @@ export type Database = {
           nickname: string | null
           number: number | null
           poll_options: Json | null
+          post_type: string | null
           published_at: string | null
           reaction_count: number | null
           target_name: string | null

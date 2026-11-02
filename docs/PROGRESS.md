@@ -1524,3 +1524,13 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 - `feed_posts` gains `post_type` and `answer_count`, appended last.
 - `create_post` keeps its exact signature as a wrapper around the internal `_create_post`; the new `create_qa_post(body, images)` creates a Q&A post. No app code uses them yet.
 - **Left:** regenerate both types files, then the app steps (composer, tag, answers count, upvotes, Helpful badge).
+
+**Step 2, Q&A in the app (no upvotes yet; no database change):**
+- Types regenerated (both files identical): `post_type`, `answer_count` and `create_qa_post`.
+- Create chips: Post | Q&A | Shoutout | Poll | Sell | Lost & Found (`lib/createKinds.ts`). Q&A uses the post form ("Your question", "Post question", up to 3 photos) and `create_qa_post`; toasts "Your question is live" / "Your question is waiting for review". The Post chip still calls `create_post` as before.
+- Feed card and detail: a "Q&A" tag in the Poll tag slot; a Q&A post's count is its answer count, read as "N answers". Detail: "Answers", "Write an answer…", "No answers yet. Be the first to answer." Replies work as before.
+- Status screen and edit label "Question"; share sheet "Share question"; share card chip "Q&A". Words come from `postWord(kind, postType)` in `lib/postKindWord.ts`; notifications still say "post".
+- Counts: `lib/answers.ts` holds the database's rules (a top-level comment is also an answer, a reply is not; deleting a top-level comment takes its replies). The comment thread, the 30-second counts refresh, post detail and My Posts carry `answerCount`.
+- The feed row schema moved to `lib/feedPostSchema.ts` (and the pure reaction helpers to `lib/reactionTypes.ts`, re-exported by `lib/reactions.ts`) so Node tests can parse rows. The persisted cache buster went 4 -> 5.
+- **Verified:** `tsc`, lint and all 22 mobile suites pass (new `test:answers` 11); site typecheck; admin typecheck and 380 tests. Device-tested through an EAS Update on the preview channel (group `88ff9933-a5be-4f4b-8189-3f558b2f1b12`, runtime 1.0.2): passed.
+- **Left:** upvotes on answers, the Helpful badge, the admin and notification wording for Q&A.

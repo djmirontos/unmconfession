@@ -128,3 +128,9 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
 1. Kind text for Q&A: the notification and admin RPCs still return the kind ('confession') for Q&A posts, so members read "Your post was approved" and staff see "Post". Returning 'qa' ("Your question was approved", the admin "Q&A" label already exists) is deferred to a later small migration.
 2. The dead `Poll #N` branch in `mobile/components/share/ShareCard.tsx` can be deleted (polls never get a number); `test:labels` allow-lists that one line.
 3. Members on builds 1.0.1 and 1.0.2 without the update still see `#N` and "Confession".
+4. The post detail top bar still says "Post" for Q&A posts.
+5. The persisted feed cache buster went 4 -> 5 (Q&A fields), so the first launch after the update shows the feed skeleton once.
+6. `ChipGroup` has a `bleed` option, used only on Create, so the six chips scroll to the screen edges instead of being cut at the padding.
+7. The Q&A composer placeholder "What do you want to ask?" was not specified and can be changed.
+8. Q&A notification wording ("Your question was approved") is still deferred to the database side (see 1).
+

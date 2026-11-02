@@ -22,7 +22,7 @@ type Props = {
   full?: boolean;
   /** Read-only cards: show reaction and comment counts (published items only). */
   showCounts?: boolean;
-  /** Next to the #number in the header (My Posts: status badge and "⋯"). */
+  /** At the end of the header (My Posts: status badge and "⋯"). */
   headerAccessory?: ReactNode;
   /** Below the card content (My Posts: review or rejection note). */
   footer?: ReactNode;
@@ -72,7 +72,6 @@ function PostCardImpl({
     <View className={cardGap(flush)}>
       <PostHeader
         kind={post.kind}
-        number={post.number}
         author_id={post.author_id}
         nickname={post.nickname}
         avatar_key={post.avatar_key}

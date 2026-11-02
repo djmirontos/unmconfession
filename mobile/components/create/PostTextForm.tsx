@@ -15,14 +15,14 @@ import { validate } from '@/lib/validation';
 type Props = { userId: string; kind: 'confession' | 'shoutout' };
 
 export const POST_TEXT_REQUIRED: Record<Props['kind'], readonly RequiredField<'target' | 'body'>[]> = {
-  confession: [{ key: 'body', label: 'Your confession' }],
+  confession: [{ key: 'body', label: 'Your post' }],
   shoutout: [
     { key: 'target', label: "Who it's for" },
     { key: 'body', label: 'Your message' },
   ],
 };
 
-/** Confession, or shoutout (which adds who it is for). Both take up to 3 photos. */
+/** Post, or shoutout (which adds who it is for). Both take up to 3 photos. */
 export function PostTextForm({ userId, kind }: Props) {
   const draft = useDraft(userId, kind, { target: '', body: '' });
   const photos = usePhotoAttachments();
@@ -72,7 +72,7 @@ export function PostTextForm({ userId, kind }: Props) {
         />
       ) : null}
       <TextField
-        label={kind === 'shoutout' ? 'Message' : 'Confession'}
+        label={kind === 'shoutout' ? 'Message' : 'Post'}
         value={body}
         onChangeText={(t) => {
           draft.set('body', t);
@@ -94,7 +94,7 @@ export function PostTextForm({ userId, kind }: Props) {
         locked={locked}
       />
       <SubmitFooter
-        label={kind === 'shoutout' ? 'Post shoutout' : 'Post confession'}
+        label={kind === 'shoutout' ? 'Post shoutout' : 'Post it'}
         onPress={onSubmit}
         submitting={submitting}
         disabled={!input || photos.busy || photos.hasFailed}

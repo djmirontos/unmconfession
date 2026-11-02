@@ -65,7 +65,7 @@ const shoutoutHeading = (post: FeedPost) => `Shoutout to ${prepareShareText(post
 
 type PostProps = { post: FeedPost; photoUri: string | null; onPhotoSettled?: (ok: boolean) => void };
 
-/** Confession / shoutout with a photo: the first photo on top (number on it), a short caption below. */
+/** Post / shoutout with a photo: the first photo on top (kind chip on it), a short caption below. */
 function PhotoPostContent({ post, photoUri, onPhotoSettled }: PostProps & { photoUri: string }) {
   const shoutout = post.kind === 'shoutout';
   const { text, truncated } = preparePhotoCaption(post.body, shoutout);
@@ -100,8 +100,8 @@ function PhotoPostContent({ post, photoUri, onPhotoSettled }: PostProps & { phot
   );
 }
 
-const postChipLabel = (post: FeedPost) =>
-  post.number !== null ? `#${post.number}` : post.kind === 'shoutout' ? 'Shoutout' : 'Confession';
+// No post number on the card (v1.0.3): just the kind.
+const postChipLabel = (post: FeedPost) => (post.kind === 'shoutout' ? 'Shoutout' : 'Post');
 
 function PostContent({ post, photoUri, onPhotoSettled }: PostProps) {
   if (post.kind === 'poll') return <PollContent post={post} />;

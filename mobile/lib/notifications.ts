@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { authorLabel } from '@/lib/authorLabel';
 import { logError } from '@/lib/log';
+import { postKindWord } from '@/lib/postKindWord';
 import { REACTION_TYPES, type ReactionType } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
 import { Constants } from '@/types/database';
@@ -114,12 +115,11 @@ export async function deleteAllNotifications(userId: string): Promise<void> {
 // ---------------------------------------------------------------------------
 // Wording
 
-/** "confession" / "shoutout" / "poll" / "comment" / "listing". */
+/** "post" / "shoutout" / "poll" / "comment" / "listing". */
 export function targetWord(n: Pick<NotificationGroup, 'target_type' | 'target_kind'>): string {
   if (n.target_type === 'comment') return 'comment';
   if (n.target_type === 'listing') return 'listing';
-  const kind = n.target_kind;
-  return kind === 'confession' || kind === 'shoutout' || kind === 'poll' ? kind : 'post';
+  return postKindWord(n.target_kind);
 }
 
 /** The main line, e.g. "tester_two and 3 others reacted to your post". */

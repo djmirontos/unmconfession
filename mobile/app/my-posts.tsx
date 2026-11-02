@@ -27,7 +27,7 @@ const EMPTY = (
   <EmptyState
     icon="create-outline"
     title="Nothing posted yet"
-    message="Your confessions, shoutouts, polls and listings show up here with their review status."
+    message="Your posts, shoutouts, polls and listings show up here with their review status."
   />
 );
 

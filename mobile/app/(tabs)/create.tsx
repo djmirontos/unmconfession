@@ -17,7 +17,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 type FormKind = 'confession' | 'shoutout' | 'poll' | 'sell' | 'lost_found';
 
 const KINDS: readonly { value: FormKind; label: string }[] = [
-  { value: 'confession', label: 'Confession' },
+  { value: 'confession', label: 'Post' },
   { value: 'shoutout', label: 'Shoutout' },
   { value: 'poll', label: 'Poll' },
   { value: 'sell', label: 'Sell' },
@@ -52,7 +52,7 @@ function GuestPrompt() {
   const requireAuth = useRequireAuth();
   return (
     <View className="gap-3 rounded-2xl border border-hairline bg-surface1 p-4">
-      <Text className="text-base text-text">Sign in to post confessions, shoutouts, polls and listings.</Text>
+      <Text className="text-base text-text">Sign in to share posts, shoutouts, polls and listings.</Text>
       <Button label="Sign in to post" onPress={() => requireAuth('post')} />
     </View>
   );

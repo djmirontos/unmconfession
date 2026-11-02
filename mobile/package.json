@@ -30,6 +30,7 @@
     "test:appversions": "node --no-warnings --test tests/appVersions.test.mjs",
     "test:softupdate": "node --no-warnings --test tests/softUpdate.test.mjs",
     "test:legal": "node --no-warnings --test tests/legalParity.test.mjs",
+    "test:labels": "node --no-warnings --test tests/postLabels.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

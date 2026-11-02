@@ -11,7 +11,7 @@ import type { MyItem } from '@/lib/myPosts';
 import { afterPostEdit, editOwnPost } from '@/lib/ownItems';
 import { validate } from '@/lib/validation';
 
-/** Edit a confession or shoutout: same fields, limits and schemas as Create. */
+/** Edit a post or shoutout: same fields, limits and schemas as Create. */
 export function EditPostForm({ item, kind }: { item: MyItem; kind: 'confession' | 'shoutout' }) {
   const queryClient = useQueryClient();
   const { save, saving, error } = useEditSave();
@@ -52,7 +52,7 @@ export function EditPostForm({ item, kind }: { item: MyItem; kind: 'confession' 
         />
       ) : null}
       <TextField
-        label={kind === 'shoutout' ? 'Message' : 'Confession'}
+        label={kind === 'shoutout' ? 'Message' : 'Post'}
         value={body}
         onChangeText={setBody}
         multiline

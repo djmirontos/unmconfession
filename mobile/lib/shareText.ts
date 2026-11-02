@@ -40,7 +40,7 @@ export function prepareShareText(raw: string, max = SHARE_TEXT_MAX): { text: str
 
 export type TextSize = { fontSize: number; lineHeight: number; maxLines: number };
 
-// Body box of a confession / shoutout card: about 280 dp tall. maxLines = floor(280 / lineHeight),
+// Body box of a post / shoutout card: about 280 dp tall. maxLines = floor(280 / lineHeight),
 // and each step holds at least its character limit at the card width.
 const SMALLEST_BODY: TextSize = { fontSize: 14, lineHeight: 20, maxLines: 14 };
 const BODY_SIZES: readonly (TextSize & { upTo: number })[] = [

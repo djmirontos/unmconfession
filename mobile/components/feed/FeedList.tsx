@@ -184,7 +184,7 @@ export function FeedList() {
           getItemType={getItemType}
           ListHeaderComponent={header}
           ListEmptyComponent={
-            <EmptyState icon="chatbubbles-outline" title="No confessions yet" message="Be the first to say something." />
+            <EmptyState icon="chatbubbles-outline" title="No posts yet" message="Be the first to say something." />
           }
           ListFooterComponent={
             query.isFetchNextPageError ? (

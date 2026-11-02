@@ -20,7 +20,7 @@ import { formatEventDate } from '@/lib/manilaDate';
 import type { MyItem } from '@/lib/myPosts';
 
 const KIND_LABEL: Record<MyItem['kind'], string> = {
-  confession: 'Confession',
+  confession: 'Post',
   shoutout: 'Shoutout',
   poll: 'Poll',
   sell: 'Sell',
@@ -92,7 +92,6 @@ function StatusContent({ item, onDelete }: { item: MyItem; onDelete: () => void 
         <StatusBadge status={item.status} />
         <Text className="text-xs font-bold uppercase tracking-widest text-text-dim">
           {KIND_LABEL[item.kind]}
-          {item.number !== null ? ` #${item.number}` : ''}
         </Text>
       </View>
       <ReasonBlock item={item} />

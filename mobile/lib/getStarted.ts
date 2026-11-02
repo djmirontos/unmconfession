@@ -1,4 +1,4 @@
-// "Get started" card on Home: react to 3 confessions. Pure rules and texts (tests/getStarted.test.mjs).
+// "Get started" card on Home: react to 3 posts. Pure rules and texts (tests/getStarted.test.mjs).
 import type { MembershipStatus } from '@/hooks/useProfile';
 
 export const GET_STARTED_GOAL = 3;
@@ -8,7 +8,7 @@ export const GET_STARTED_COUNT_KEY = 'get-started-count';
 
 export const GET_STARTED_COPY = {
   title: 'Get started',
-  body: "Tap a reaction on 3 confessions. It's the quickest way to join in.",
+  body: "Tap a reaction on 3 posts. It's the quickest way to join in.",
   done: "Nice, you're in!",
   dismiss: 'Dismiss get started',
 } as const;

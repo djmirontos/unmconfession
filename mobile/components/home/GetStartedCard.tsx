@@ -14,7 +14,7 @@ import {
 
 type Props = { view: Exclude<GetStartedView, { phase: 'hidden' }>; onDismiss: () => void };
 
-/** Home feed header, below the announcement: "react to 3 confessions", then a short success state. */
+/** Home feed header, below the announcement: "react to 3 posts", then a short success state. */
 export function GetStartedCard({ view, onDismiss }: Props) {
   const { colors } = useTheme();
   const done = view.phase === 'done';

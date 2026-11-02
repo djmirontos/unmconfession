@@ -120,7 +120,7 @@ test('account deletion removes the key, and logout clears the count cache', () =
 
 test('the card copy', () => {
   assert.equal(G.GET_STARTED_COPY.title, 'Get started');
-  assert.equal(G.GET_STARTED_COPY.body, "Tap a reaction on 3 confessions. It's the quickest way to join in.");
+  assert.equal(G.GET_STARTED_COPY.body, "Tap a reaction on 3 posts. It's the quickest way to join in.");
   assert.equal(G.GET_STARTED_COPY.done, "Nice, you're in!");
   assert.equal(G.GET_STARTED_COPY.dismiss, 'Dismiss get started');
 });

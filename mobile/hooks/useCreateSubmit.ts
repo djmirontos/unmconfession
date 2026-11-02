@@ -6,6 +6,7 @@ import type { Created, StoredImage } from '@/lib/create';
 import { getErrorCode, getErrorMessage } from '@/lib/errors';
 import { refreshFeedTop } from '@/lib/feed';
 import { logError } from '@/lib/log';
+import { postKindWord } from '@/lib/postKindWord';
 import { askForPush } from '@/lib/pushAsk';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -14,8 +15,7 @@ const PENDING_TOAST = "Sent for review. You'll be notified when it's approved.";
 
 function liveToast(created: Created): string {
   if (created.kind === 'listing') return 'Your listing is live';
-  if (created.postKind === 'poll') return 'Your poll is live';
-  return `Your ${created.postKind} is live${created.number !== null ? ` (#${created.number})` : ''}`;
+  return `Your ${postKindWord(created.postKind)} is live`;
 }
 
 type Photos = { uploadAll: (userId: string) => Promise<StoredImage[]> };

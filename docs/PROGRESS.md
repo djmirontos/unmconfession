@@ -1482,3 +1482,30 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 - Of the 8 such profiles, 7 were created within about 100 seconds on 2026-10-29: probably a group sign-in or an automated test.
 - Only one is clearly a person who gave up on the nickname screen.
 - Email sign-ups always complete because the nickname is sent in the sign-up data (`handle_new_user`).
+
+## App versions, soft update and Play link (v1.0.2, 2026-11-02, device-tested)
+
+**Database** (two migrations, applied in the SQL editor):
+- `20261102100000_soft_update.sql`: `app_settings.latest_app_version` (default '0.0.0' = off), `play_update_url`, `latest_update_message`, and the public `get_latest_app_info()`.
+- `20261102110000_app_version_tracking.sql`: `member_app_versions` (version, platform, updated_at only; no device model or identifier), `report_app_version`, staff-only `mod_app_versions` (counts only). `delete_my_account` and `admin_delete_account` delete the row; `admin_delete_account` now also erases push data.
+
+**App:**
+- **Version report** (`hooks/useReportAppVersion.ts`, `lib/appVersions.ts`): members report version and platform once per session; errors are only logged.
+- **"Versions in use"** in the Moderation hub (`hooks/useAppVersions.ts`): counts per version and platform, with members seen in the last 7 days. "Not reporting yet (older builds)" = members on builds without the report.
+- **Soft update popup** (`lib/softUpdate.ts`, `hooks/useSoftUpdate.ts`, `components/layout/SoftUpdatePrompt.tsx`): shows when `latest_app_version` is newer than the installed version. Update / Later; Later lasts for the session only (in memory). It waits for the push explainer and the sign-in sheet, and never shows over the hard gate or the nickname gate. Fetched after restore and on foreground, at most every 5 minutes.
+- **Build type** from `Updates.channel` (`lib/buildType.ts`, `lib/buildChannel.ts`): 'production' = Play, everything else = GitHub, so OTA updates cannot change it. Play builds link to `play_update_url`, else `PLAY_FALLBACK_URL` (the Play listing).
+- **Hard gate:** Play builds never open `update_url` (it may point to GitHub); GitHub builds are unchanged. Only the link changed; the blocking logic is untouched.
+- **Privacy wording:** the app version record and the Play tester list in the privacy policy, the deletion paragraph, the site's delete-account page and the in-app delete-account screen. Last updated 2 November 2026. `test:legal` checks the app and site texts are word for word identical.
+
+**Release rules:**
+- Do not publish a GitHub APK for 1.0.3: it would satisfy `min_app_version` without moving people to Play.
+- To move GitHub users to Play: Play 1.0.3 live on the closed-test track and verified by an opted-in tester first; then set `min_app_version` = 1.0.3, `update_url` and `play_update_url` = https://play.google.com/apps/testing/com.unmfreedom.confessions, and an `update_message` telling people to uninstall the GitHub version first (different signing key). Announce in the Facebook group a few days before.
+- 2 members use a non-Gmail email sign-up and may not have a Google account.
+- `min_app_version` stays 1.0.1 for now; never raise it to a version Play does not have yet.
+
+**Verified:**
+- `tsc`, lint and all 20 mobile suites pass (new: `test:appversions` 6, `test:softupdate` 22, `test:legal` 7; `test:moderation` now 46).
+- Both types files are byte-identical.
+- Published as an EAS Update to the preview channel (group `e3abde70-044c-45ed-bbc4-7a73e3be377c`, runtime 1.0.2) and device-tested: version report, versions hub and soft popup all passed.
+
+**Left:** see V2_BACKLOG "App versions and updates (v1.0.2)".

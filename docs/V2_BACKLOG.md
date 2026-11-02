@@ -115,3 +115,10 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
 5. The Google sign-in button's visibility was discussed and deliberately left as is. If revisited, follow Google's official button branding: the white or dark variant with the multicolour G, not a custom colour.
 6. Measure onboarding with the read-only funnel queries (sign-ups → nickname → first reaction within 1 day) before and after the campaign.
 7. Accent colour themes: 6 options, including #7B7FD4, each with a display colour plus a darker shade for filled areas, for contrast. Pending a read-only audit.
+
+## App versions and updates (v1.0.2)
+
+1. Play Console Data safety form: declare app version and platform (app functionality, not shared, deleted with the account) and the email shared with Google for the tester list.
+2. Hub row truncation on narrow phones: "N members · M seen in 7 days" next to the long "Not reporting yet" label may truncate. If it appears, show the counts on a second line.
+3. The first privacy sentence "We collect your email address, nickname and the content you post." reads like a complete list; it could say "for example".
+4. `admin/AGENTS.md` and `mobile/public/` are untracked and unrelated: decide whether to commit or ignore them.

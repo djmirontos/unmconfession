@@ -26,7 +26,7 @@ export default function HomePage() {
         </h2>
         <ul className="list-disc space-y-2 pl-5 leading-7">
           <li>Anyone can read the feed without an account.</li>
-          <li>Signed-in members post confessions, shoutouts and polls under a nickname, and react, comment and vote.</li>
+          <li>Signed-in members share posts, shoutouts and polls under a nickname, and react, comment and vote.</li>
           <li>Buy &amp; Sell and Lost &amp; Found listings.</li>
           <li>Trending shows the most reacted posts this week and active polls.</li>
           <li>Moderators review reports and held posts to keep the community safe.</li>

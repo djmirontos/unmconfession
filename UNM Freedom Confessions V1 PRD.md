@@ -61,7 +61,7 @@ Five bottom tabs. The feed is one list for everything, with no categories.
 
 ## Feature details
 
-**Feed and numbering.** Newest first. Each published confession and shoutout gets a sequential number (#1234) at publish time, so rejected or held posts leave no gaps. Comments and Facebook shares reference the number.
+**Feed and numbering.** Newest first. Each published confession and shoutout gets a sequential number (#1234) at publish time, so rejected or held posts leave no gaps. Comments and Facebook shares reference the number. From 1.0.3 the number is no longer shown to members (feed, post detail, share cards, toasts, My Posts); it is still assigned and kept internally, and staff still see it and can search by it in the web admin panel.
 
 **Create**
 

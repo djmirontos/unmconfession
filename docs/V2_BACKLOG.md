@@ -122,3 +122,9 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
 2. Hub row truncation on narrow phones: "N members · M seen in 7 days" next to the long "Not reporting yet" label may truncate. If it appears, show the counts on a second line.
 3. The first privacy sentence "We collect your email address, nickname and the content you post." reads like a complete list; it could say "for example".
 4. `admin/AGENTS.md` and `mobile/public/` are untracked and unrelated: decide whether to commit or ignore them.
+
+## v1.0.3 follow-ups
+
+1. Kind text for Q&A: the notification and admin RPCs still return the kind ('confession') for Q&A posts, so members read "Your post was approved" and staff see "Post". Returning 'qa' ("Your question was approved", the admin "Q&A" label already exists) is deferred to a later small migration.
+2. The dead `Poll #N` branch in `mobile/components/share/ShareCard.tsx` can be deleted (polls never get a number); `test:labels` allow-lists that one line.
+3. Members on builds 1.0.1 and 1.0.2 without the update still see `#N` and "Confession".

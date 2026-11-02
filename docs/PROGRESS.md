@@ -1509,3 +1509,18 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 - Published as an EAS Update to the preview channel (group `e3abde70-044c-45ed-bbc4-7a73e3be377c`, runtime 1.0.2) and device-tested: version report, versions hub and soft popup all passed.
 
 **Left:** see V2_BACKLOG "App versions and updates (v1.0.2)".
+
+## v1.0.3 (in progress)
+
+**Step 1, numbers hidden and "Confession" renamed "Post" (label only; no database change):**
+- Members no longer see post numbers: the feed and detail header tag, the share card chip, the "is live" toast and the My Posts status screen. `posts.number` is still assigned; the web admin panel still shows it and searches "#123".
+- The post kind `confession` reads "Post" everywhere members see it (composer, empty states, Get started, share sheet title, notifications) and in the admin label. The DB value, identifiers and the app name "UNM Freedom Confessions" are unchanged. Kind words come from `lib/postKindWord.ts`.
+- `test:labels` scans the member-facing source for "confession" text and for rendered post numbers; the admin has a `kindLabel` test.
+- PRD line 64 amended. Builds 1.0.1 and 1.0.2 keep showing numbers and "Confession" until updated.
+- **Verified:** `tsc`, lint and all 21 mobile suites pass (`test:labels` 6); site typecheck, lint and build pass; admin typecheck and 380 tests pass. Device-tested through an EAS Update on the preview channel (group `64680b95-6c94-419e-b924-4450e4f8f2ea`, runtime 1.0.2): passed.
+
+**Step A migration `20261103100000_qa_posts.sql` (applied 2026-11-02):**
+- `posts.post_type` ('post' default, or 'qa'; Q&A only on kind 'confession'; locked after posting) and `posts.answer_count` (published top-level comments only; backfilled). `comment_count` still counts replies.
+- `feed_posts` gains `post_type` and `answer_count`, appended last.
+- `create_post` keeps its exact signature as a wrapper around the internal `_create_post`; the new `create_qa_post(body, images)` creates a Q&A post. No app code uses them yet.
+- **Left:** regenerate both types files, then the app steps (composer, tag, answers count, upvotes, Helpful badge).

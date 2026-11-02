@@ -229,6 +229,46 @@ export type Database = {
           },
         ]
       }
+      comment_upvotes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_upvotes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_upvotes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "thread_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "comment_upvotes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_id: string
@@ -249,6 +289,7 @@ export type Database = {
           reply_count: number
           reply_to_id: string | null
           status: Database["public"]["Enums"]["content_status"]
+          upvote_count: number
         }
         Insert: {
           author_id: string
@@ -269,6 +310,7 @@ export type Database = {
           reply_count?: number
           reply_to_id?: string | null
           status: Database["public"]["Enums"]["content_status"]
+          upvote_count?: number
         }
         Update: {
           author_id?: string
@@ -289,6 +331,7 @@ export type Database = {
           reply_count?: number
           reply_to_id?: string | null
           status?: Database["public"]["Enums"]["content_status"]
+          upvote_count?: number
         }
         Relationships: [
           {
@@ -1565,6 +1608,7 @@ export type Database = {
           id: string | null
           listing_id: string | null
           my_reaction: Database["public"]["Enums"]["reaction_type"] | null
+          my_upvote: boolean | null
           nickname: string | null
           parent_id: string | null
           post_id: string | null
@@ -1573,6 +1617,7 @@ export type Database = {
           reply_count: number | null
           reply_to_id: string | null
           top_reactions: string[] | null
+          upvote_count: number | null
         }
         Relationships: [
           {
@@ -1821,6 +1866,7 @@ export type Database = {
           reply_count: number
           reply_to_id: string | null
           status: Database["public"]["Enums"]["content_status"]
+          upvote_count: number
         }
         SetofOptions: {
           from: "*"
@@ -1963,6 +2009,7 @@ export type Database = {
           reply_count: number
           reply_to_id: string | null
           status: Database["public"]["Enums"]["content_status"]
+          upvote_count: number
         }
         SetofOptions: {
           from: "*"
@@ -1997,6 +2044,7 @@ export type Database = {
           reply_count: number
           reply_to_id: string | null
           status: Database["public"]["Enums"]["content_status"]
+          upvote_count: number
         }
         SetofOptions: {
           from: "*"
@@ -2155,6 +2203,7 @@ export type Database = {
           id: string | null
           listing_id: string | null
           my_reaction: Database["public"]["Enums"]["reaction_type"] | null
+          my_upvote: boolean | null
           nickname: string | null
           parent_id: string | null
           post_id: string | null
@@ -2163,6 +2212,7 @@ export type Database = {
           reply_count: number | null
           reply_to_id: string | null
           top_reactions: string[] | null
+          upvote_count: number | null
         }[]
         SetofOptions: {
           from: "*"
@@ -2376,6 +2426,7 @@ export type Database = {
           id: string | null
           listing_id: string | null
           my_reaction: Database["public"]["Enums"]["reaction_type"] | null
+          my_upvote: boolean | null
           nickname: string | null
           parent_id: string | null
           post_id: string | null
@@ -2384,6 +2435,7 @@ export type Database = {
           reply_count: number | null
           reply_to_id: string | null
           top_reactions: string[] | null
+          upvote_count: number | null
         }[]
         SetofOptions: {
           from: "*"
@@ -2746,6 +2798,10 @@ export type Database = {
       respond_item_sale: {
         Args: { p_accept: boolean; p_sale: string }
         Returns: undefined
+      }
+      set_answer_upvote: {
+        Args: { p_comment_id: string; p_on: boolean }
+        Returns: number
       }
       set_comment_reaction: {
         Args: {

@@ -14,6 +14,8 @@ export type BadgeStyle = { icon: IconName; tone: keyof ThemeColors; staff: boole
 
 const STYLES: Record<string, BadgeStyle> = {
   campus_hero: { icon: 'trophy', tone: 'accent', staff: false },
+  // Top-voted answer on 3 Q&A posts (v1.0.3). Success green: readable in light and dark mode.
+  helpful: { icon: 'bulb', tone: 'success', staff: false },
   trusted_seller: { icon: 'storefront', tone: 'accent', staff: false },
   first_circle: { icon: 'star', tone: 'accent', staff: false },
   campus_voice: { icon: 'megaphone', tone: 'success', staff: false },

@@ -7,7 +7,7 @@ import { badgeStyle, chunkIds, idsToFetch, isStaffBadge, resultsById, TOP_BADGES
 const row = (code, earned_at = '2026-10-29T16:30:00Z') => ({ code, name: code, description: `${code} description`, earned_at });
 
 test('known earned codes have their own icon and tone, and are not staff', () => {
-  for (const code of ['campus_hero', 'trusted_seller', 'first_circle', 'campus_voice', 'campus_regular', 'nocturnal']) {
+  for (const code of ['campus_hero', 'helpful', 'trusted_seller', 'first_circle', 'campus_voice', 'campus_regular', 'nocturnal']) {
     const style = badgeStyle(code);
     assert.equal(style.staff, false, code);
     assert.notEqual(style.icon, 'ribbon-outline', code);
@@ -32,6 +32,12 @@ test('earned badges keep their own icons', () => {
   assert.equal(badgeStyle('campus_voice').icon, 'megaphone');
   assert.equal(badgeStyle('campus_regular').icon, 'calendar');
   assert.equal(badgeStyle('nocturnal').icon, 'moon');
+});
+
+test('helpful (v1.0.3) has its own style, not the fallback', () => {
+  assert.deepEqual(badgeStyle('helpful'), { icon: 'bulb', tone: 'success', staff: false });
+  assert.notDeepEqual(badgeStyle('helpful'), badgeStyle('community_guardian'));
+  assert.equal(isStaffBadge({ code: 'helpful', name: 'Helpful', description: '', earnedAt: null }), false);
 });
 
 test('an unknown code falls back to a neutral style instead of failing', () => {
@@ -130,6 +136,14 @@ test('resultsById keeps at most 3 per user and drops duplicate codes', () => {
   assert.equal(TOP_BADGES_PER_USER, 3);
   const rows = [top(1, 'admin'), top(1, 'admin'), top(1, 'campus_hero'), top(1, 'trusted_seller'), top(1, 'first_circle')];
   assert.deepEqual(resultsById([uid(1)], toTopBadges(rows)).get(uid(1)).map((b) => b.code), ['admin', 'campus_hero', 'trusted_seller']);
+});
+
+// get_top_badges orders by sort_order: staff label 0, campus_hero 5, helpful 6, trusted_seller 7, first_circle 10.
+test('resultsById keeps the server priority with helpful included (top 3 per user)', () => {
+  const rows = [top(1, 'moderator'), top(1, 'campus_hero'), top(1, 'helpful', 'Helpful'), top(1, 'trusted_seller'), top(2, 'helpful', 'Helpful'), top(2, 'first_circle')];
+  const results = resultsById([uid(1), uid(2)], toTopBadges(rows));
+  assert.deepEqual(results.get(uid(1)).map((b) => b.code), ['moderator', 'campus_hero', 'helpful']);
+  assert.deepEqual(results.get(uid(2)).map((b) => b.code), ['helpful', 'first_circle']);
 });
 
 test('toTopBadges drops incomplete rows and keeps unknown codes', () => {

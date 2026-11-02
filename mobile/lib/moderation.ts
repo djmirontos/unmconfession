@@ -65,6 +65,52 @@ export function toRecentSignups(
   );
 }
 
+/** One mod_app_versions row. version null: members whose app has never reported (older builds). Counts only. */
+export type AppVersionRow = { version: string | null; platform: 'android' | 'ios' | null; members: number; seen7d: number };
+
+const APP_VERSION = /^[0-9]{1,4}\.[0-9]{1,4}\.[0-9]{1,4}$/;
+
+/** A count sent as a number or a numeric string ("3"); anything else is null. */
+function toCount(value: unknown): number | null {
+  const n = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+  return isCount(n) ? n : null;
+}
+
+/**
+ * mod_app_versions to rows. The generated types call app_version and platform strings, but the
+ * "not reporting yet" row has null in both. Malformed rows and empty groups are dropped; the
+ * server order (newest first) is kept and the not-reporting row always comes last.
+ */
+export function toAppVersionRows(raw: unknown): AppVersionRow[] {
+  if (!Array.isArray(raw)) return [];
+  const rows = raw.flatMap((item: unknown): AppVersionRow[] => {
+    if (typeof item !== 'object' || item === null) return [];
+    const r = item as Record<string, unknown>;
+    const version = r.app_version ?? null;
+    if (version !== null && !(typeof version === 'string' && APP_VERSION.test(version))) return [];
+    const members = toCount(r.members);
+    const seen7d = toCount(r.seen_7d ?? 0);
+    if (members === null || members <= 0 || seen7d === null) return [];
+    const platform = r.platform === 'android' || r.platform === 'ios' ? r.platform : null;
+    return [{ version, platform, members, seen7d }];
+  });
+  return [...rows.filter((r) => r.version !== null), ...rows.filter((r) => r.version === null)];
+}
+
+const PLATFORM_LABEL = { android: 'Android', ios: 'iOS' } as const;
+
+/** "1.0.2 · Android"; the null row reads "Not reporting yet (older builds)". */
+export function appVersionLabel(row: AppVersionRow): string {
+  if (row.version === null) return 'Not reporting yet (older builds)';
+  return row.platform ? `${row.version} · ${PLATFORM_LABEL[row.platform]}` : row.version;
+}
+
+/** "12 members · 9 seen in 7 days"; the null row only counts members ("1 member"). */
+export function appVersionDetail(row: AppVersionRow): string {
+  const members = `${formatCount(row.members)} ${row.members === 1 ? 'member' : 'members'}`;
+  return row.version === null ? members : `${members} · ${formatCount(row.seen7d)} seen in 7 days`;
+}
+
 /** Accessibility label of the Home shield: "Moderation", "Moderation, 1 open report", "Moderation, 4 open reports". */
 export function formatOpenReportsLabel(count: number): string {
   if (!isCount(count) || count === 0) return 'Moderation';

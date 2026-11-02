@@ -7,6 +7,7 @@ import { BackHeader } from '@/components/layout/BackHeader';
 import { SettingsGroup, SettingsRow } from '@/components/profile/SettingsRow';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useAppVersions } from '@/hooks/useAppVersions';
 import { useModerationCounts } from '@/hooks/useModerationCounts';
 import { useModerationStats } from '@/hooks/useModerationStats';
 import { useOpenReportCount } from '@/hooks/useOpenReportCount';
@@ -15,7 +16,14 @@ import { useStaffGuard } from '@/hooks/useStaffGuard';
 import { useTheme } from '@/hooks/useTheme';
 import { badgeStyle } from '@/lib/badges';
 import { getModerationErrorMessage } from '@/lib/errors';
-import { formatCount, formatSignupTime, heldBreakdown, type ModerationStats } from '@/lib/moderation';
+import {
+  appVersionDetail,
+  appVersionLabel,
+  formatCount,
+  formatSignupTime,
+  heldBreakdown,
+  type ModerationStats,
+} from '@/lib/moderation';
 
 /** A section that failed to load: the friendly message and Retry, kept small so the other sections stay visible. */
 function SectionError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
@@ -91,12 +99,15 @@ export default function ModerationScreen() {
   const stats = useModerationStats();
   const signups = useRecentSignups();
   const held = useModerationCounts();
+  const versions = useAppVersions();
   const [pulling, setPulling] = useState(false);
 
   const onRefresh = useCallback(() => {
     setPulling(true);
-    void Promise.allSettled([openCount.refetch(), held.refetch(), stats.refetch(), signups.refetch()]).finally(() => setPulling(false));
-  }, [openCount, held, stats, signups]);
+    void Promise.allSettled([openCount.refetch(), held.refetch(), stats.refetch(), signups.refetch(), versions.refetch()]).finally(() =>
+      setPulling(false),
+    );
+  }, [openCount, held, stats, signups, versions]);
 
   if (!isStaff) return <View className="flex-1 bg-bg" />;
 
@@ -173,6 +184,30 @@ export default function ModerationScreen() {
     badges = <RowsSkeleton count={4} label="Loading badges" />;
   }
 
+  let inUse;
+  if (versions.data) {
+    inUse =
+      versions.data.length > 0 ? (
+        <SettingsGroup>
+          {versions.data.map((v, i) => (
+            <SettingsRow
+              key={`${v.version ?? 'none'}-${v.platform ?? 'none'}`}
+              icon={v.version === null ? 'time-outline' : 'phone-portrait-outline'}
+              label={appVersionLabel(v)}
+              value={appVersionDetail(v)}
+              first={i === 0}
+            />
+          ))}
+        </SettingsGroup>
+      ) : (
+        <SectionEmpty text="No members yet." />
+      );
+  } else if (versions.isError) {
+    inUse = <SectionError error={versions.error} onRetry={() => void versions.refetch()} />;
+  } else {
+    inUse = <RowsSkeleton count={2} label="Loading versions in use" />;
+  }
+
   let latest;
   if (signups.data) {
     latest =
@@ -212,6 +247,12 @@ export default function ModerationScreen() {
         <Section title="Overview">
           {overview}
           <Text className="px-1 text-xs text-text-dim">Engaged: posted, listed, commented or reacted at least once.</Text>
+        </Section>
+        <Section title="Versions in use">
+          <Text className="px-1 text-xs text-text-dim">
+            {"Based on what each app reports. Members who haven't updated yet show as Not reporting yet."}
+          </Text>
+          {inUse}
         </Section>
         <Section title="Members by badge">{badges}</Section>
         <Section title="Latest sign-ups">{latest}</Section>

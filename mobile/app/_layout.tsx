@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SignInSheet } from '@/components/auth/SignInSheet';
 import { ReactorsSheet } from '@/components/reactions/ReactorsSheet';
 import { ForceUpdateGate } from '@/components/layout/ForceUpdateGate';
+import { SoftUpdatePrompt } from '@/components/layout/SoftUpdatePrompt';
 import { ThemeRoot } from '@/components/layout/ThemeRoot';
 import { ReactionPickerOverlay } from '@/components/reactions/ReactionPickerOverlay';
 import { ShareCardHost } from '@/components/share/ShareCardHost';
@@ -20,6 +21,7 @@ import { useAuthBootstrap } from '@/hooks/useAuthBootstrap';
 import { useNotificationsRealtime } from '@/hooks/useNotificationsRealtime';
 import { type MembershipStatus, useMembership } from '@/hooks/useProfile';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useReportAppVersion } from '@/hooks/useReportAppVersion';
 import { loadGoogleSignIn } from '@/lib/googleSignIn';
 import { persistOptions, queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
@@ -44,6 +46,8 @@ export default function RootLayout() {
           <ReactionPickerOverlay />
           <ImageViewer />
           <ShareCardHost />
+          {/* Just before the hard gate, which must always stack above it. */}
+          <SoftUpdatePrompt />
           {/* Last, so its Modal stacks above every sheet and modal. */}
           <ForceUpdateGate />
         </ThemeRoot>
@@ -81,6 +85,8 @@ function RootNavigator() {
   useNotificationsRealtime();
   // Push: register this phone or show the explainer once per session; open tapped notifications.
   usePushNotifications();
+  // Members only: which app version this phone runs, once per launch (staff see the counts).
+  useReportAppVersion();
   const needsNickname = status === 'needs-nickname';
   const covered = useStartupCover(status);
 

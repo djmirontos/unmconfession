@@ -21,7 +21,11 @@ import { useToastStore } from '@/stores/toastStore';
 const BLOCKS: readonly { title: string; lines: readonly string[] }[] = [
   {
     title: 'What will be erased',
-    lines: ['Your sign-in and email', 'Your nickname and avatar', 'Your blocked users, notification settings and notifications'],
+    lines: [
+      'Your sign-in and email',
+      'Your nickname and avatar',
+      'Your blocked users, notification settings, notifications, push notification tokens and the record of which app version you use',
+    ],
   },
   {
     title: 'What stays',

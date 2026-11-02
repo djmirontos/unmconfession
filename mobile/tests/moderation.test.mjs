@@ -497,3 +497,76 @@ test('staffState: guests and members without a nickname are not staff, and not l
   assert.deepEqual(staff({ membership: 'needs-nickname', isPending: true, data: undefined }), { isStaff: false, isLoading: false });
   assert.deepEqual(staff({ membership: 'error', isPending: true, data: undefined }), { isStaff: false, isLoading: false });
 });
+
+// ---------------------------------------------------------------- versions in use (mod_app_versions)
+
+const ver = (over = {}) => ({ app_version: '1.0.2', platform: 'android', members: 5, seen_7d: 3, ...over });
+const notReporting = (over = {}) => ({ app_version: null, platform: null, members: 9, seen_7d: 0, ...over });
+
+test('toAppVersionRows maps valid rows in the server order', () => {
+  assert.deepEqual(M.toAppVersionRows([ver(), ver({ platform: 'ios', members: 2, seen_7d: 2 }), ver({ app_version: '1.0.1', members: 4, seen_7d: 0 })]), [
+    { version: '1.0.2', platform: 'android', members: 5, seen7d: 3 },
+    { version: '1.0.2', platform: 'ios', members: 2, seen7d: 2 },
+    { version: '1.0.1', platform: 'android', members: 4, seen7d: 0 },
+  ]);
+});
+
+test('toAppVersionRows keeps the not-reporting row (version null) and always puts it last', () => {
+  const rows = M.toAppVersionRows([notReporting(), ver({ app_version: '1.0.10' }), ver()]);
+  assert.deepEqual(
+    rows.map((r) => r.version),
+    ['1.0.10', '1.0.2', null],
+  );
+  assert.deepEqual(rows[2], { version: null, platform: null, members: 9, seen7d: 0 });
+});
+
+test('toAppVersionRows: an unknown platform becomes null', () => {
+  assert.equal(M.toAppVersionRows([ver({ platform: 'web' })])[0].platform, null);
+  assert.equal(M.toAppVersionRows([ver({ platform: null })])[0].platform, null);
+  assert.equal(M.toAppVersionRows([ver({ platform: 'Android' })])[0].platform, null);
+});
+
+test('toAppVersionRows coerces numeric strings and drops malformed rows', () => {
+  assert.deepEqual(M.toAppVersionRows([ver({ members: '7', seen_7d: '4' })])[0], { version: '1.0.2', platform: 'android', members: 7, seen7d: 4 });
+  const bad = [
+    null,
+    'row',
+    42,
+    ver({ app_version: '1.0' }),
+    ver({ app_version: 'abc' }),
+    ver({ app_version: 102 }),
+    ver({ members: 'many' }),
+    ver({ members: 1.5 }),
+    ver({ members: undefined }),
+    ver({ seen_7d: -1 }),
+    ver({ seen_7d: 'x' }),
+  ];
+  assert.deepEqual(M.toAppVersionRows(bad), []);
+});
+
+test('toAppVersionRows drops groups with 0 or negative members; a missing seen_7d counts as 0', () => {
+  assert.deepEqual(M.toAppVersionRows([ver({ members: 0 }), ver({ members: -3 }), notReporting({ members: 0 })]), []);
+  assert.equal(M.toAppVersionRows([ver({ seen_7d: undefined })])[0].seen7d, 0);
+});
+
+test('toAppVersionRows: empty and non-array input give no rows', () => {
+  assert.deepEqual(M.toAppVersionRows([]), []);
+  assert.deepEqual(M.toAppVersionRows(null), []);
+  assert.deepEqual(M.toAppVersionRows(undefined), []);
+  assert.deepEqual(M.toAppVersionRows({ app_version: '1.0.2' }), []);
+});
+
+test('appVersionLabel and appVersionDetail', () => {
+  const android = { version: '1.0.2', platform: 'android', members: 12, seen7d: 9 };
+  assert.equal(M.appVersionLabel(android), '1.0.2 · Android');
+  assert.equal(M.appVersionLabel({ ...android, platform: 'ios' }), '1.0.2 · iOS');
+  assert.equal(M.appVersionLabel({ ...android, platform: null }), '1.0.2');
+  assert.equal(M.appVersionDetail(android), '12 members · 9 seen in 7 days');
+  assert.equal(M.appVersionDetail({ ...android, members: 1, seen7d: 1 }), '1 member · 1 seen in 7 days');
+  assert.equal(M.appVersionDetail({ ...android, members: 1234, seen7d: 0 }), '1,234 members · 0 seen in 7 days');
+
+  const none = { version: null, platform: null, members: 5, seen7d: 0 };
+  assert.equal(M.appVersionLabel(none), 'Not reporting yet (older builds)');
+  assert.equal(M.appVersionDetail(none), '5 members');
+  assert.equal(M.appVersionDetail({ ...none, members: 1 }), '1 member');
+});

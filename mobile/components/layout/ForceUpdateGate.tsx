@@ -6,8 +6,13 @@ import { Seal } from '@/components/brand/Seal';
 import { Button } from '@/components/ui/Button';
 import { useBottomInset } from '@/hooks/useBottomInset';
 import { useForceUpdate } from '@/hooks/useAppRequirements';
+import { currentBuildType } from '@/lib/buildChannel';
 import { logError } from '@/lib/log';
-import { safeUpdateUrl } from '@/lib/versionGate';
+import { resolveGateLink } from '@/lib/softUpdate';
+import { useSoftUpdateStore } from '@/stores/softUpdateStore';
+
+// Play installs update only through Play, so the gate never sends them to update_url (GitHub).
+const buildType = currentBuildType();
 
 const DEFAULT_MESSAGE = 'A new version of the app is required to continue.';
 
@@ -17,6 +22,8 @@ const DEFAULT_MESSAGE = 'A new version of the app is required to continue.';
  */
 export function ForceUpdateGate() {
   const { required, requirement, installed } = useForceUpdate();
+  // Only what the soft update check already fetched; no fetch of its own.
+  const playUpdateUrl = useSoftUpdateStore((s) => s.info?.playUpdateUrl ?? null);
 
   // The Modal's onRequestClose already swallows back; this also covers the moment around mount.
   useEffect(() => {
@@ -30,7 +37,7 @@ export function ForceUpdateGate() {
     <Modal visible animationType="none" onRequestClose={() => {}} statusBarTranslucent navigationBarTranslucent>
       <UpdateRequired
         message={requirement.updateMessage?.trim() || DEFAULT_MESSAGE}
-        url={safeUpdateUrl(requirement.updateUrl)}
+        url={resolveGateLink(buildType, requirement.updateUrl, playUpdateUrl)}
         installed={installed ?? 'unknown'}
         minimum={requirement.minAppVersion}
       />

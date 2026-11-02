@@ -27,6 +27,9 @@
     "test:moderation": "node --no-warnings --test tests/moderation.test.mjs",
     "test:nickname": "node --no-warnings --test tests/chooseNickname.test.mjs",
     "test:getstarted": "node --no-warnings --test tests/getStarted.test.mjs",
+    "test:appversions": "node --no-warnings --test tests/appVersions.test.mjs",
+    "test:softupdate": "node --no-warnings --test tests/softUpdate.test.mjs",
+    "test:legal": "node --no-warnings --test tests/legalParity.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

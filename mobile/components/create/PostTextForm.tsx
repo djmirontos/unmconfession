@@ -7,22 +7,24 @@ import { useCreateSubmit } from '@/hooks/useCreateSubmit';
 import { useDraft } from '@/hooks/useDraft';
 import { usePhotoAttachments } from '@/hooks/usePhotoAttachments';
 import { useTouched } from '@/hooks/useTouched';
-import { createPost, type PostInput } from '@/lib/create';
+import { createPost, createQaPost, type PostInput } from '@/lib/create';
 import { confessionSchema, LIMITS, shoutoutSchema } from '@/lib/createSchemas';
 import { missingFields, type RequiredField } from '@/lib/missingFields';
 import { validate } from '@/lib/validation';
 
-type Props = { userId: string; kind: 'confession' | 'shoutout' };
+/** 'qa' is a Q&A post: the same form as a post, sent with create_qa_post. */
+type Props = { userId: string; kind: 'confession' | 'qa' | 'shoutout' };
 
 export const POST_TEXT_REQUIRED: Record<Props['kind'], readonly RequiredField<'target' | 'body'>[]> = {
   confession: [{ key: 'body', label: 'Your post' }],
+  qa: [{ key: 'body', label: 'Your question' }],
   shoutout: [
     { key: 'target', label: "Who it's for" },
     { key: 'body', label: 'Your message' },
   ],
 };
 
-/** Post, or shoutout (which adds who it is for). Both take up to 3 photos. */
+/** Post, Q&A, or shoutout (which adds who it is for). All take up to 3 photos. */
 export function PostTextForm({ userId, kind }: Props) {
   const draft = useDraft(userId, kind, { target: '', body: '' });
   const photos = usePhotoAttachments();
@@ -31,7 +33,8 @@ export function PostTextForm({ userId, kind }: Props) {
   const { target, body } = draft.values;
 
   const shout = kind === 'shoutout' ? validate(shoutoutSchema, { target, body }) : null;
-  const confession = kind === 'confession' ? validate(confessionSchema, { body }) : null;
+  // A Q&A post has the same rules as a post.
+  const confession = kind !== 'shoutout' ? validate(confessionSchema, { body }) : null;
   const input: PostInput | null = shout
     ? shout.data && { kind: 'shoutout', body: shout.data.body, target: shout.data.target }
     : confession?.data
@@ -45,7 +48,7 @@ export function PostTextForm({ userId, kind }: Props) {
     if (!input) return;
     void submit({
       photos,
-      run: (images) => createPost(input, images),
+      run: (images) => (kind === 'qa' && input.kind === 'confession' ? createQaPost(input.body, images) : createPost(input, images)),
       onSuccess: () => {
         draft.clear();
         photos.reset();
@@ -72,13 +75,13 @@ export function PostTextForm({ userId, kind }: Props) {
         />
       ) : null}
       <TextField
-        label={kind === 'shoutout' ? 'Message' : 'Post'}
+        label={kind === 'shoutout' ? 'Message' : kind === 'qa' ? 'Your question' : 'Post'}
         value={body}
         onChangeText={(t) => {
           draft.set('body', t);
           touched.touch('body');
         }}
-        placeholder={kind === 'shoutout' ? 'Say something nice…' : "What's on your mind?"}
+        placeholder={kind === 'shoutout' ? 'Say something nice…' : kind === 'qa' ? 'What do you want to ask?' : "What's on your mind?"}
         multiline
         maxLength={LIMITS.body}
         counter={{ length: body.length, max: LIMITS.body }}
@@ -94,7 +97,7 @@ export function PostTextForm({ userId, kind }: Props) {
         locked={locked}
       />
       <SubmitFooter
-        label={kind === 'shoutout' ? 'Post shoutout' : 'Post it'}
+        label={kind === 'shoutout' ? 'Post shoutout' : kind === 'qa' ? 'Post question' : 'Post it'}
         onPress={onSubmit}
         submitting={submitting}
         disabled={!input || photos.busy || photos.hasFailed}

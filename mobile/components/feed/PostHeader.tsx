@@ -5,7 +5,7 @@ import { AuthorLine } from '@/components/feed/AuthorLine';
 import { CardTag } from '@/components/feed/CardTag';
 import type { FeedPost } from '@/lib/posts';
 
-type Props = Pick<FeedPost, 'kind' | 'author_id' | 'nickname' | 'avatar_key' | 'published_at'> & {
+type Props = Pick<FeedPost, 'kind' | 'postType' | 'author_id' | 'nickname' | 'avatar_key' | 'published_at'> & {
   /** Shows "· Edited" after the time when set. */
   edited_at?: string | null;
   /** Extra controls after the tag (My Posts: status badge and "⋯"). */
@@ -14,9 +14,9 @@ type Props = Pick<FeedPost, 'kind' | 'author_id' | 'nickname' | 'avatar_key' | '
   leading?: ReactNode;
 };
 
-export function PostHeader({ kind, author_id, nickname, avatar_key, published_at, edited_at, accessory, leading }: Props) {
-  // Post numbers are not shown to members (v1.0.3); the tag slot is free for other kinds.
-  const tag = kind === 'poll' ? 'Poll' : null;
+export function PostHeader({ kind, postType, author_id, nickname, avatar_key, published_at, edited_at, accessory, leading }: Props) {
+  // Post numbers are not shown to members (v1.0.3); the slot tags polls and Q&A posts.
+  const tag = kind === 'poll' ? 'Poll' : postType === 'qa' ? 'Q&A' : null;
   return (
     <View className="flex-row items-center gap-2">
       {leading}

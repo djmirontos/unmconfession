@@ -1,3 +1,4 @@
+import { type PostType, toPostType } from '@/lib/answers';
 import type { Condition, LostFoundType } from '@/lib/createSchemas';
 import { logError, logInfo } from '@/lib/log';
 import { supabase } from '@/lib/supabase';
@@ -8,7 +9,14 @@ type PostKind = Database['public']['Enums']['post_kind'];
 /** Shape stored in posts.images / listings.images. */
 export type StoredImage = { path: string; width: number; height: number; blurhash: string | null };
 
-export type CreatedPost = { kind: 'post'; id: string; postKind: PostKind; number: number | null; published: boolean };
+export type CreatedPost = {
+  kind: 'post';
+  id: string;
+  postKind: PostKind;
+  postType: PostType;
+  number: number | null;
+  published: boolean;
+};
 export type CreatedListing = { kind: 'listing'; id: string; published: boolean };
 export type Created = CreatedPost | CreatedListing;
 
@@ -50,7 +58,29 @@ export async function createPost(input: PostInput, images: StoredImage[]): Promi
     throw error;
   }
   logInfo('rpc.create_post', 'ok', { kind: input.kind, status: data.status, number: data.number });
-  return { kind: 'post', id: data.id, postKind: data.kind, number: data.number, published: data.status === 'published' };
+  return toCreatedPost(data);
+}
+
+type PostRow = Database['public']['Tables']['posts']['Row'];
+
+const toCreatedPost = (row: PostRow): CreatedPost => ({
+  kind: 'post',
+  id: row.id,
+  postKind: row.kind,
+  postType: toPostType(row.post_type),
+  number: row.number,
+  published: row.status === 'published',
+});
+
+/** create_qa_post: a Q&A post (kind 'confession', post_type 'qa'). Same checks, holds and errors as create_post. */
+export async function createQaPost(body: string, images: StoredImage[]): Promise<CreatedPost> {
+  const { data, error } = await supabase.rpc('create_qa_post', { p_body: body, p_images: images });
+  if (error) {
+    logError('rpc.create_qa_post', error, { images: images.length });
+    throw error;
+  }
+  logInfo('rpc.create_qa_post', 'ok', { status: data.status, number: data.number });
+  return toCreatedPost(data);
 }
 
 export async function createListing(input: ListingInput, images: StoredImage[]): Promise<CreatedListing> {

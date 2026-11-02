@@ -1,45 +1,10 @@
 import { z } from 'zod';
 
+import { feedPostSchema, imageSchema, pollOptionSchema } from '@/lib/feedPostSchema';
 import type { Tally } from '@/lib/reactionTally';
-import { parseTopReactions } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
-import { Constants } from '@/types/database';
 
-const imageSchema = z.object({
-  path: z.string(),
-  width: z.number().positive(),
-  height: z.number().positive(),
-  blurhash: z.string().nullish(),
-});
-
-const pollOptionSchema = z.object({ id: z.string(), label: z.string(), votes: z.number() });
-
-// Views make every column nullable in the generated types; this narrows a
-// feed_posts row to what a published post always has.
-const feedPostSchema = z.object({
-  id: z.string(),
-  number: z.number().nullable(),
-  kind: z.enum(Constants.public.Enums.post_kind),
-  body: z.string(),
-  target_name: z.string().nullable(),
-  images: z.array(imageSchema).catch([]),
-  ends_at: z.string().nullable(),
-  author_id: z.string(),
-  nickname: z.string().nullable(),
-  avatar_key: z.string().nullable(),
-  published_at: z.string(),
-  reaction_count: z.number(),
-  comment_count: z.number(),
-  my_reaction: z.enum(Constants.public.Enums.reaction_type).nullable(),
-  poll_options: z.array(pollOptionSchema).nullable().catch(null),
-  my_vote: z.string().nullable(),
-  // Missing on rows cached before the column existed.
-  edited_at: z.string().nullable().catch(null),
-  // Most used first; missing on rows cached before 4.6a+, unknown types dropped.
-  top_reactions: z.unknown().transform(parseTopReactions),
-});
-
-export type FeedPost = z.infer<typeof feedPostSchema> & {
+export type FeedPost = z.output<typeof feedPostSchema> & {
   /**
    * Exact reactions per type, when known (feed rows carry only the top 3): set after my own tap
    * is confirmed and in My Posts; cleared when a counts refresh changes the reactions.

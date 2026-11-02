@@ -91,7 +91,7 @@ function StatusContent({ item, onDelete }: { item: MyItem; onDelete: () => void 
       <View className="flex-row items-center gap-3">
         <StatusBadge status={item.status} />
         <Text className="text-xs font-bold uppercase tracking-widest text-text-dim">
-          {KIND_LABEL[item.kind]}
+          {item.postType === 'qa' ? 'Question' : KIND_LABEL[item.kind]}
         </Text>
       </View>
       <ReasonBlock item={item} />

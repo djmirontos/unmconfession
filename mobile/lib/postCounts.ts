@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 
+import { applyCountDelta, type CountDelta } from '@/lib/answers';
 import { updateListedPost, updateListedPosts } from '@/lib/postLists';
 import { type FeedPost, type PollOption, parsePollOptions } from '@/lib/posts';
 import { parseTopReactions } from '@/lib/reactions';
@@ -9,6 +10,8 @@ export type PostCounts = {
   id: string | null;
   reaction_count: number | null;
   comment_count: number | null;
+  /** Published top-level comments (Q&A answers); missing from older selects. */
+  answer_count?: number | null;
   /** Polls only: fresh results and my vote. */
   poll_options?: Json | null;
   my_vote?: string | null;
@@ -28,6 +31,7 @@ function applyCounts(post: FeedPost, byId: Map<string, PostCounts>, skipPoll: (p
   if (!counts) return post;
   const reaction_count = counts.reaction_count ?? post.reaction_count;
   const comment_count = counts.comment_count ?? post.comment_count;
+  const answerCount = counts.answer_count ?? post.answerCount;
   let { poll_options, my_vote } = post;
   if (post.kind === 'poll' && counts.poll_options !== undefined && !skipPoll(post.id)) {
     const fresh = parsePollOptions(counts.poll_options);
@@ -42,6 +46,7 @@ function applyCounts(post: FeedPost, byId: Map<string, PostCounts>, skipPoll: (p
   if (
     reaction_count === post.reaction_count &&
     comment_count === post.comment_count &&
+    answerCount === post.answerCount &&
     poll_options === post.poll_options &&
     my_vote === post.my_vote &&
     top_reactions === post.top_reactions
@@ -53,6 +58,7 @@ function applyCounts(post: FeedPost, byId: Map<string, PostCounts>, skipPoll: (p
     ...post,
     reaction_count,
     comment_count,
+    answerCount,
     poll_options,
     my_vote,
     top_reactions,
@@ -80,9 +86,9 @@ export function mergePostCounts(
   );
 }
 
-/** comment_count += delta (never below 0) on every cached post list and the post detail for this post. */
-export function bumpCommentCount(queryClient: QueryClient, postId: string, delta: number): void {
-  const bump = (post: FeedPost): FeedPost => ({ ...post, comment_count: Math.max(0, post.comment_count + delta) });
+/** comment_count and answerCount move by `delta` (never below 0) on every cached post list and the post detail. */
+export function bumpPostCounts(queryClient: QueryClient, postId: string, delta: CountDelta): void {
+  const bump = (post: FeedPost): FeedPost => applyCountDelta(post, delta);
   updateListedPost(queryClient, postId, bump);
   queryClient.setQueriesData<FeedPost | null>({ queryKey: ['post', postId] }, (post) => (post ? bump(post) : post));
 }

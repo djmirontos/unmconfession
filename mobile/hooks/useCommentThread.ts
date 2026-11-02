@@ -21,7 +21,8 @@ import {
 import { commentReactionBusy } from '@/lib/commentReactionSync';
 import { getCommentErrorMessage, getErrorCode, getReplyErrorMessage } from '@/lib/errors';
 import { bumpListingCommentCount } from '@/lib/listings';
-import { bumpCommentCount } from '@/lib/postCounts';
+import { addedDelta, type CountDelta, removedDelta } from '@/lib/answers';
+import { bumpPostCounts } from '@/lib/postCounts';
 import { askForPush } from '@/lib/pushAsk';
 import { breakdownTally, topFromBreakdown } from '@/lib/reactions';
 import { parseTimestamp } from '@/lib/time';
@@ -286,11 +287,14 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
     }
   }, [thread, publishedCount, expectedCount]);
 
-  /** comment_count of the post (feed, lists, detail) or the listing (screen, My Posts). */
+  /**
+   * comment_count (and, for posts, answerCount: top-level comments only) of the post (feed, lists,
+   * detail) or the listing (screen, My Posts). Listings have no answers.
+   */
   const bumpTargetCount = useCallback(
-    (delta: number) => {
-      if (target === 'post') bumpCommentCount(queryClient, targetId, delta);
-      else bumpListingCommentCount(queryClient, targetId, delta);
+    (delta: CountDelta) => {
+      if (target === 'post') bumpPostCounts(queryClient, targetId, delta);
+      else bumpListingCommentCount(queryClient, targetId, delta.comments);
     },
     [queryClient, target, targetId],
   );
@@ -329,7 +333,7 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         const item = fromRow(await createComment(target, targetId, body), me);
         storeComment(item);
         void askForPush('published');
-        if (item.state === 'published') bumpTargetCount(1);
+        if (item.state === 'published') bumpTargetCount(addedDelta(true));
         if (item.state === 'pending') showToast('Sent for review');
         return { ok: true, id: item.id };
       } catch (error) {
@@ -355,20 +359,20 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
       setSending((list) => [...list, temp]);
       setReplies(parentId, true);
       bumpReplyCount(queryClient, parentId, 1);
-      bumpTargetCount(1);
+      bumpTargetCount(addedDelta(false));
       try {
         const item = fromRow(await createReply(to.id, body), me);
         storeComment(item);
         void askForPush('published');
         if (item.state === 'pending') {
           bumpReplyCount(queryClient, parentId, -1);
-          bumpTargetCount(-1);
+          bumpTargetCount(removedDelta(false));
           showToast('Sent for review');
         }
         return { ok: true, id: item.id };
       } catch (error) {
         bumpReplyCount(queryClient, parentId, -1);
-        bumpTargetCount(-1);
+        bumpTargetCount(removedDelta(false));
         const message = getReplyErrorMessage(error);
         showToast(message);
         if (getErrorCode(error) === 'not_found') void refetchAll();
@@ -387,7 +391,8 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         const item = fromRow(await editOwnComment(comment.id, body), me);
         storeComment(item);
         if (comment.state === 'published' && item.state === 'pending') {
-          bumpTargetCount(-1);
+          // Held for review: a top-level one stops being an answer too (its replies stay).
+          bumpTargetCount(removedDelta(!item.parentId));
           if (item.parentId) bumpReplyCount(queryClient, item.parentId, -1);
         }
         showToast(item.state === 'pending' ? 'Sent for review' : 'Saved');
@@ -414,9 +419,9 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         if (comment.state === 'published') {
           if (comment.parentId) {
             bumpReplyCount(queryClient, comment.parentId, -1);
-            bumpTargetCount(-1);
+            bumpTargetCount(removedDelta(false));
           } else {
-            bumpTargetCount(-(1 + comment.replyCount));
+            bumpTargetCount(removedDelta(true, comment.replyCount));
             setReplies(comment.id, false);
             queryClient.removeQueries({ queryKey: repliesKey(comment.id) });
             void queryClient.invalidateQueries({ queryKey: [target, targetId] });
@@ -477,7 +482,7 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
       if (event === 'UPDATE' && !row.published_at) return;
       if (event === 'UPDATE' && Math.abs(Date.now() - parseTimestamp(row.published_at ?? '')) > JUST_PUBLISHED_MS) return;
       if (row.author_id === userId) return; // my own: already handled locally
-      bumpTargetCount(1);
+      bumpTargetCount(addedDelta(!row.parent_id));
       if (row.parent_id) {
         // A reply: never the pill or the top-level list. Its parent's reply_count arrives with the
         // parent's own UPDATE (the server trigger bumps it); open replies just refetch (merge by id).

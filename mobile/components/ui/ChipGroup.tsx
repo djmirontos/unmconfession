@@ -9,6 +9,8 @@ type Props<T extends string | number> = {
   accessibilityLabel: string;
   /** Horizontal scroll instead of wrapping. */
   scroll?: boolean;
+  /** With scroll, inside a 16 px padded screen: the row runs to the screen edges, so chips scroll out at the edge, not at the padding. */
+  bleed?: boolean;
   disabled?: boolean;
 };
 
@@ -19,6 +21,7 @@ export function ChipGroup<T extends string | number>({
   onChange,
   accessibilityLabel,
   scroll = false,
+  bleed = false,
   disabled = false,
 }: Props<T>) {
   const chips = options.map((option) => {
@@ -45,7 +48,8 @@ export function ChipGroup<T extends string | number>({
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerClassName="gap-2"
+        className={bleed ? '-mx-4' : undefined}
+        contentContainerClassName={bleed ? 'gap-2 px-4' : 'gap-2'}
         accessibilityRole="radiogroup"
         accessibilityLabel={accessibilityLabel}
       >

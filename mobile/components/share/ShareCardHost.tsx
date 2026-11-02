@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { ShareCard } from '@/components/share/ShareCard';
 import { logError } from '@/lib/log';
-import { postKindWord } from '@/lib/postKindWord';
+import { postWord } from '@/lib/postKindWord';
 import { postImageUrl } from '@/lib/posts';
 import { captureAndShare, SHARE_FAILED, type ShareItem } from '@/lib/share';
 import { useShareCardStore } from '@/stores/shareCardStore';
@@ -16,7 +16,7 @@ type PhotoState = 'none' | 'loading' | 'ready' | 'failed';
 
 function dialogTitle(item: ShareItem): string {
   if (item.type === 'listing') return 'Share listing';
-  return `Share ${postKindWord(item.post.kind)}`;
+  return `Share ${postWord(item.post.kind, item.post.postType)}`;
 }
 
 /** One share: render the card, wait for layout and the photo, capture, share, clean up. */

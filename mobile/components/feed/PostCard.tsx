@@ -66,12 +66,14 @@ function PostCardImpl({
 }: Props) {
   const vote = usePollVote(post.id, post.my_vote);
   const flush = useFlushCards();
+  const qa = post.postType === 'qa';
   const accessory =
     headerAccessory ?? (onMore ? <MoreButton onPress={() => onMore(post)} accessibilityLabel="More options for this post" /> : undefined);
   const content = (
     <View className={cardGap(flush)}>
       <PostHeader
         kind={post.kind}
+        postType={post.postType}
         author_id={post.author_id}
         nickname={post.nickname}
         avatar_key={post.avatar_key}
@@ -113,7 +115,8 @@ function PostCardImpl({
         <PostActions
           reactionCount={post.reaction_count}
           topReactions={post.top_reactions}
-          commentCount={post.comment_count}
+          commentCount={qa ? post.answerCount : post.comment_count}
+          answers={qa}
           postId={post.id}
           myReaction={post.my_reaction}
           reactionsDisabled={reactionsDisabled}
@@ -122,7 +125,12 @@ function PostCardImpl({
           onAction={onAction}
         />
       ) : showCounts ? (
-        <PostCounts reactionCount={post.reaction_count} topReactions={post.top_reactions} commentCount={post.comment_count} />
+        <PostCounts
+          reactionCount={post.reaction_count}
+          topReactions={post.top_reactions}
+          commentCount={qa ? post.answerCount : post.comment_count}
+          answers={qa}
+        />
       ) : null}
       {footer}
     </View>

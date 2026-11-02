@@ -32,6 +32,8 @@ type Props = {
   onCancelReply?: () => void;
   autoFocus?: boolean;
   inputRef?: Ref<TextInput>;
+  /** Q&A post: a new top-level comment is an answer. */
+  answers?: boolean;
 };
 
 /** Bottom composer for a thread. Guests get a sign-in button instead. */
@@ -47,6 +49,7 @@ export function CommentComposer({
   onCancelReply,
   autoFocus,
   inputRef,
+  answers = false,
 }: Props) {
   const replying = replyingTo !== null && !editing;
   const { colors } = useTheme();
@@ -108,14 +111,16 @@ export function CommentComposer({
             ref={inputRef}
             value={value}
             onChangeText={onChangeText}
-            placeholder={replying ? 'Write a reply…' : 'Write a comment…'}
+            placeholder={replying ? 'Write a reply…' : answers ? 'Write an answer…' : 'Write a comment…'}
             placeholderTextColor={colors.textDim}
             selectionColor={colors.accent}
             multiline
             autoFocus={autoFocus}
             editable={!busy}
             textAlignVertical="top"
-            accessibilityLabel={editing ? 'Edit your comment' : replying ? `Write a reply to ${replyingTo}` : 'Write a comment'}
+            accessibilityLabel={
+              editing ? 'Edit your comment' : replying ? `Write a reply to ${replyingTo}` : answers ? 'Write an answer' : 'Write a comment'
+            }
             style={{
               maxHeight: 120 + KEYBOARD_GAP,
               paddingTop: INPUT_PAD_Y,

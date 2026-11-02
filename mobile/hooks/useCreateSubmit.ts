@@ -6,7 +6,7 @@ import type { Created, StoredImage } from '@/lib/create';
 import { getErrorCode, getErrorMessage } from '@/lib/errors';
 import { refreshFeedTop } from '@/lib/feed';
 import { logError } from '@/lib/log';
-import { postKindWord } from '@/lib/postKindWord';
+import { postWord } from '@/lib/postKindWord';
 import { askForPush } from '@/lib/pushAsk';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
@@ -15,7 +15,11 @@ const PENDING_TOAST = "Sent for review. You'll be notified when it's approved.";
 
 function liveToast(created: Created): string {
   if (created.kind === 'listing') return 'Your listing is live';
-  return `Your ${postKindWord(created.postKind)} is live`;
+  return `Your ${postWord(created.postKind, created.postType)} is live`;
+}
+
+function pendingToast(created: Created): string {
+  return created.kind === 'post' && created.postType === 'qa' ? 'Your question is waiting for review' : PENDING_TOAST;
 }
 
 type Photos = { uploadAll: (userId: string) => Promise<StoredImage[]> };
@@ -75,7 +79,7 @@ export function useCreateSubmit() {
         // The one push reminder, if the member said "Not now" before (lib/pushPermission.ts).
         void askForPush('published');
         if (!created.published) {
-          showToast(PENDING_TOAST);
+          showToast(pendingToast(created));
           router.push('/my-posts');
           return;
         }

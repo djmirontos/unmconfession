@@ -122,6 +122,7 @@ export default function PostDetailScreen() {
         scrollEnabled={!pickerOpen}
         expectedCount={data.comment_count}
         onAuthorBlocked={onAuthorBlocked}
+        answers={data.postType === 'qa'}
       />
     );
   }

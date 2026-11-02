@@ -11,7 +11,7 @@ import type { MyItem } from '@/lib/myPosts';
 import { afterPostEdit, editOwnPost } from '@/lib/ownItems';
 import { validate } from '@/lib/validation';
 
-/** Edit a post or shoutout: same fields, limits and schemas as Create. */
+/** Edit a post (or Q&A post) or shoutout: same fields, limits and schemas as Create. The post type never changes. */
 export function EditPostForm({ item, kind }: { item: MyItem; kind: 'confession' | 'shoutout' }) {
   const queryClient = useQueryClient();
   const { save, saving, error } = useEditSave();
@@ -52,7 +52,7 @@ export function EditPostForm({ item, kind }: { item: MyItem; kind: 'confession' 
         />
       ) : null}
       <TextField
-        label={kind === 'shoutout' ? 'Message' : 'Post'}
+        label={kind === 'shoutout' ? 'Message' : item.postType === 'qa' ? 'Question' : 'Post'}
         value={body}
         onChangeText={setBody}
         multiline

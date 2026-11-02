@@ -1,5 +1,6 @@
 import type { QueryData } from '@supabase/supabase-js';
 
+import { type PostType, toPostType } from '@/lib/answers';
 import { LOST_FOUND_TYPES, type LostFoundType } from '@/lib/createSchemas';
 import type { ListingCardData } from '@/lib/listings';
 import { type FeedPost, parseImages, type PostImage } from '@/lib/posts';
@@ -15,6 +16,8 @@ export type MyItem = {
   source: 'post' | 'listing';
   id: string;
   kind: Enums['post_kind'] | Enums['listing_kind'];
+  /** Posts: 'qa' for a Q&A post; listings are always 'post'. */
+  postType: PostType;
   /** Post body or listing title. */
   text: string;
   number: number | null;
@@ -51,7 +54,7 @@ export const MY_POSTS_START: MyPostsCursor = {
 
 // Everything the shared cards need, including the author's own profile and, for polls, the options.
 const POST_COLUMNS =
-  'id, kind, body, number, status, reject_reason, created_at, target_name, images, ends_at, author_id, published_at, edited_at, reaction_count, reaction_breakdown, comment_count, author:profiles!posts_author_id_fkey(nickname, avatar_key), poll_options(id, label, position, vote_count)';
+  'id, kind, body, number, status, reject_reason, created_at, target_name, images, ends_at, author_id, published_at, edited_at, reaction_count, reaction_breakdown, comment_count, post_type, answer_count, author:profiles!posts_author_id_fkey(nickname, avatar_key), poll_options(id, label, position, vote_count)';
 const LISTING_COLUMNS =
   'id, kind, title, status, reject_reason, created_at, images, description, price, condition, location, event_date, lost_found_type, is_closed, author_id, published_at, edited_at, comment_count, author:profiles!listings_author_id_fkey(nickname, avatar_key)';
 
@@ -84,6 +87,8 @@ function toFeedPost(r: PostRow, images: PostImage[]): FeedPost {
     // Read from posts, not feed_posts: the same top 3 rule, computed here.
     top_reactions: topFromBreakdown(r.reaction_breakdown),
     reaction_breakdown: breakdownTally(r.reaction_breakdown),
+    postType: toPostType(r.post_type),
+    answerCount: r.answer_count,
   };
 }
 
@@ -93,6 +98,7 @@ const toPostItem = (r: PostRow): MyItem => {
     source: 'post',
     id: r.id,
     kind: r.kind,
+    postType: toPostType(r.post_type),
     text: r.body,
     number: r.number,
     status: r.status,
@@ -118,6 +124,7 @@ const toListingItem = (r: ListingRow): MyItem => {
     source: 'listing',
     id: r.id,
     kind: r.kind,
+    postType: 'post',
     text: r.title,
     number: null,
     status: r.status,

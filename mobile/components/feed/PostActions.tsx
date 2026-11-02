@@ -8,6 +8,7 @@ import type { PostAction } from '@/hooks/useComingSoonAction';
 import { useOpenReactors } from '@/hooks/useReactors';
 import { useIsSharing } from '@/hooks/useShareCard';
 import { useTheme } from '@/hooks/useTheme';
+import { answersLabel } from '@/lib/answers';
 import type { ReactionType } from '@/lib/reactions';
 import { setReaction } from '@/lib/reactionSync';
 import { postShareKey } from '@/lib/share';
@@ -18,6 +19,8 @@ type ButtonProps = {
   icon: IconName;
   label: string;
   count?: number;
+  /** Screen-reader text instead of "label, count". */
+  spoken?: string;
   active?: boolean;
   /** Spinner instead of the icon; taps ignored and "busy" announced. */
   busy?: boolean;
@@ -25,7 +28,7 @@ type ButtonProps = {
 };
 
 // 36 px high + 6 px hit slop on each side = a 48 px touch target.
-function ActionButton({ icon, label, count, active, busy = false, onPress }: ButtonProps) {
+function ActionButton({ icon, label, count, spoken, active, busy = false, onPress }: ButtonProps) {
   const { colors } = useTheme();
   return (
     <Pressable
@@ -33,7 +36,7 @@ function ActionButton({ icon, label, count, active, busy = false, onPress }: But
       disabled={busy}
       hitSlop={6}
       accessibilityRole="button"
-      accessibilityLabel={count === undefined ? label : `${label}, ${count}`}
+      accessibilityLabel={spoken ?? (count === undefined ? label : `${label}, ${count}`)}
       accessibilityState={{ busy, disabled: busy }}
       className="h-9 flex-row items-center gap-1.5 rounded-full px-3 active:bg-surface2"
     >
@@ -60,6 +63,8 @@ type Props = {
   /** Most used reaction types, first = most used (up to 3). */
   topReactions: readonly ReactionType[];
   commentCount: number;
+  /** Q&A post: the count is the answer count (top-level comments) and is read as "N answers". */
+  answers?: boolean;
   /** Reacting is disabled until the post is fully loaded. */
   reactionsDisabled?: boolean;
   onAction: (action: PostAction) => void;
@@ -75,6 +80,7 @@ export function PostActions({
   reactionCount,
   topReactions,
   commentCount,
+  answers = false,
   reactionsDisabled,
   onAction,
   onComment,
@@ -96,6 +102,7 @@ export function PostActions({
         icon="chatbubble-outline"
         label="Comments"
         count={commentCount}
+        spoken={answers ? answersLabel(commentCount) : undefined}
         onPress={onComment ?? (() => onAction('comment'))}
       />
       <View className="min-w-0 flex-1 flex-row justify-end" onLayout={(e) => setRoom(e.nativeEvent.layout.width)}>
@@ -113,23 +120,33 @@ export function PostCounts({
   reactionCount,
   topReactions = [],
   commentCount,
+  answers = false,
 }: {
   reactionCount?: number;
   /** With reactions: the same top-3 stack as the action bar instead of the heart. */
   topReactions?: readonly ReactionType[];
   commentCount: number;
+  /** Q&A post: the count is the answer count, read as "N answers". */
+  answers?: boolean;
 }) {
   const { colors } = useTheme();
   const stack = reactionCount !== undefined && reactionCount > 0 && topReactions.length > 0;
-  const items: { icon: IconName; label: string; count: number }[] = [
-    ...(reactionCount !== undefined && !stack ? [{ icon: 'heart-outline' as const, label: 'Reactions', count: reactionCount }] : []),
-    { icon: 'chatbubble-outline', label: 'Comments', count: commentCount },
+  const items: { icon: IconName; label: string; count: number; spoken: string }[] = [
+    ...(reactionCount !== undefined && !stack
+      ? [{ icon: 'heart-outline' as const, label: 'Reactions', count: reactionCount, spoken: `Reactions, ${reactionCount}` }]
+      : []),
+    {
+      icon: 'chatbubble-outline',
+      label: 'Comments',
+      count: commentCount,
+      spoken: answers ? answersLabel(commentCount) : `Comments, ${commentCount}`,
+    },
   ];
   return (
     <View className="flex-row items-center gap-4">
       {stack ? <TopReactions types={topReactions} total={reactionCount} /> : null}
       {items.map((i) => (
-        <View key={i.label} className="flex-row items-center gap-1.5" accessibilityLabel={`${i.label}, ${i.count}`}>
+        <View key={i.label} className="flex-row items-center gap-1.5" accessibilityLabel={i.spoken}>
           <Ionicons name={i.icon} size={18} color={colors.textDim} />
           <Text className="text-sm font-bold text-text-dim">{i.count}</Text>
         </View>

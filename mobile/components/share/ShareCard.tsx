@@ -101,7 +101,7 @@ function PhotoPostContent({ post, photoUri, onPhotoSettled }: PostProps & { phot
 }
 
 // No post number on the card (v1.0.3): just the kind.
-const postChipLabel = (post: FeedPost) => (post.kind === 'shoutout' ? 'Shoutout' : 'Post');
+const postChipLabel = (post: FeedPost) => (post.kind === 'shoutout' ? 'Shoutout' : post.postType === 'qa' ? 'Q&A' : 'Post');
 
 function PostContent({ post, photoUri, onPhotoSettled }: PostProps) {
   if (post.kind === 'poll') return <PollContent post={post} />;

@@ -1,20 +1,9 @@
 import type { ImageSourcePropType } from 'react-native';
 
 import { parseTally, reactAndRank, type Tally, topOf } from '@/lib/reactionTally';
-import { Constants, type Database } from '@/types/database';
+import { isReactionType, REACTION_TYPES, type ReactionType } from '@/lib/reactionTypes';
 
-export type ReactionType = Database['public']['Enums']['reaction_type'];
-
-/** Picker order, from the generated enum (like, love, haha, wow, sad, angry). */
-export const REACTION_TYPES: readonly ReactionType[] = Constants.public.Enums.reaction_type;
-
-export const isReactionType = (value: unknown): value is ReactionType =>
-  typeof value === 'string' && (REACTION_TYPES as readonly string[]).includes(value);
-
-/** A server top_reactions array, keeping only known types (null / missing = none). */
-export function parseTopReactions(value: unknown): ReactionType[] {
-  return Array.isArray(value) ? value.filter(isReactionType).slice(0, 3) : [];
-}
+export { isReactionType, parseTopReactions, REACTION_TYPES, type ReactionType } from '@/lib/reactionTypes';
 
 /**
  * Top 3 from a reaction_breakdown tally ({"like":5,"love":2}): most used first, ties in

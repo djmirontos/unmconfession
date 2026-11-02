@@ -13,24 +13,18 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { AccountLoadError } from '@/components/auth/AccountLoadError';
 import { useMembership } from '@/hooks/useProfile';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { CREATE_KINDS, type FormKind } from '@/lib/createKinds';
 
-type FormKind = 'confession' | 'shoutout' | 'poll' | 'sell' | 'lost_found';
-
-const KINDS: readonly { value: FormKind; label: string }[] = [
-  { value: 'confession', label: 'Post' },
-  { value: 'shoutout', label: 'Shoutout' },
-  { value: 'poll', label: 'Poll' },
-  { value: 'sell', label: 'Sell' },
-  { value: 'lost_found', label: 'Lost & Found' },
-];
-
-/** All five forms stay mounted (hidden when inactive), so switching keeps text and photos. */
+/** All six forms stay mounted (hidden when inactive), so switching keeps text and photos. */
 function Forms({ userId, active }: { userId: string; active: FormKind }) {
   const show = (kind: FormKind) => ({ display: active === kind ? ('flex' as const) : ('none' as const) });
   return (
     <>
       <View style={show('confession')}>
         <PostTextForm userId={userId} kind="confession" />
+      </View>
+      <View style={show('qa')}>
+        <PostTextForm userId={userId} kind="qa" />
       </View>
       <View style={show('shoutout')}>
         <PostTextForm userId={userId} kind="shoutout" />
@@ -71,7 +65,7 @@ export default function CreateScreen() {
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerClassName="gap-5 p-4 pb-12">
           {status === 'member' && userId ? (
             <>
-              <ChipGroup options={KINDS} value={kind} onChange={setKind} accessibilityLabel="What to post" scroll />
+              <ChipGroup options={CREATE_KINDS} value={kind} onChange={setKind} accessibilityLabel="What to post" scroll bleed />
               <Forms userId={userId} active={kind} />
             </>
           ) : status === 'guest' ? (

@@ -75,6 +75,8 @@ type Props = {
   expectedCount?: number;
   /** After blocking a commenter from their comment's menu. */
   onAuthorBlocked?: (authorId: string) => void;
+  /** Q&A post: top-level comments are answers (wording only; replies work as usual). */
+  answers?: boolean;
 };
 
 /**
@@ -92,6 +94,7 @@ export function CommentThread({
   focusRequest = 0,
   expectedCount = 0,
   onAuthorBlocked,
+  answers = false,
 }: Props) {
   const reduceMotion = useReducedMotion();
   const requireAuth = useRequireAuth();
@@ -259,11 +262,11 @@ export function CommentThread({
       <View className="gap-4 pb-2">
         {header}
         <Text accessibilityRole="header" className="text-xs font-bold uppercase tracking-widest text-text-dim">
-          Comments
+          {answers ? 'Answers' : 'Comments'}
         </Text>
       </View>
     ),
-    [header],
+    [header, answers],
   );
 
   const empty = thread.error ? (
@@ -273,7 +276,10 @@ export function CommentThread({
       <SkeletonList item={CommentSkeleton} count={3} />
     </View>
   ) : (
-    <EmptyState icon="chatbubble-outline" title="No comments yet. Be the first to comment." />
+    <EmptyState
+      icon="chatbubble-outline"
+      title={answers ? 'No answers yet. Be the first to answer.' : 'No comments yet. Be the first to comment.'}
+    />
   );
 
   const footer = thread.hasMore ? (
@@ -332,6 +338,7 @@ export function CommentThread({
         replyingTo={replyTo ? authorLabel(replyTo.nickname) : null}
         onCancelReply={resetComposer}
         autoFocus={focusComposer}
+        answers={answers}
       />
       <ActionSheet visible={menuFor !== null} actions={menuActions} onClose={() => setMenuFor(null)} />
       <ContentMenu target={otherMenu} onClose={() => setOtherMenu(null)} onBlocked={onAuthorBlocked} />

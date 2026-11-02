@@ -100,9 +100,12 @@ export type Database = {
           audit_retention_days: number
           campus_voice_reactions: number
           id: number
+          latest_app_version: string
+          latest_update_message: string | null
           logo_path: string | null
           min_app_version: string
           moderation_mode: string
+          play_update_url: string | null
           push_enabled: boolean
           rejected_retention_days: number
           tagline: string
@@ -116,9 +119,12 @@ export type Database = {
           audit_retention_days?: number
           campus_voice_reactions?: number
           id?: number
+          latest_app_version?: string
+          latest_update_message?: string | null
           logo_path?: string | null
           min_app_version?: string
           moderation_mode?: string
+          play_update_url?: string | null
           push_enabled?: boolean
           rejected_retention_days?: number
           tagline?: string
@@ -132,9 +138,12 @@ export type Database = {
           audit_retention_days?: number
           campus_voice_reactions?: number
           id?: number
+          latest_app_version?: string
+          latest_update_message?: string | null
           logo_path?: string | null
           min_app_version?: string
           moderation_mode?: string
+          play_update_url?: string | null
           push_enabled?: boolean
           rejected_retention_days?: number
           tagline?: string
@@ -680,6 +689,35 @@ export type Database = {
             foreignKeyName: "listings_moderated_by_fkey"
             columns: ["moderated_by"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      member_app_versions: {
+        Row: {
+          app_version: string
+          platform: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          app_version: string
+          platform: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          app_version?: string
+          platform?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_app_versions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -2076,6 +2114,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_latest_app_info: {
+        Args: never
+        Returns: {
+          latest_app_version: string
+          latest_update_message: string
+          play_update_url: string
+          update_url: string
+        }[]
+      }
       get_listing_return: {
         Args: { p_listing: string }
         Returns: {
@@ -2338,6 +2385,15 @@ export type Database = {
           total_members: number
         }[]
       }
+      mod_app_versions: {
+        Args: never
+        Returns: {
+          app_version: string
+          members: number
+          platform: string
+          seen_7d: number
+        }[]
+      }
       mod_clear_profile_details: {
         Args: { p_reason?: string; p_user: string }
         Returns: undefined
@@ -2578,6 +2634,10 @@ export type Database = {
       refresh_trending: { Args: never; Returns: undefined }
       register_push_token: {
         Args: { p_platform: string; p_token: string }
+        Returns: undefined
+      }
+      report_app_version: {
+        Args: { p_platform: string; p_version: string }
         Returns: undefined
       }
       report_content: {

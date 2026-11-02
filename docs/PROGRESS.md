@@ -1543,3 +1543,9 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 - Optimistic toggle through the existing latest-only queue (`lib/answerUpvoteSync.ts`): one request per answer, only the last wanted vote is sent, the server's count wins unless I tapped again since, rollback on error, and realtime counts are skipped while my change is in flight (`answerUpvoteBusy`). Edits keep the upvotes shown. Pure rules in `lib/upvotes.ts`.
 - **Verified:** `tsc`, lint and all 23 mobile suites pass (new `test:upvotes` 13); site typecheck; admin typecheck and 380 tests. Device-tested through an EAS Update on the preview channel (group `e15bf2b1-5c24-419f-9869-1874a93ecd07`, runtime 1.0.2): passed.
 - **Left:** the Helpful badge, the admin and notification wording for Q&A.
+
+**Step 4, "Helpful" badge (migration `20261103120000_helpful_badge.sql`, applied 2026-11-02):**
+- Database: badge row `helpful` (sort_order 6, between Campus Hero and Trusted Seller), table `helpful_wins` (one win per Q&A post, recorded the first time it qualifies, never taken back), and `award_badges()` = the Trusted Seller version plus the helpful block. Runs in the existing 10-minute cron job.
+- App: `helpful` style in `lib/badges.ts` (filled `bulb`, `success` tone for contrast in both themes). The staff hub's "Members by badge" reads the `badges` table, so it lists Helpful with no change. Builds without the icon show the neutral ribbon.
+- **Verified:** `tsc`, lint and all 23 mobile suites pass (`test:badges` 20); site typecheck; admin typecheck and 380 tests.
+- **Not device-tested:** the award itself cannot happen until Q&A posts are 48 hours old. `supabase/tests/run.sh` has no tests for it yet (it covers V1 only).

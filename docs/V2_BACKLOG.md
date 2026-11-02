@@ -138,3 +138,6 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
 11. Upvotes stay when the voter deletes their account (same as reactions; decided).
 12. Answers stay ordered by time; a "Top | Oldest" switch can be added later.
 13. The asker's best-answer pick is postponed.
+14. Q&A wording in notifications and the admin panel ("Your question was approved", the admin "Q&A" label): decided to skip in 1.0.3. Needs a small migration recreating `get_notifications` and the admin content functions (see 1).
+15. Helpful wins are locked at first qualification: an answer that overtakes the winner later does not change it.
+16. Helpful needs 3 wins on 3 different Q&A posts; each win needs at least 3 distinct valid upvoters (not the author, not banned or deleted), on a post at least 48 hours old with at least 2 answers.

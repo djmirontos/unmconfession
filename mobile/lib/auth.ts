@@ -10,6 +10,8 @@ import { logOutLocallyFirst } from '@/lib/sessionRules';
 import { encryptedSessionStorage, SUPABASE_SESSION_KEY } from '@/lib/sessionStorage';
 import { SESSION_STORAGE_KEY, supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { useCommentDraftStore } from '@/stores/commentDraftStore';
+import { closeCommentsSheet } from '@/stores/commentsSheetStore';
 
 /** Logs the real Auth error (dev only, redacted) and returns it for rethrowing. */
 function authFail(scope: string, error: unknown): unknown {
@@ -112,6 +114,9 @@ export function clearMemberCaches() {
   for (const key of ['profile', 'notifications', 'notifications-unread', 'trending', 'polls', 'listings', 'my-settings', 'profile-details', 'reactors', 'badges', 'top-badges', 'item-return', 'item-return-candidates', 'item-sale', 'item-sale-candidates', 'push-settings', 'staff', 'mod-open-reports', 'mod-stats', 'mod-recent-signups', 'mod-reports', 'mod-report', 'mod-held', 'mod-held-item', 'mod-dashboard', 'mod-app-versions', 'get-started-count']) {
     queryClient.removeQueries({ queryKey: [key] });
   }
+  // Unsent comments are the person's too, and the comments sheet closes with the account.
+  useCommentDraftStore.getState().clearAll();
+  closeCommentsSheet();
 }
 
 const REVOKE_TIMEOUT_MS = 5000;

@@ -141,3 +141,10 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
 14. Q&A wording in notifications and the admin panel ("Your question was approved", the admin "Q&A" label): decided to skip in 1.0.3. Needs a small migration recreating `get_notifications` and the admin content functions (see 1).
 15. Helpful wins are locked at first qualification: an answer that overtakes the winner later does not change it.
 16. Helpful needs 3 wins on 3 different Q&A posts; each win needs at least 3 distinct valid upvoters (not the author, not banned or deleted), on a post at least 48 hours old with at least 2 answers.
+
+## Comments bottom sheet follow-ups
+
+1. TalkBack on Android may reach the feed behind the sheet, because `accessibilityViewIsModal` is iOS-only.
+2. The sheet cannot close itself when a member is banned or suspended (the phone does not know the status); the server refusal covers it.
+3. Live resizing between the two snap heights re-lays out the list, which may stutter on low-end phones; consider a fixed-height sheet with a translate animation.
+4. The Android keyboard relies on `softwareKeyboardLayoutMode` "pan"; if that mode ever changes, revisit `keyboardLift` in `lib/commentsSheet.ts`.

@@ -1549,3 +1549,10 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 - App: `helpful` style in `lib/badges.ts` (filled `bulb`, `success` tone for contrast in both themes). The staff hub's "Members by badge" reads the `badges` table, so it lists Helpful with no change. Builds without the icon show the neutral ribbon.
 - **Verified:** `tsc`, lint and all 23 mobile suites pass (`test:badges` 20); site typecheck; admin typecheck and 380 tests.
 - **Not device-tested:** the award itself cannot happen until Q&A posts are 48 hours old. `supabase/tests/run.sh` has no tests for it yet (it covers V1 only).
+
+## Comments bottom sheet (v1.0.3 OTA, 2026-11-03, device-tested on Android)
+
+- The comment icon on a Feed or Trending card opens a bottom sheet with the post's comments and the composer, for members and guests; tapping the post still opens `/post/[id]`. Built from the existing `CommentThread`, `useCommentThread`, caches and composer; no new comment or count store.
+- `components/comments/CommentsSheet.tsx`: a root-level overlay (not a Modal), snaps at about 60% and 92%, drag down / backdrop / close button / Back close it, the keyboard does not open by itself. Pure rules in `lib/commentsSheet.ts`; stores `commentsSheetStore` and `commentDraftStore` (in-memory drafts, shared with the post screen).
+- iOS lifts the sheet by the keyboard; Android relies on the window pan (`softwareKeyboardLayoutMode` "pan") and only stops the sheet closing while the keyboard is up.
+- **Verified:** `tsc`, lint and all 24 mobile suites pass (new `test:commentssheet` 12). Shipped as an EAS Update to the production channel, runtime 1.0.3 (group `71feb469-f8e0-4753-bf92-16afa2f98691`), device-tested on the Play 1.0.3 build (Android): passed. No native change.

@@ -5,6 +5,7 @@ import { Pressable, type StyleProp, View, type ViewStyle } from 'react-native';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { isDeletedAuthor } from '@/lib/authorLabel';
 import { useAuthStore } from '@/stores/authStore';
+import { closeCommentsSheet } from '@/stores/commentsSheetStore';
 
 const MIN_TARGET = 44;
 
@@ -20,6 +21,8 @@ export function useOpenProfile() {
   return useCallback(
     (userId: string) => {
       if (!requireAuth('profile')) return;
+      // From the comments sheet: close it first, so the profile is not opened underneath it.
+      closeCommentsSheet();
       if (userId === viewerId) router.navigate('/(tabs)/profile');
       else router.push({ pathname: '/user/[id]', params: { id: userId } });
     },

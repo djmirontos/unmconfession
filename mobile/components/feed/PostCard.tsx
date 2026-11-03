@@ -28,8 +28,8 @@ type Props = {
   footer?: ReactNode;
   /** Detail screen: true while only the cached feed copy is shown. */
   reactionsDisabled?: boolean;
-  /** Comment button (Feed: open the post with the composer focused; detail: focus the composer). */
-  onComment?: (id: string) => void;
+  /** Comment button (lists: the comments sheet; detail: focus the composer). */
+  onComment?: (id: string, post: FeedPost) => void;
   /** Share button: the image card (see useShareCard). */
   onShare?: (post: FeedPost) => void;
   /** Feed: "⋯" in the header for someone else's post (Report / Block). Ignored when headerAccessory is set. */
@@ -120,7 +120,7 @@ function PostCardImpl({
           postId={post.id}
           myReaction={post.my_reaction}
           reactionsDisabled={reactionsDisabled}
-          onComment={onComment ? () => onComment(post.id) : undefined}
+          onComment={onComment ? () => onComment(post.id, post) : undefined}
           onShare={onShare ? () => onShare(post) : undefined}
           onAction={onAction}
         />

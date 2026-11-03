@@ -7,6 +7,7 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SignInSheet } from '@/components/auth/SignInSheet';
+import { CommentsSheet } from '@/components/comments/CommentsSheet';
 import { ReactorsSheet } from '@/components/reactions/ReactorsSheet';
 import { ForceUpdateGate } from '@/components/layout/ForceUpdateGate';
 import { SoftUpdatePrompt } from '@/components/layout/SoftUpdatePrompt';
@@ -42,10 +43,12 @@ export default function RootLayout() {
           <ReactorsSheet />
           <SignInSheet />
           <PushExplainerSheet />
-          <Toast />
-          <ReactionPickerOverlay />
           <ImageViewer />
           <ShareCardHost />
+          {/* A plain overlay (not a Modal): the toast and the reaction picker come after it so they draw above it. */}
+          <CommentsSheet />
+          <Toast />
+          <ReactionPickerOverlay />
           {/* Just before the hard gate, which must always stack above it. */}
           <SoftUpdatePrompt />
           {/* Last, so its Modal stacks above every sheet and modal. */}

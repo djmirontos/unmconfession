@@ -30,6 +30,7 @@ import { useRegisterTopBadges } from '@/hooks/useTopBadges';
 import { authorLabel } from '@/lib/authorLabel';
 import { canEditComment, type CommentTarget, type ThreadComment } from '@/lib/comments';
 import { getErrorMessage } from '@/lib/errors';
+import { useCommentDraftStore } from '@/stores/commentDraftStore';
 
 // Within this distance of the end, new comments from others are appended instead of raising the pill.
 const NEAR_BOTTOM_PX = 160;
@@ -63,8 +64,8 @@ function ReplyLink({ label, onPress, busy = false }: LinkProps) {
 type Props = {
   targetType: CommentTarget;
   targetId: string;
-  /** The post (or listing) shown above the comments, inside the same list. */
-  header: ReactElement;
+  /** The post (or listing) shown above the comments, inside the same list. None in the comments sheet. */
+  header?: ReactElement;
   /** Open with the composer focused (Feed comment button). */
   focusComposer?: boolean;
   /** Off while the reaction picker owns the touch. */
@@ -77,6 +78,13 @@ type Props = {
   onAuthorBlocked?: (authorId: string) => void;
   /** Q&A post: top-level comments are answers (wording only; replies work as usual). */
   answers?: boolean;
+  /**
+   * Keeps the unsent text (and the reply or edit it belongs to) in memory under this key, so it
+   * survives closing the comments sheet or moving to the post screen. Without it, as before.
+   */
+  draftKey?: string;
+  /** Inside the comments sheet: the sheet shows the title and moves for the keyboard itself. */
+  inSheet?: boolean;
 };
 
 /**
@@ -95,6 +103,8 @@ export function CommentThread({
   expectedCount = 0,
   onAuthorBlocked,
   answers = false,
+  draftKey,
+  inSheet = false,
 }: Props) {
   const reduceMotion = useReducedMotion();
   const requireAuth = useRequireAuth();
@@ -114,11 +124,16 @@ export function CommentThread({
 
   const thread = useCommentThread(targetType, targetId, { isNearBottom, onAppended: scrollToEnd, expectedCount });
 
-  const [text, setText] = useState('');
+  // Starts from the saved draft (if any); every change is saved back while a draftKey is set.
+  const [saved] = useState(() => (draftKey ? useCommentDraftStore.getState().drafts[draftKey] : undefined));
+  const [text, setText] = useState(saved?.text ?? '');
   const [busy, setBusy] = useState(false);
   const [composerError, setComposerError] = useState<string | null>(null);
-  const [editing, setEditing] = useState<ThreadComment | null>(null);
-  const [replyTo, setReplyTo] = useState<ThreadComment | null>(null);
+  const [editing, setEditing] = useState<ThreadComment | null>(saved?.editing ?? null);
+  const [replyTo, setReplyTo] = useState<ThreadComment | null>(saved?.replyTo ?? null);
+  useEffect(() => {
+    if (draftKey) useCommentDraftStore.getState().setDraft(draftKey, { text, replyTo, editing });
+  }, [draftKey, text, replyTo, editing]);
   const [menuFor, setMenuFor] = useState<ThreadComment | null>(null);
   // A reply just sent: scrolled into view once its row exists.
   const [revealId, setRevealId] = useState<string | null>(null);
@@ -259,15 +274,16 @@ export function CommentThread({
   );
 
   const listHeader = useMemo(
-    () => (
-      <View className="gap-4 pb-2">
-        {header}
-        <Text accessibilityRole="header" className="text-xs font-bold uppercase tracking-widest text-text-dim">
-          {answers ? 'Answers' : 'Comments'}
-        </Text>
-      </View>
-    ),
-    [header, answers],
+    () =>
+      inSheet ? null : (
+        <View className="gap-4 pb-2">
+          {header}
+          <Text accessibilityRole="header" className="text-xs font-bold uppercase tracking-widest text-text-dim">
+            {answers ? 'Answers' : 'Comments'}
+          </Text>
+        </View>
+      ),
+    [header, answers, inSheet],
   );
 
   const empty = thread.error ? (
@@ -292,7 +308,7 @@ export function CommentThread({
   );
 
   return (
-    <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' && !inSheet ? 'padding' : undefined}>
       <View className="flex-1">
         <FlashList
           ref={listRef}

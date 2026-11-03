@@ -23,6 +23,7 @@ import { getErrorMessage } from '@/lib/errors';
 import type { ModTarget } from '@/lib/moderation';
 import type { FeedPost } from '@/lib/posts';
 import { useAuthStore } from '@/stores/authStore';
+import { commentDraftKey } from '@/stores/commentDraftStore';
 import { usePickerOpen } from '@/stores/reactionPickerStore';
 
 export default function PostDetailScreen() {
@@ -123,6 +124,7 @@ export default function PostDetailScreen() {
         expectedCount={data.comment_count}
         onAuthorBlocked={onAuthorBlocked}
         answers={data.postType === 'qa'}
+        draftKey={commentDraftKey(data.id)}
       />
     );
   }

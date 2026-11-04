@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 
 import { getErrorMessage } from '@/lib/errors';
 import { getGoogleIdToken, signOutOfGoogle } from '@/lib/googleSignIn';
+import { forgetListingUpdates, resetListingUpdates } from '@/lib/listingUpdatesSync';
 import { logError } from '@/lib/log';
 import { unregisterThisDevice } from '@/lib/pushRegistration';
 import { queryClient } from '@/lib/queryClient';
@@ -117,6 +118,9 @@ export function clearMemberCaches() {
   // Unsent comments are the person's too, and the comments sheet closes with the account.
   useCommentDraftStore.getState().clearAll();
   closeCommentsSheet();
+  // New-listings banners: every account's counts and in-memory markers go (stored markers stay, per account).
+  queryClient.removeQueries({ queryKey: ['listing-updates'] });
+  resetListingUpdates();
 }
 
 const REVOKE_TIMEOUT_MS = 5000;
@@ -200,7 +204,8 @@ export async function forgetDeletedAccount(userId: string): Promise<void> {
   void signOutOfGoogle();
   // Every cache keyed by this user (profile, settings, My Posts, blocks, their feed copy…).
   queryClient.removeQueries({ predicate: (query) => query.queryKey.includes(userId) });
-  // Drafts and the avatar tip are stored per user id.
+  // Drafts, the avatar tip and the new-listings markers are stored per user id.
+  forgetListingUpdates(userId);
   const keys = await AsyncStorage.getAllKeys();
   await AsyncStorage.multiRemove(keys.filter((k) => k.includes(userId)));
 }

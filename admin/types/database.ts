@@ -439,6 +439,35 @@ export type Database = {
           },
         ]
       }
+      helpful_wins: {
+        Row: {
+          comment_id: string | null
+          post_id: string
+          user_id: string
+          won_at: string
+        }
+        Insert: {
+          comment_id?: string | null
+          post_id: string
+          user_id: string
+          won_at?: string
+        }
+        Update: {
+          comment_id?: string | null
+          post_id?: string
+          user_id?: string
+          won_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "helpful_wins_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       identity_audit_log: {
         Row: {
           admin_id: string | null
@@ -660,6 +689,7 @@ export type Database = {
           description: string | null
           edited_at: string | null
           event_date: string | null
+          first_published_at: string | null
           id: string
           images: Json
           is_closed: boolean
@@ -683,6 +713,7 @@ export type Database = {
           description?: string | null
           edited_at?: string | null
           event_date?: string | null
+          first_published_at?: string | null
           id?: string
           images?: Json
           is_closed?: boolean
@@ -706,6 +737,7 @@ export type Database = {
           description?: string | null
           edited_at?: string | null
           event_date?: string | null
+          first_published_at?: string | null
           id?: string
           images?: Json
           is_closed?: boolean
@@ -1896,6 +1928,7 @@ export type Database = {
           description: string | null
           edited_at: string | null
           event_date: string | null
+          first_published_at: string | null
           id: string
           images: Json
           is_closed: boolean
@@ -2072,6 +2105,7 @@ export type Database = {
           description: string | null
           edited_at: string | null
           event_date: string | null
+          first_published_at: string | null
           id: string
           images: Json
           is_closed: boolean
@@ -2283,6 +2317,14 @@ export type Database = {
           role: string
           sale_id: string
           status: string
+        }[]
+      }
+      get_listing_updates: {
+        Args: { p_since_lost_found?: string; p_since_sell?: string }
+        Returns: {
+          mark: string
+          new_count: number
+          section: string
         }[]
       }
       get_listings: {

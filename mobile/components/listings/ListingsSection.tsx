@@ -1,4 +1,5 @@
 import { FlashList, type FlashListRef, type ListRenderItemInfo } from '@shopify/flash-list';
+import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { RefreshControl, View } from 'react-native';
 
@@ -21,6 +22,7 @@ import { useTheme } from '@/hooks/useTheme';
 import { useRegisterTopBadges } from '@/hooks/useTopBadges';
 import { getErrorMessage } from '@/lib/errors';
 import { LISTING_SEARCH_MAX, type ListingCardData, type ListingFilters, type ListingKind } from '@/lib/listings';
+import { visitListingSection } from '@/lib/listingUpdatesSync';
 
 const SEARCH_DEBOUNCE_MS = 400;
 // 16 px sides; 8 px under the filter row so the first row sits right below it.
@@ -111,11 +113,35 @@ export function ListingsSection({ kind, active, onOpen }: Props) {
   }, [query]);
 
   const refetch = query.refetch;
+
+  // The Feed's "new listings" banner for this section clears only after a fresh load of the default
+  // list (no search, type "All"), with the mark taken before it (lib/listingUpdatesSync.ts).
+  const current = useRef({ search: trimmed, type });
+  useEffect(() => {
+    current.current = { search: trimmed, type };
+  }, [trimmed, type]);
+  const visit = useCallback(
+    (alwaysRefetch: boolean) =>
+      visitListingSection({
+        section: kind,
+        refetchList: () => refetch(),
+        filters: () => ({ search: current.current.search, lostFoundType: kind === 'lost_found' ? current.current.type : 'all' }),
+        alwaysRefetch,
+      }),
+    [kind, refetch],
+  );
+  // Shown (tab focused and this segment active): the visit runs once.
+  useFocusEffect(
+    useCallback(() => {
+      if (active) void visit(false);
+    }, [active, visit]),
+  );
+
   const onRefresh = useCallback(async () => {
     setPulling(true);
-    await refetch();
+    await visit(true);
     setPulling(false);
-  }, [refetch]);
+  }, [visit]);
 
   const closedLabel = kind === 'sell' ? 'Hide sold' : 'Hide returned';
   const controls = (

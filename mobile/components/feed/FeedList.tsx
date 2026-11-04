@@ -5,6 +5,7 @@ import { type NativeScrollEvent, type NativeSyntheticEvent, RefreshControl, View
 import { useReducedMotion } from 'react-native-reanimated';
 
 import { AnnouncementCard } from '@/components/feed/AnnouncementCard';
+import { ListingUpdateBanners } from '@/components/feed/ListingUpdateBanners';
 import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { NewPostsPill } from '@/components/feed/NewPostsPill';
 import { FEED_BG, FEED_CONTENT_STYLE, FEED_ITEM_STYLE, FeedCards } from '@/components/feed/feedCards';
@@ -18,6 +19,7 @@ import { useAppActive } from '@/hooks/useAppActive';
 import { useBackToTop } from '@/hooks/useBackToTop';
 import { useFeed } from '@/hooks/useFeed';
 import { useGetStarted } from '@/hooks/useGetStarted';
+import { useListingUpdates } from '@/hooks/useListingUpdates';
 import { useNewPosts } from '@/hooks/useNewPosts';
 import { useRegisterTopBadges } from '@/hooks/useTopBadges';
 import { usePostCountsRefresh } from '@/hooks/usePostCountsRefresh';
@@ -49,6 +51,8 @@ export function FeedList() {
   const { announcement, close: closeAnnouncement, query: announcementQuery } = useAnnouncement();
   // Members with fewer than 3 reactions: the "Get started" card under the announcement.
   const getStarted = useGetStarted();
+  // "New in Buy & Sell / Lost & Found" cards (guests too); nothing while loading or after a failure.
+  const { banners: listingBanners, dismiss: dismissListingBanner, refresh: refreshListingUpdates } = useListingUpdates();
   // Same rule as the lists: refetch on tab focus or return to the foreground, only when stale.
   useRefetchWhenStale(announcementQuery, true);
   // The reaction picker owns the touch while open; the list must not scroll under it.
@@ -131,10 +135,10 @@ export function FeedList() {
   const onRefresh = useCallback(async () => {
     setPulling(true);
     clear();
-    // Pull to refresh also reloads the announcement (its failure is silent; the card keeps the last value).
-    await Promise.all([runTopRefresh(), announcementQuery.refetch()]);
+    // Pull to refresh also reloads the announcement and the listing counts (their failures are silent).
+    await Promise.all([runTopRefresh(), announcementQuery.refetch(), refreshListingUpdates()]);
     setPulling(false);
-  }, [clear, runTopRefresh, announcementQuery]);
+  }, [clear, runTopRefresh, announcementQuery, refreshListingUpdates]);
 
   const onPillPress = useCallback(() => {
     listRef.current?.scrollToOffset({ offset: 0, animated: !reduceMotion });
@@ -148,14 +152,15 @@ export function FeedList() {
   // The banner and the cards keep their side margin; only the post cards are flush.
   const header = useMemo(
     () =>
-      refreshFailed || announcement || getStartedView.phase !== 'hidden' ? (
+      refreshFailed || announcement || getStartedView.phase !== 'hidden' || listingBanners.length > 0 ? (
         <View className="gap-3 px-4 pt-2.5" style={FEED_ITEM_STYLE}>
           {refreshFailed ? <RefreshErrorBanner onRetry={() => void runTopRefresh()} /> : null}
           {announcement ? <AnnouncementCard announcement={announcement} onClose={() => closeAnnouncement(announcement.id)} /> : null}
           {getStartedView.phase !== 'hidden' ? <GetStartedCard view={getStartedView} onDismiss={dismissGetStarted} /> : null}
+          <ListingUpdateBanners banners={listingBanners} onDismiss={dismissListingBanner} />
         </View>
       ) : null,
-    [refreshFailed, announcement, closeAnnouncement, runTopRefresh, getStartedView, dismissGetStarted],
+    [refreshFailed, announcement, closeAnnouncement, runTopRefresh, getStartedView, dismissGetStarted, listingBanners, dismissListingBanner],
   );
 
   // First load only: skeletons. Afterwards cached posts stay on screen.

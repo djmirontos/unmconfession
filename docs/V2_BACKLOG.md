@@ -148,3 +148,16 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
 2. The sheet cannot close itself when a member is banned or suspended (the phone does not know the status); the server refusal covers it.
 3. Live resizing between the two snap heights re-lays out the list, which may stutter on low-end phones; consider a fixed-height sheet with a translate animation.
 4. The Android keyboard relies on `softwareKeyboardLayoutMode` "pan"; if that mode ever changes, revisit `keyboardLift` in `lib/commentsSheet.ts`.
+
+## "New listings" banners follow-ups
+
+1. Existing moderation question: published listings of banned or suspended authors remain visible on the dedicated pages and are counted by the banner identically; to be decided separately.
+2. The `first_published_at` backfill cannot recover dates already overwritten by an earlier re-approval.
+3. A listing published within about 5 seconds of a visit may show once more as new (the 5-second margin is best-effort).
+4. Markers are per device and reset on reinstall (accepted).
+5. Play Console Data safety: the banner markers stay on the phone and the "since" values sent with each count request are not stored by our database, so nothing new is collected or declared.
+6. A count answer computed before a dismiss or a visit commit can finish afterwards and overwrite the optimistic 0, bringing the banner back until the next refetch. Fix idea: discard any answer that was requested with older markers than the current ones and refetch.
+7. `fetchListingUpdates` ignores React Query's abort signal: a cancelled fetch still finishes and stores seeds (harmless today, since seeds only move a missing marker forward).
+8. Marker comparison relies on `Date.parse` for mark strings with up to six decimals. It worked on the device (a dismissal survived a restart), but an own small parser would remove the engine dependency.
+9. During QA the Buy & Sell banner once vanished about 1 second after appearing and did not reproduce. Suspects: an accidental tap on the x, or the feed's `maintainVisibleContentPosition` shifting the scroll when the header grew. Watch for a repeat; if it recurs, check whether the feed was at the very top.
+10. The local-pg SQL suites resolve `HERE` to `supabase/tests`, so inside this repo they look for `supabase/tests/tests/00_supabase_stub.sql` and `supabase/tests/migrations/`, which do not exist; they run only from the layout they were written in. Fix all suites together if they should run from the repo.

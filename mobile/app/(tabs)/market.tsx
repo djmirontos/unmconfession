@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,6 +8,7 @@ import { ListingsSection } from '@/components/listings/ListingsSection';
 import { NotificationBell } from '@/components/notifications/NotificationBell';
 import { ChipGroup } from '@/components/ui/ChipGroup';
 import type { ListingKind } from '@/lib/listings';
+import { useMarketSegmentStore } from '@/stores/marketSegmentStore';
 
 const SEGMENTS = [
   { value: 'sell', label: 'Buy & Sell' },
@@ -20,11 +21,22 @@ let lastSegment: ListingKind = 'sell';
 export default function MarketScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [segment, setSegment] = useState<ListingKind>(lastSegment);
+  const [chosen, setChosen] = useState<ListingKind>(lastSegment);
+  // A Feed banner asked for a segment: shown in the same render (so the right section is the active
+  // one when the tab gains focus), then stored as the choice and the request cleared.
+  const requested = useMarketSegmentStore((s) => s.requested);
+  const clearRequest = useMarketSegmentStore((s) => s.clear);
+  if (requested && requested !== chosen) setChosen(requested);
+  const segment = requested ?? chosen;
+  useEffect(() => {
+    if (!requested) return;
+    lastSegment = requested;
+    clearRequest();
+  }, [requested, clearRequest]);
 
   const choose = (value: ListingKind) => {
     lastSegment = value;
-    setSegment(value);
+    setChosen(value);
   };
 
   const openListing = useCallback((id: string) => router.push({ pathname: '/listing/[id]', params: { id } }), [router]);

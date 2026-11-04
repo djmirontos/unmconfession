@@ -1556,3 +1556,14 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 - `components/comments/CommentsSheet.tsx`: a root-level overlay (not a Modal), snaps at about 60% and 92%, drag down / backdrop / close button / Back close it, the keyboard does not open by itself. Pure rules in `lib/commentsSheet.ts`; stores `commentsSheetStore` and `commentDraftStore` (in-memory drafts, shared with the post screen).
 - iOS lifts the sheet by the keyboard; Android relies on the window pan (`softwareKeyboardLayoutMode` "pan") and only stops the sheet closing while the keyboard is up.
 - **Verified:** `tsc`, lint and all 24 mobile suites pass (new `test:commentssheet` 12). Shipped as an EAS Update to the production channel, runtime 1.0.3 (group `71feb469-f8e0-4753-bf92-16afa2f98691`), device-tested on the Play 1.0.3 build (Android): passed. No native change.
+
+## "New listings" banners on the Feed (v1.0.4, built 2026-11-03, awaiting device test)
+
+- Migration `20261103130000_listing_updates.sql` applied: `listings.first_published_at` (set once by a trigger, backfilled from `published_at`) and `get_listing_updates(p_since_sell, p_since_lost_found)` (one call, two rows, mark = server time minus 5 s).
+- Types regenerated; also catches up helpful_wins from 20261103120000 (no app code uses it).
+- App: up to two cards at the top of the Feed ("New in Buy & Sell · N new listings", "New in Lost & Found · …"), guests too. The body opens that Market segment (`stores/marketSegmentStore.ts`) and clears nothing; the × (a sibling, 44 px) dismisses with the mark of the count on screen. Nothing shows while loading or after a failure.
+- Markers are local only (`unm-listing-updates:<userId|guest>`), read before any count call, advanced forward-only through one serialized write queue (`lib/listingUpdates.ts`, `lib/listingUpdatesSync.ts`). A section without a marker is seeded. Opening a segment clears it only when the refreshed count is above 0 and a fresh load of the default list (no search, type "All") succeeds, with the mark taken before the load. Account changes discard results; `clearMemberCaches` resets the in-memory copies; account deletion forgets them and removes the key.
+- Privacy policy (app and site): one sentence about information kept only on the phone; site "Last updated" 3 November 2026 (terms acceptance is not versioned, so no re-acceptance).
+- **Verified:** `tsc`, lint, all mobile suites (new `test:listingupdates` 31) and admin suites pass. No native or dependency change.
+- **Shipped:** as an EAS Update to the production channel, runtime 1.0.3 (group `db0c2777-3aff-4e9b-910c-984e3af245f3`), device-tested on Android: passed. Migration `20261103130000` applied. The privacy sentence is on the app Privacy screen and on the site.
+- SQL suite `supabase/tests/local-pg/listing_updates.sh` added (70/70 on a local Postgres; it cannot run inside this repo checkout, like its sibling suites).

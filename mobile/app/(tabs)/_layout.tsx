@@ -6,8 +6,12 @@ import { type ColorValue, View } from 'react-native';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { useTheme } from '@/hooks/useTheme';
+import { useToastStore } from '@/stores/toastStore';
 
 type IconName = ComponentProps<typeof Ionicons>['name'];
+
+// Chats is a placeholder: its tab only says so (members and guests alike) and never opens.
+const CHATS_COMING_SOON = 'Chats are coming soon';
 
 function tabIcon(active: IconName, inactive: IconName) {
   function TabIcon({ focused, color, size }: { focused: boolean; color: ColorValue; size: number }) {
@@ -45,8 +49,19 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: 'Feed', tabBarIcon: tabIcon('home', 'home-outline') }} />
       <Tabs.Screen
-        name="trending"
-        options={{ title: 'Trending', tabBarIcon: tabIcon('flame', 'flame-outline') }}
+        name="chats"
+        options={{
+          title: 'Chats',
+          tabBarIcon: tabIcon('chatbubbles-outline', 'chatbubbles-outline'),
+          tabBarAccessibilityLabel: 'Chats, coming soon',
+          tabBarItemStyle: { opacity: 0.5 },
+        }}
+        listeners={{
+          tabPress: (event) => {
+            event.preventDefault();
+            useToastStore.getState().show(CHATS_COMING_SOON);
+          },
+        }}
       />
       <Tabs.Screen
         name="create"

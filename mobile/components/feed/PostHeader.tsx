@@ -10,7 +10,7 @@ type Props = Pick<FeedPost, 'kind' | 'postType' | 'author_id' | 'nickname' | 'av
   edited_at?: string | null;
   /** Extra controls after the tag (My Posts: status badge and "⋯"). */
   accessory?: ReactNode;
-  /** Before the author (Trending: the rank). */
+  /** Before the author (Popular: the rank). */
   leading?: ReactNode;
 };
 

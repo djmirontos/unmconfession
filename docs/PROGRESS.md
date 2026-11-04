@@ -1567,3 +1567,13 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 - **Verified:** `tsc`, lint, all mobile suites (new `test:listingupdates` 31) and admin suites pass. No native or dependency change.
 - **Shipped:** as an EAS Update to the production channel, runtime 1.0.3 (group `db0c2777-3aff-4e9b-910c-984e3af245f3`), device-tested on Android: passed. Migration `20261103130000` applied. The privacy sentence is on the app Privacy screen and on the site.
 - SQL suite `supabase/tests/local-pg/listing_updates.sh` added (70/70 on a local Postgres; it cannot run inside this repo checkout, like its sibling suites).
+
+## Feed views (Latest | Popular | Polls) and the Chats placeholder (v1.0.4, 2026-11-04, device-tested on Android)
+
+- The Trending tab is merged into the Feed: a pinned connected-pill selector (`components/ui/SegmentedControl.tsx`) directly under the header, outside every list, with Latest (the main feed), Popular (the ranked `get_trending` list with rank badges) and Polls (open polls). Latest is the default on every cold start; the choice is kept for the session only (`lib/feedViews.ts`).
+- Latest is always mounted; Popular and Polls are mounted only once opened, then kept mounted and hidden, so app start fetches neither and each keeps its query and scroll position.
+- `FeedList` takes `active`: its 30 s counts timer, the announcement's focus refetch and the new-listings count query run only while Latest is shown and the tab is focused. Announcements, Get started and the banners stay in Latest's header.
+- Tabs are now Feed, Chats, Create, Buy & Sell, Profile. Chats is a dimmed placeholder: the press is prevented and shows the toast "Chats are coming soon" (members and guests); `app/(tabs)/chats.tsx` shows a "coming soon" empty state for deep links. `app/(tabs)/trending.tsx` is deleted; `useTrending.ts`, the `['trending']` / `['polls']` keys and the RPCs are unchanged.
+- PRD and CLAUDE.md amended (Popular holds the engagement ranking); site home sentence updated.
+- **Verified:** typecheck, lint, all mobile suites (new `test:feedviews`), admin typecheck and tests, site typecheck and lint pass. No native, dependency or database change.
+- **Shipped:** as an EAS Update to the production channel, runtime 1.0.3 (group `cbc738cf-7ffc-4182-afad-c4d89d2a885e`), device-tested on Android on the Play 1.0.3 build: passed.

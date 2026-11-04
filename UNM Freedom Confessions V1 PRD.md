@@ -8,7 +8,7 @@ UNM Freedom Confessions becomes a mobile app so members can post under a nicknam
 
 **Problems with the Facebook group today**
 
-- No search, no trending, no structured polls or listings.
+- No search, no ranking of popular posts, no structured polls or listings.
 - Moderation depends on admin approval in Facebook, with no keyword hold or audit trail.
 - No control over identity, so abuse is hard to trace.
 
@@ -26,7 +26,7 @@ The app is open to read and needs an account only to take part, Yipster style. T
 
 | Action | Guest | Signed in |
 | --- | --- | --- |
-| Read feed, trending, polls, Buy & Sell | Yes | Yes |
+| Read the feed (Latest, Popular, Polls), Buy & Sell | Yes | Yes |
 | Post, comment, react, vote, share | No (prompt to sign in) | Yes |
 | Report, block, mute | No | Yes |
 
@@ -53,8 +53,8 @@ Five bottom tabs. The feed is one list for everything, with no categories.
 
 | Tab | What it holds |
 | --- | --- |
-| Feed | One feed of confessions, shoutouts and polls, newest first. A pinned announcement card sits on top only when one is active. Bell icon opens notifications. |
-| Trending | Most reacted this week and active polls. |
+| Feed | Three views under one pinned selector, Latest | Popular | Polls. Latest is one feed of posts, shoutouts and polls, newest first, with a pinned announcement card on top only when one is active. Popular is the most reacted this week. Polls lists the open polls. Bell icon opens notifications. |
+| Chats | Placeholder: tapping it says "Chats are coming soon" (from 1.0.3). |
 | Create | Confession, Shoutout, Poll, Buy & Sell listing, Lost & Found. |
 | Buy & Sell | Listings, with a toggle between Buy & Sell and Lost & Found. |
 | Profile | My Posts with status, Notifications, Settings. |
@@ -75,7 +75,7 @@ Five bottom tabs. The feed is one list for everything, with no categories.
 
 **Comments.** Show the commenter's nickname. Buy & Sell contact is through comments only in V1, with a no-payments disclaimer on every listing.
 
-**Trending.** Score is reactions plus comments times 2 over the last 7 days, with slight time decay. It is cached and refreshed every few minutes.
+**Popular** (formerly the Trending tab, a Feed view from 1.0.3). Score is reactions plus comments times 2 over the last 7 days, with slight time decay. It is cached and refreshed every few minutes.
 
 **Announcements.** Posted by official accounts (admin and mods for now). Shown as a pinned card on top of the Feed only while active.
 
@@ -136,13 +136,13 @@ Speed and data security are the top priorities during development.
 
 **Speed**
 
-- Skeleton loading on feed, trending and detail screens instead of spinners.
+- Skeleton loading on the feed views (Latest, Popular, Polls) and detail screens instead of spinners.
 - The last feed is cached on the device and shows instantly on open, then updates in the background.
 - Keyset pagination on (published\_at, id), not offset. Published time is used so a held post approved later appears at the top of the feed.
 - Optimistic updates for reactions and votes.
 - Filtering happens on the device, not through new network requests.
 
-**Feed order.** Newest first. Engagement ranking lives only in Trending.
+**Feed order.** Latest is newest first. Engagement ranking lives only in Popular.
 
 **Realtime**
 

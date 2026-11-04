@@ -35,6 +35,7 @@
     "test:upvotes": "node --no-warnings --test tests/upvotes.test.mjs",
     "test:commentssheet": "node --no-warnings --test tests/commentsSheet.test.mjs",
     "test:listingupdates": "node --no-warnings --test tests/listingUpdates.test.mjs",
+    "test:feedviews": "node --no-warnings --test tests/feedViews.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

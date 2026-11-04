@@ -28,7 +28,7 @@ export default function HomePage() {
           <li>Anyone can read the feed without an account.</li>
           <li>Signed-in members share posts, shoutouts and polls under a nickname, and react, comment and vote.</li>
           <li>Buy &amp; Sell and Lost &amp; Found listings.</li>
-          <li>Trending shows the most reacted posts this week and active polls.</li>
+          <li>Popular shows the most reacted posts this week, and Polls lists the open polls.</li>
           <li>Moderators review reports and held posts to keep the community safe.</li>
         </ul>
       </section>

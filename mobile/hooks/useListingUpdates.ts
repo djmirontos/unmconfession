@@ -11,15 +11,16 @@ export type ListingUpdateBanner = SectionUpdate & { section: ListingSection };
 
 /**
  * The Feed's "new listings" banners (guests too). No call before the stored session is read and the
- * membership is known; refetched on focus, on return to the foreground and on pull to refresh,
- * only when stale. Nothing shows while loading or after a failed count.
+ * membership is known, and none while `active` is false (Popular or Polls shown); refetched on focus,
+ * on return to the foreground and on pull to refresh, only when stale. Nothing shows while loading,
+ * inactive or after a failed count.
  */
-export function useListingUpdates() {
+export function useListingUpdates(active = true) {
   const restored = useAuthStore((s) => s.restored);
   const userId = useAuthStore((s) => s.session?.user.id ?? null);
   const { status } = useMembership();
   const accountKey = accountKeyOf(userId);
-  const enabled = canQueryUpdates(restored, status);
+  const enabled = active && canQueryUpdates(restored, status);
 
   const query = useQuery({
     queryKey: listingUpdatesKey(accountKey),

@@ -27,6 +27,7 @@ import { usePostListActions } from '@/hooks/usePostListActions';
 import { useRefetchWhenStale } from '@/hooks/useRefetchWhenStale';
 import { useTheme } from '@/hooks/useTheme';
 import { getErrorMessage } from '@/lib/errors';
+import { listIsLive } from '@/lib/feedViews';
 import { logError } from '@/lib/log';
 import type { FeedPost } from '@/lib/posts';
 import { usePickerOpen } from '@/stores/reactionPickerStore';
@@ -40,7 +41,8 @@ const KEEP_POSITION = { autoscrollToTopThreshold: AT_TOP_PX };
 const keyExtractor = (post: FeedPost) => post.id;
 const getItemType = (post: FeedPost) => post.kind;
 
-export function FeedList() {
+/** `active`: Latest is the view shown on the Feed tab (false while Popular or Polls is shown). */
+export function FeedList({ active = true }: { active?: boolean }) {
   const { colors } = useTheme();
   const reduceMotion = useReducedMotion();
   const appActive = useAppActive();
@@ -52,9 +54,9 @@ export function FeedList() {
   // Members with fewer than 3 reactions: the "Get started" card under the announcement.
   const getStarted = useGetStarted();
   // "New in Buy & Sell / Lost & Found" cards (guests too); nothing while loading or after a failure.
-  const { banners: listingBanners, dismiss: dismissListingBanner, refresh: refreshListingUpdates } = useListingUpdates();
+  const { banners: listingBanners, dismiss: dismissListingBanner, refresh: refreshListingUpdates } = useListingUpdates(active);
   // Same rule as the lists: refetch on tab focus or return to the foreground, only when stale.
-  useRefetchWhenStale(announcementQuery, true);
+  useRefetchWhenStale(announcementQuery, active);
   // The reaction picker owns the touch while open; the list must not scroll under it.
   const pickerOpen = usePickerOpen();
   const listRef = useRef<FlashListRef<FeedPost>>(null);
@@ -90,7 +92,7 @@ export function FeedList() {
     pendingRef.current = pendingCount;
   }, [pendingCount]);
 
-  usePostCountsRefresh(() => visibleIds.current, appActive && isFocused);
+  usePostCountsRefresh(() => visibleIds.current, listIsLive(appActive, isFocused, active));
 
   // Open / comments / share, and "⋯" (Report / Block) on other members' posts; own posts keep no menu here.
   const { onAction, openPost, openComments, sharePost, moreFor, menu } = usePostListActions();

@@ -29,13 +29,13 @@ type Props = {
   query: UseQueryResult<FeedPost[]>;
   /** False while another segment is shown: no refresh timers, no focus refetch. */
   active: boolean;
-  /** Show the position as a rank badge (Trending). */
+  /** Show the position as a rank badge (Popular). */
   ranked?: boolean;
   empty: { icon: 'flame-outline' | 'stats-chart-outline'; title: string };
 };
 
 /**
- * A single-page list of post cards (Trending, active polls) with the Feed's card
+ * A single-page list of post cards (the Feed views Popular and Polls) with the Feed's card
  * behaviour: open, comments, reactions, voting and the "⋯" menu. Refetches when it
  * comes into view or the app returns while the data is stale; counts refresh every
  * 30 s for the visible posts.

@@ -34,7 +34,7 @@ type Props = {
   onShare?: (post: FeedPost) => void;
   /** Feed: "⋯" in the header for someone else's post (Report / Block). Ignored when headerAccessory is set. */
   onMore?: (post: FeedPost) => void;
-  /** Trending: position in the ranking (1 = first), shown quietly before the author. */
+  /** Popular: position in the ranking (1 = first), shown quietly before the author. */
   rank?: number;
 };
 

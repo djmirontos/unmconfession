@@ -161,3 +161,9 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
 8. Marker comparison relies on `Date.parse` for mark strings with up to six decimals. It worked on the device (a dismissal survived a restart), but an own small parser would remove the engine dependency.
 9. During QA the Buy & Sell banner once vanished about 1 second after appearing and did not reproduce. Suspects: an accidental tap on the x, or the feed's `maintainVisibleContentPosition` shifting the scroll when the header grew. Watch for a repeat; if it recurs, check whether the feed was at the very top.
 10. The local-pg SQL suites resolve `HERE` to `supabase/tests`, so inside this repo they look for `supabase/tests/tests/00_supabase_stub.sql` and `supabase/tests/migrations/`, which do not exist; they run only from the layout they were written in. Fix all suites together if they should run from the repo.
+
+## Feed views and Chats follow-ups
+
+1. Chats needs its own plan before any build: private messaging in an anonymous campus app (safety, reporting, blocking, moderation, retention, Play UGC policy, privacy text). The tab is only a placeholder.
+2. Tapping the Feed tab again does not scroll to the top (no `useScrollToTop`); consider it for the active view.
+3. Polls was unused when this change shipped (0 polls had ever been created); if it stays unused, revisit the Polls view.

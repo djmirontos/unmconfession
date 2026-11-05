@@ -8,6 +8,7 @@ import { TermsCheckbox } from '@/components/auth/TermsCheckbox';
 import { Button } from '@/components/ui/Button';
 import { FormMessage } from '@/components/ui/FormMessage';
 import { Screen } from '@/components/ui/Screen';
+import { markPending } from '@/hooks/useAvatarPrompt';
 import { ensureNicknameAvailable, nicknameAvailableKey } from '@/hooks/useNicknameAvailability';
 import { profileQueryKey, useTermsAccepted } from '@/hooks/useProfile';
 import { logOut } from '@/lib/auth';
@@ -74,6 +75,8 @@ export default function ChooseNicknameScreen() {
         p_accept_terms: needsTerms && acceptedTerms,
       });
       if (error) throw error;
+      // First nickname saved (a new Google member): the "Pick your avatar" card may show once on Profile.
+      markPending(userId);
       await queryClient.invalidateQueries({ queryKey: profileQueryKey(userId) });
     } catch (error) {
       const code = getErrorCode(error);

@@ -50,10 +50,12 @@ export async function signUpWithEmail(params: { email: string; password: string;
 
 export type OtpPurpose = 'signup' | 'recovery';
 
-export async function verifyEmailOtp(email: string, token: string, type: OtpPurpose) {
+/** Returns the signed-in user's id (null when the server sent no session). */
+export async function verifyEmailOtp(email: string, token: string, type: OtpPurpose): Promise<string | null> {
   const { data, error } = await supabase.auth.verifyOtp({ email, token, type });
   if (error) throw authFail('verifyOtp', error);
   applySession(data.session);
+  return data.session?.user.id ?? null;
 }
 
 export async function resendOtp(email: string, type: OtpPurpose) {
@@ -204,7 +206,7 @@ export async function forgetDeletedAccount(userId: string): Promise<void> {
   void signOutOfGoogle();
   // Every cache keyed by this user (profile, settings, My Posts, blocks, their feed copy…).
   queryClient.removeQueries({ predicate: (query) => query.queryKey.includes(userId) });
-  // Drafts, the avatar tip and the new-listings markers are stored per user id.
+  // Drafts, the avatar card flags (pending and seen) and the new-listings markers are stored per user id.
   forgetListingUpdates(userId);
   const keys = await AsyncStorage.getAllKeys();
   await AsyncStorage.multiRemove(keys.filter((k) => k.includes(userId)));

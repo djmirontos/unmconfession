@@ -167,3 +167,7 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
 1. Chats needs its own plan before any build: private messaging in an anonymous campus app (safety, reporting, blocking, moderation, retention, Play UGC policy, privacy text). The tab is only a placeholder.
 2. Tapping the Feed tab again does not scroll to the top (no `useScrollToTop`); consider it for the active view.
 3. Polls was unused when this change shipped (0 polls had ever been created); if it stays unused, revisit the Polls view.
+
+## Avatar card follow-ups
+
+1. The once-only flag is per phone (accepted): a member who signs up on one phone and first opens Profile on another sees no card, and a reinstall before opening Profile skips it.

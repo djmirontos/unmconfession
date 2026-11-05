@@ -8,6 +8,7 @@ import { CODE_LENGTH, CodeInput, type CodeInputHandle } from '@/components/ui/Co
 import { FormMessage } from '@/components/ui/FormMessage';
 import { Screen } from '@/components/ui/Screen';
 import { useCooldown } from '@/hooks/useCooldown';
+import { markPending } from '@/hooks/useAvatarPrompt';
 import { useExitAuthFlow } from '@/hooks/useExitAuthFlow';
 import { type OtpPurpose, resendOtp, verifyEmailOtp } from '@/lib/auth';
 import { getErrorCode, getErrorMessage } from '@/lib/errors';
@@ -48,9 +49,13 @@ export default function VerifyScreen() {
 
     setVerifying(true);
     try {
-      await verifyEmailOtp(email, data.token, purpose);
+      const userId = await verifyEmailOtp(email, data.token, purpose);
       if (purpose === 'recovery') router.replace('/reset-password');
-      else exitToFeed();
+      else {
+        // A new member: the "Pick your avatar" card may show once on Profile. Never for a password reset.
+        if (userId) markPending(userId);
+        exitToFeed();
+      }
     } catch (error) {
       // Supabase reports both a wrong and an expired code as otp_expired.
       if (getErrorCode(error) === 'otp_expired') {

@@ -41,7 +41,7 @@
 
 **Built**
 - Six-box `CodeInput` (`components/ui/CodeInput.tsx`): one hidden number-pad TextInput over six boxes, digits-only and cut to 6 on every change (paste fills all boxes), navy outline on the next box (new `navy` token, lighter blue in dark), all borders red on a wrong/expired code until the next edit, blinking caret that is static under reduced motion, label "Verification code, 6 digits". Autofill props taken from the RN 0.86 source: iOS `textContentType="oneTimeCode"`, Android `autoComplete="email-otp"` (the code comes by email; `one-time-code` maps to `sms-otp` on Android). Used by `verify.tsx` for both sign-up and the password reset code. No auto-submit; the button is disabled until 6 digits. The OTP schema now requires exactly 6 digits.
-- After sign-up verification the user lands on the Feed (`useExitAuthFlow('/')`). Profile shows a dismissible "Pick your avatar" card until the picker is opened once (AsyncStorage key per user id); the picker is now behind a "Change avatar" button.
+- After sign-up verification the user lands on the Feed (`useExitAuthFlow('/')`). Profile shows a "Pick your avatar" card only once, right after onboarding (since v1.0.4: a pending flag set at the sign-up code or the first nickname, marked seen the first time it is shown; see the avatar card entry below); the picker is behind a "Change avatar" button.
 - Status bar: the style is re-applied imperatively on theme change, 300 ms after it and on app foreground, because Android can reset the icons while `<StatusBar>` thinks its cached style is current.
 - Feed: `rpc('get_feed')` with `useInfiniteQuery`, keyset cursor = last row's `(published_at, id)`, key per viewer (`['feed', userId|'guest']`, since rows carry `my_reaction`/`my_vote`). Only the first page is persisted (custom persister `serialize`), 30-min maxAge, buster bumped to 2. FlashList 2.0.2 (bundled in Expo Go SDK 57), memoized `PostCard`, stable callbacks, `getItemType` by kind.
 - Post card: avatar, nickname, relative time, `#number` (confession/shoutout) or "Poll", "To: …" for shoutouts, ~6-line clamp with "Read more" (line count estimated, not measured, to stay cheap in a recycled list), up to 2 images via expo-image at their stored aspect ratio with blurhash placeholder (public `post-images` URL), poll bars with %, my vote highlighted, "Ended"/"Ends in …", reaction and comment counts. React/comment/vote/share: sign-in sheet for guests, "Coming soon" toast for members (new root `<Toast/>`).
@@ -1577,3 +1577,18 @@ Migration `20261030180000_launch_hardening.sql`, applied by hand in the SQL edit
 - PRD and CLAUDE.md amended (Popular holds the engagement ranking); site home sentence updated.
 - **Verified:** typecheck, lint, all mobile suites (new `test:feedviews`), admin typecheck and tests, site typecheck and lint pass. No native, dependency or database change.
 - **Shipped:** as an EAS Update to the production channel, runtime 1.0.3 (group `cbc738cf-7ffc-4182-afad-c4d89d2a885e`), device-tested on Android on the Play 1.0.3 build: passed.
+
+## "Pick your avatar" card: once, only after onboarding (v1.0.4, 2026-11-05, device-tested on Play 1.0.3)
+
+- The card used to show for every member until dismissed or the picker was opened, once per phone and account, so it came back on every new phone, reinstall or app-data wipe (for example the GitHub to Play move).
+- Now (`lib/avatarPrompt.ts`, `hooks/useAvatarPrompt.ts`): a pending flag `unm-avatar-prompt-pending:<userId>` is set only when the sign-up code is accepted (`verify.tsx`, not a password reset; `verifyEmailOtp` now returns the user id) or the first nickname is saved (`choose-nickname.tsx`). The card shows while pending and not seen (`unm-avatar-picker-seen:<userId>`). The first time it shows, seen is stored and pending removed; it stays up for that visit only. Dismiss or the picker hides it at once. Existing members never get the flag. Writes log failures; a read that finishes after an account switch is discarded.
+- Both keys contain the user id, so account deletion (`forgetDeletedAccount`) removes them; sign-out keeps them.
+- **Verified:** typecheck, lint, all mobile suites (new `test:avatarprompt` 11), admin typecheck and tests, site typecheck and lint pass. No database, native or dependency change.
+- **Device-tested on Play 1.0.3 and published as a production OTA** (runtime 1.0.3, group `4459413e-9501-4658-9f71-48055f0219d9`). All 7 checks passed:
+  1. a new email account sees the card once (still there after switching tabs, gone after a restart);
+  2. a new Google account sees it once after choosing the nickname;
+  3. an existing member on a fresh install sees no card;
+  4. the x hides it, the card body opens the picker and hides it, the header pencil still opens the picker;
+  5. a password reset does not create the flag;
+  6. guests never see it;
+  7. signing out and in on the same phone does not bring it back.

@@ -11,11 +11,13 @@ import { StatusBadge } from '@/components/myposts/StatusBadge';
 import { PostCardSkeleton } from '@/components/skeletons/PostCardSkeleton';
 import { Button } from '@/components/ui/Button';
 import { useDeleteOwnItem } from '@/hooks/useDeleteOwnItem';
+import { useHoldReason } from '@/hooks/useHoldReason';
 import { useMyItem } from '@/hooks/useMyItem';
 import { useMembership } from '@/hooks/useProfile';
 import { getErrorMessage } from '@/lib/errors';
 import { CONDITIONS } from '@/lib/createSchemas';
 import { CONDITION_LABELS, formatPrice } from '@/lib/listings';
+import { holdNoticeText } from '@/lib/holdReason';
 import { formatEventDate } from '@/lib/manilaDate';
 import type { MyItem } from '@/lib/myPosts';
 
@@ -28,14 +30,16 @@ const KIND_LABEL: Record<MyItem['kind'], string> = {
 };
 
 function ReasonBlock({ item }: { item: MyItem }) {
-  // Pending: never say why it is held (no keyword, no hold reason).
+  // Pending: the author is told THAT the word filter held it, never WHICH word (get_my_hold_reason
+  // never returns it). Pre-moderation or no answer keeps the generic line. Own items only (My Posts).
+  const holdReason = useHoldReason(item.source, item.id, item.status === 'pending');
   if (item.status === 'pending') {
     return (
       <View className="gap-1.5 rounded-xl border border-accent bg-accent-dim p-4" accessibilityRole="summary">
         <Text accessibilityRole="header" className="text-base font-bold text-text">
           Waiting for review
         </Text>
-        <Text className="text-base leading-6 text-text">A moderator will check it before it is published.</Text>
+        <Text className="text-base leading-6 text-text">{holdNoticeText(holdReason, 'A moderator will check it before it is published.')}</Text>
       </View>
     );
   }

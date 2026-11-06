@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from 'react';
 import type { Created, StoredImage } from '@/lib/create';
 import { getErrorCode, getErrorMessage } from '@/lib/errors';
 import { refreshFeedTop } from '@/lib/feed';
+import { announceHold } from '@/lib/holdNotice';
 import { logError } from '@/lib/log';
 import { postWord } from '@/lib/postKindWord';
 import { askForPush } from '@/lib/pushAsk';
@@ -79,7 +80,8 @@ export function useCreateSubmit() {
         // The one push reminder, if the member said "Not now" before (lib/pushPermission.ts).
         void askForPush('published');
         if (!created.published) {
-          showToast(pendingToast(created));
+          // Today's text at once; the keyword line replaces it if the word filter held it.
+          announceHold(created.kind, created.id, pendingToast(created));
           router.push('/my-posts');
           return;
         }

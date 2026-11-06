@@ -35,6 +35,7 @@ export function EditPostForm({ item, kind }: { item: MyItem; kind: 'confession' 
     void save(
       () => editOwnPost(item.id, data.body, data.targetName),
       (r) => afterPostEdit(queryClient, item.id, r),
+      { type: 'post', id: item.id },
     );
   };
 

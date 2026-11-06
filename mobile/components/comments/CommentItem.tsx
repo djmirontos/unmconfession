@@ -10,9 +10,11 @@ import { ProfileLink } from '@/components/profile/ProfileLink';
 import { ReactionButton } from '@/components/reactions/ReactionButton';
 import { TopReactions } from '@/components/reactions/TopReactions';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { useHoldReason } from '@/hooks/useHoldReason';
 import { useOpenReactors } from '@/hooks/useReactors';
 import { authorLabel, isDeletedAuthor } from '@/lib/authorLabel';
 import type { ThreadComment } from '@/lib/comments';
+import { holdNoticeText } from '@/lib/holdReason';
 import { setCommentReaction } from '@/lib/commentReactionSync';
 import { formatRelative } from '@/lib/time';
 import { showsUpvote } from '@/lib/upvotes';
@@ -32,6 +34,8 @@ type Props = {
 };
 
 function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = false, qaThread = false }: Props) {
+  // Only the author's own pending comment asks why it is held (told THAT the filter held it, never WHICH word).
+  const holdReason = useHoldReason('comment', comment.id, mine && comment.state === 'pending');
   const sending = comment.state === 'sending';
   const name = authorLabel(comment.nickname);
   const openReactors = useOpenReactors();
@@ -104,7 +108,9 @@ function CommentItemImpl({ comment, onMore, mine = false, onReply, isReply = fal
         {comment.state === 'pending' ? (
           <View className="gap-0.5 self-start rounded-xl border border-accent bg-accent-dim px-2.5 py-1.5">
             <Text className="text-xs font-bold text-text">Waiting for review</Text>
-            <Text className="text-xs text-text-dim">Only you can see this until a moderator approves it.</Text>
+            <Text className="text-xs text-text-dim">
+              {holdNoticeText(holdReason, 'Only you can see this until a moderator approves it.')}
+            </Text>
           </View>
         ) : null}
       </View>

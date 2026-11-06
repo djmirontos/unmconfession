@@ -38,6 +38,7 @@
     "test:feedviews": "node --no-warnings --test tests/feedViews.test.mjs",
     "test:avatarprompt": "node --no-warnings --test tests/avatarPrompt.test.mjs",
     "test:chat": "node --no-warnings --test tests/chat.test.mjs",
+    "test:holdreason": "node --no-warnings --test tests/holdReason.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

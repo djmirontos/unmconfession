@@ -2640,6 +2640,13 @@ export type Database = {
           sender_id: string
         }[]
       }
+      get_my_hold_reason: {
+        Args: {
+          p_id: string
+          p_type: Database["public"]["Enums"]["content_type"]
+        }
+        Returns: string
+      }
       get_my_profile_details: {
         Args: never
         Returns: {

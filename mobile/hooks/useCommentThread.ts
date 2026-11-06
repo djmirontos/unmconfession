@@ -22,6 +22,7 @@ import { answerUpvoteBusy } from '@/lib/answerUpvoteSync';
 import { byTime } from '@/lib/commentOrder';
 import { commentReactionBusy } from '@/lib/commentReactionSync';
 import { getCommentErrorMessage, getErrorCode, getReplyErrorMessage } from '@/lib/errors';
+import { announceHold } from '@/lib/holdNotice';
 import { bumpListingCommentCount } from '@/lib/listings';
 import { addedDelta, type CountDelta, removedDelta } from '@/lib/answers';
 import { bumpPostCounts } from '@/lib/postCounts';
@@ -344,7 +345,7 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         storeComment(item);
         void askForPush('published');
         if (item.state === 'published') bumpTargetCount(addedDelta(true));
-        if (item.state === 'pending') showToast('Sent for review');
+        if (item.state === 'pending') announceHold('comment', item.id, 'Sent for review');
         return { ok: true, id: item.id };
       } catch (error) {
         return { ok: false, message: getCommentErrorMessage(error) };
@@ -352,7 +353,7 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         setSending((list) => list.filter((c) => c.id !== temp.id));
       }
     },
-    [localRow, me, target, targetId, storeComment, bumpTargetCount, showToast],
+    [localRow, me, target, targetId, storeComment, bumpTargetCount],
   );
 
   /**
@@ -377,7 +378,7 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
         if (item.state === 'pending') {
           bumpReplyCount(queryClient, parentId, -1);
           bumpTargetCount(removedDelta(false));
-          showToast('Sent for review');
+          announceHold('comment', item.id, 'Sent for review');
         }
         return { ok: true, id: item.id };
       } catch (error) {
@@ -405,7 +406,8 @@ export function useCommentThread(target: CommentTarget, targetId: string, { isNe
           bumpTargetCount(removedDelta(!item.parentId));
           if (item.parentId) bumpReplyCount(queryClient, item.parentId, -1);
         }
-        showToast(item.state === 'pending' ? 'Sent for review' : 'Saved');
+        if (item.state === 'pending') announceHold('comment', item.id, 'Sent for review');
+        else showToast('Saved');
         return { ok: true, id: item.id };
       } catch (error) {
         return { ok: false, message: getCommentErrorMessage(error) };

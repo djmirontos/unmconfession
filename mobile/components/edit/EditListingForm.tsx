@@ -61,12 +61,14 @@ export function EditListingForm({ item }: { item: MyItem }) {
       void save(
         () => editOwnListing(item.id, { title: d.title, description: d.description, price: d.price, condition: d.condition }),
         () => afterListingEdit(queryClient, item.id),
+        { type: 'listing', id: item.id },
       );
     } else if (lostFound?.data) {
       const d = lostFound.data;
       void save(
         () => editOwnListing(item.id, { title: d.title, description: d.description, location: d.location, eventDate: d.eventDate }),
         () => afterListingEdit(queryClient, item.id),
+        { type: 'listing', id: item.id },
       );
     }
   };

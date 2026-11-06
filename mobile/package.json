@@ -37,6 +37,7 @@
     "test:listingupdates": "node --no-warnings --test tests/listingUpdates.test.mjs",
     "test:feedviews": "node --no-warnings --test tests/feedViews.test.mjs",
     "test:avatarprompt": "node --no-warnings --test tests/avatarPrompt.test.mjs",
+    "test:chat": "node --no-warnings --test tests/chat.test.mjs",
     "branding": "node scripts/make-branding.mjs"
   },
   "dependencies": {

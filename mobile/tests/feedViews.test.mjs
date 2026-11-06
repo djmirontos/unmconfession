@@ -94,14 +94,18 @@ test('SegmentedControl is a tab list of 44 pt tabs with the selected state', () 
 
 test('five tabs in order: Feed, Chats, Create, Buy & Sell, Profile', () => {
   const src = read('../app/(tabs)/_layout.tsx');
-  const names = [...src.matchAll(/<Tabs\.Screen\s+name="([^"]+)"/g)].map((m) => m[1]);
+  // Chats has two variants (chat on / not on); one screen either way.
+  const names = [...new Set([...src.matchAll(/<Tabs\.Screen\s+name="([^"]+)"/g)].map((m) => m[1]))];
   assert.deepEqual(names, ['index', 'chats', 'create', 'market', 'profile']);
   assert.doesNotMatch(src, /name="trending"/);
 });
 
-test('Chats: the press is prevented and shows the toast; dimmed, labelled, no badge', () => {
+test('Chats while chat is not on: the press is prevented and shows the toast; dimmed, labelled, no badge', () => {
   const src = read('../app/(tabs)/_layout.tsx');
-  const start = src.indexOf('name="chats"');
+  // The placeholder is the else branch of the one chat gate, unchanged from before.
+  assert.match(src, /const chatOn = useChatEnabled\(\)\.enabled;/);
+  assert.match(src, /\{chatOn \? \(\s*<Tabs\.Screen\s+name="chats"/);
+  const start = src.indexOf('name="chats"', src.indexOf(') : ('));
   const block = src.slice(start, src.indexOf('<Tabs.Screen', start));
   assert.match(src, /const CHATS_COMING_SOON = 'Chats are coming soon';/);
   assert.match(block, /tabPress: \(event\) => \{\s*event\.preventDefault\(\);\s*useToastStore\.getState\(\)\.show\(CHATS_COMING_SOON\);/);
@@ -109,6 +113,14 @@ test('Chats: the press is prevented and shows the toast; dimmed, labelled, no ba
   assert.match(block, /tabBarItemStyle: \{ opacity: 0\.5 \}/);
   assert.match(block, /chatbubbles-outline/);
   assert.doesNotMatch(block, /tabBarBadge|requireAuth/);
+});
+
+test('Chats while chat is on: opens normally, badge = unread chats + requests, nothing dimmed', () => {
+  const src = read('../app/(tabs)/_layout.tsx');
+  const on = src.slice(src.indexOf('{chatOn ? ('), src.indexOf(') : ('));
+  assert.match(on, /tabBarBadge: badge \? formatBadge\(badge\) : undefined/);
+  assert.doesNotMatch(on, /preventDefault|opacity|coming soon/);
+  assert.match(src, /const badge = chatOn \? chatBadge\(chatUnread\.data\) : undefined;/);
 });
 
 test('Create keeps its guest sign-in press and Profile its unread dot', () => {
@@ -119,10 +131,10 @@ test('Create keeps its guest sign-in press and Profile its unread dot', () => {
   assert.match(src, /unread > 0/);
 });
 
-test('chats.tsx exists with a coming-soon empty state; trending.tsx is gone', () => {
+test('chats.tsx keeps its coming-soon empty state (the list only when chat is on); trending.tsx is gone', () => {
   assert.ok(exists('../app/(tabs)/chats.tsx'));
   const chats = read('../app/(tabs)/chats.tsx');
-  assert.match(chats, /<EmptyState icon="chatbubbles-outline" title="Chats are coming soon" \/>/);
+  assert.match(chats, /\{chatOn \? <ChatList \/> : <EmptyState icon="chatbubbles-outline" title="Chats are coming soon" \/>\}/);
   assert.doesNotMatch(chats, /useQuery|supabase/);
   assert.equal(exists('../app/(tabs)/trending.tsx'), false);
 });

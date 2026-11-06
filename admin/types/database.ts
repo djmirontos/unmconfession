@@ -99,6 +99,11 @@ export type Database = {
           app_name: string
           audit_retention_days: number
           campus_voice_reactions: number
+          chat_messages_per_minute: number
+          chat_mode: string
+          chat_request_cooldown_days: number
+          chat_requests_per_day: number
+          chat_retention_days: number
           id: number
           latest_app_version: string
           latest_update_message: string | null
@@ -118,6 +123,11 @@ export type Database = {
           app_name?: string
           audit_retention_days?: number
           campus_voice_reactions?: number
+          chat_messages_per_minute?: number
+          chat_mode?: string
+          chat_request_cooldown_days?: number
+          chat_requests_per_day?: number
+          chat_retention_days?: number
           id?: number
           latest_app_version?: string
           latest_update_message?: string | null
@@ -137,6 +147,11 @@ export type Database = {
           app_name?: string
           audit_retention_days?: number
           campus_voice_reactions?: number
+          chat_messages_per_minute?: number
+          chat_mode?: string
+          chat_request_cooldown_days?: number
+          chat_requests_per_day?: number
+          chat_retention_days?: number
           id?: number
           latest_app_version?: string
           latest_update_message?: string | null
@@ -182,6 +197,196 @@ export type Database = {
           sort_order?: number
         }
         Relationships: []
+      }
+      chat_conversations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          declined_at: string | null
+          id: string
+          last_message_at: string | null
+          member_a: string
+          member_b: string
+          request_body: string
+          requested_at: string
+          requested_by: string
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          declined_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          member_a: string
+          member_b: string
+          request_body: string
+          requested_at?: string
+          requested_by: string
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          declined_at?: string | null
+          id?: string
+          last_message_at?: string | null
+          member_a?: string
+          member_b?: string
+          request_body?: string
+          requested_at?: string
+          requested_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_conversations_member_a_fkey"
+            columns: ["member_a"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_conversations_member_b_fkey"
+            columns: ["member_b"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_conversations_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_members: {
+        Row: {
+          cleared_before: string | null
+          conversation_id: string
+          hidden: boolean
+          last_read_at: string | null
+          muted: boolean
+          user_id: string
+        }
+        Insert: {
+          cleared_before?: string | null
+          conversation_id: string
+          hidden?: boolean
+          last_read_at?: string | null
+          muted?: boolean
+          user_id: string
+        }
+        Update: {
+          cleared_before?: string | null
+          conversation_id?: string
+          hidden?: boolean
+          last_read_at?: string | null
+          muted?: boolean
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_members_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          attachments: Json
+          body: string | null
+          conversation_id: string
+          created_at: string
+          deleted_at: string | null
+          id: string
+          reply_to_id: string | null
+          sender_id: string
+        }
+        Insert: {
+          attachments?: Json
+          body?: string | null
+          conversation_id: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          reply_to_id?: string | null
+          sender_id: string
+        }
+        Update: {
+          attachments?: Json
+          body?: string | null
+          conversation_id?: string
+          created_at?: string
+          deleted_at?: string | null
+          id?: string
+          reply_to_id?: string | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_settings: {
+        Row: {
+          last_active_at: string | null
+          show_online: boolean
+          user_id: string
+          who_can_message: string
+        }
+        Insert: {
+          last_active_at?: string | null
+          show_online?: boolean
+          user_id: string
+          who_can_message?: string
+        }
+        Update: {
+          last_active_at?: string | null
+          show_online?: boolean
+          user_id?: string
+          who_can_message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       comment_reactions: {
         Row: {
@@ -1721,6 +1926,10 @@ export type Database = {
     Functions: {
       _bump_reaction: { Args: { b: Json; d: number; t: string }; Returns: Json }
       _can_upload_avatar: { Args: never; Returns: boolean }
+      _chat_available: { Args: { p_user: string }; Returns: boolean }
+      _chat_blocked: { Args: { p_a: string; p_b: string }; Returns: boolean }
+      _chat_is_staff_user: { Args: { p_user: string }; Returns: boolean }
+      _chat_member: { Args: never; Returns: string }
       _check_images: { Args: { p_images: Json; p_uid: string }; Returns: Json }
       _cleanup_path_ok: {
         Args: { p_bucket: string; p_path: string }
@@ -1849,6 +2058,7 @@ export type Database = {
       cancel_item_return: { Args: { p_return: string }; Returns: undefined }
       cancel_item_sale: { Args: { p_sale: string }; Returns: undefined }
       change_nickname: { Args: { p_nickname: string }; Returns: undefined }
+      chat_heartbeat: { Args: never; Returns: undefined }
       cleanup_claim_batch: {
         Args: { p_limit?: number }
         Returns: {
@@ -2051,7 +2261,15 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_chat_for_me: {
+        Args: { p_conversation: string }
+        Returns: undefined
+      }
       delete_my_account: { Args: { p_confirm: string }; Returns: undefined }
+      delete_my_chat_message: {
+        Args: { p_message: string }
+        Returns: undefined
+      }
       delete_notifications: { Args: { p_keys: string[] }; Returns: undefined }
       delete_own_comment: { Args: { p_comment_id: string }; Returns: undefined }
       delete_own_listing: { Args: { p_listing_id: string }; Returns: undefined }
@@ -2198,6 +2416,31 @@ export type Database = {
           update_url: string
         }[]
       }
+      get_chat_requests: {
+        Args: never
+        Returns: {
+          body: string
+          conversation_id: string
+          from_avatar_key: string
+          from_id: string
+          from_nickname: string
+          requested_at: string
+        }[]
+      }
+      get_chat_settings: {
+        Args: never
+        Returns: {
+          show_online: boolean
+          who_can_message: string
+        }[]
+      }
+      get_chat_unread_count: {
+        Args: never
+        Returns: {
+          pending_requests: number
+          unread_chats: number
+        }[]
+      }
       get_comment_reactor_counts: {
         Args: { p_comment_id: string }
         Returns: {
@@ -2254,6 +2497,22 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_conversations: {
+        Args: never
+        Returns: {
+          conversation_id: string
+          is_online: boolean
+          last_message_at: string
+          last_message_body: string
+          last_message_sender: string
+          muted: boolean
+          other_avatar_key: string
+          other_id: string
+          other_nickname: string
+          status: string
+          unread_count: number
+        }[]
       }
       get_feed: {
         Args: { p_before_id?: string; p_before_ts?: string; p_limit?: number }
@@ -2362,6 +2621,24 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_messages: {
+        Args: {
+          p_before_at?: string
+          p_before_id?: string
+          p_conversation: string
+          p_limit?: number
+        }
+        Returns: {
+          body: string
+          created_at: string
+          deleted: boolean
+          id: string
+          reply_body: string
+          reply_sender_id: string
+          reply_to_id: string
+          sender_id: string
+        }[]
       }
       get_my_profile_details: {
         Args: never
@@ -2554,6 +2831,7 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_nickname_available: { Args: { p_nickname: string }; Returns: boolean }
       is_staff: { Args: never; Returns: boolean }
+      mark_chat_read: { Args: { p_conversation: string }; Returns: undefined }
       mark_notifications_read: {
         Args: { p_keys?: string[] }
         Returns: undefined
@@ -2814,6 +3092,7 @@ export type Database = {
       }
       process_push_responses: { Args: never; Returns: undefined }
       purge_expired: { Args: never; Returns: Json }
+      purge_old_chats: { Args: never; Returns: undefined }
       purge_staff_alerts: { Args: never; Returns: undefined }
       refresh_trending: { Args: never; Returns: undefined }
       register_push_token: {
@@ -2833,6 +3112,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      respond_chat_request: {
+        Args: { p_accept: boolean; p_conversation: string }
+        Returns: undefined
+      }
       respond_item_return: {
         Args: { p_accept: boolean; p_return: string }
         Returns: undefined
@@ -2841,9 +3124,25 @@ export type Database = {
         Args: { p_accept: boolean; p_sale: string }
         Returns: undefined
       }
+      send_chat_message: {
+        Args: { p_body: string; p_conversation: string; p_reply_to?: string }
+        Returns: string
+      }
+      send_chat_request: {
+        Args: { p_body: string; p_to: string }
+        Returns: string
+      }
       set_answer_upvote: {
         Args: { p_comment_id: string; p_on: boolean }
         Returns: number
+      }
+      set_chat_muted: {
+        Args: { p_conversation: string; p_muted: boolean }
+        Returns: undefined
+      }
+      set_chat_settings: {
+        Args: { p_show_online?: boolean; p_who?: string }
+        Returns: undefined
       }
       set_comment_reaction: {
         Args: {

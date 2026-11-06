@@ -4,6 +4,7 @@ import { type ReactNode, useCallback, useState } from 'react';
 import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native';
 
 import { AccountLoadError } from '@/components/auth/AccountLoadError';
+import { ChatPrivacyRow } from '@/components/chat/ChatPrivacyRow';
 import { TabScreen } from '@/components/layout/TabScreen';
 import { CountBadge } from '@/components/notifications/NotificationBell';
 import { BadgeRow } from '@/components/badges/BadgeRow';
@@ -146,6 +147,8 @@ function AccountGroup({ nickname }: { nickname: string | null }) {
       />
       <SettingsRow icon="ban-outline" label="Blocked users" onPress={() => router.push('/blocked-users')} />
       <SettingsRow icon="options-outline" label="Notification preferences" onPress={() => router.push('/notification-preferences')} />
+      {/* Nothing at all unless chat is on for this member. */}
+      <ChatPrivacyRow />
     </SettingsGroup>
   );
 }

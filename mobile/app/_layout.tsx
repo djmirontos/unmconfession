@@ -19,6 +19,7 @@ import { ImageViewer } from '@/components/viewer/ImageViewer';
 import { PushExplainerSheet } from '@/components/push/PushExplainerSheet';
 import { useAppRequirementsSync } from '@/hooks/useAppRequirements';
 import { useAuthBootstrap } from '@/hooks/useAuthBootstrap';
+import { useChatSession } from '@/hooks/useChatSession';
 import { useNotificationsRealtime } from '@/hooks/useNotificationsRealtime';
 import { type MembershipStatus, useMembership } from '@/hooks/useProfile';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -90,6 +91,8 @@ function RootNavigator() {
   usePushNotifications();
   // Members only: which app version this phone runs, once per launch (staff see the counts).
   useReportAppVersion();
+  // Chat (only while on for this member): the switch on foreground and the "I'm active" ping.
+  useChatSession();
   const needsNickname = status === 'needs-nickname';
   const covered = useStartupCover(status);
 
@@ -124,6 +127,9 @@ function AppStack({ needsNickname }: { needsNickname: boolean }) {
         <Stack.Screen name="change-nickname" />
         <Stack.Screen name="about-you" />
         <Stack.Screen name="notification-preferences" />
+        <Stack.Screen name="chat/[id]" />
+        <Stack.Screen name="chat/requests" />
+        <Stack.Screen name="chat-privacy" />
         <Stack.Screen name="delete-account" />
         <Stack.Screen name="post-status" />
         <Stack.Screen name="edit" />

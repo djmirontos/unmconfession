@@ -171,3 +171,17 @@ Merge the duplicate read policies on announcements and user_flags (advisor warni
 ## Avatar card follow-ups
 
 1. The once-only flag is per phone (accepted): a member who signs up on one phone and first opens Profile on another sees no card, and a reinstall before opening Profile skips it.
+
+## 1:1 chat (stage 2 built; chat_mode stays 'off')
+
+1. Cancel a sent request: not in the database yet (needs a `cancel_chat_request` RPC); the sender only sees "Request sent" until the other side answers.
+2. Live updates (stage 3): broadcast signals per member instead of the 20 s / 30 s polls.
+3. Push (stage 4): "New message" / "New chat request" pushes with no message text, the `chats` switch and per-chat mute. Open question from the audit: with or without the nickname (CLAUDE.md says nothing personal).
+4. Reports and the admin view (stage 5, required before launch): `report_chat` with a message snapshot, an admin "Chat reports" section with warn / suspend / ban, the child-safety reason and the CSAM hold. Report is not in the chat menus yet.
+5. Photos (phase 2): private bucket, signed URLs, reports must keep the files.
+6. Launch: privacy policy and terms text (app and site, word for word), the delete-account pages, Play Data safety ("Other in-app messages"), and the PRD and CLAUDE.md amendment (remove "Not in V1: DMs"). Then set `chat_mode = 'on'`.
+7. "Delete chat for me" hides a chat until the other member writes again; the member who deleted it cannot reopen it from the profile (the server answers `already_chatting`). Needs a small DB change (unhide on request, or return hidden chats to `existingChatAction`).
+8. The conversation header's "Online" refreshes on focus only (the list poll does not run while a chat is open).
+9. Copy uses React Native's deprecated core `Clipboard` (still in RN 0.86; a dev warning). Move to `expo-clipboard` with the next native build.
+10. Device checks still open: the Android keyboard with "pan" on the chat screen, the inverted list's empty state, swipe-to-reply against vertical scrolling and long press inside the gesture.
+11. Members download one extra row while chat is off (the `chat_mode` read, at most once a minute and on foreground); it can be folded into another settings read if it matters.

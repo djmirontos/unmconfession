@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session } from '@supabase/supabase-js';
 
+import { CHAT_KEY_ROOT } from '@/lib/chat';
 import { getErrorMessage } from '@/lib/errors';
 import { getGoogleIdToken, signOutOfGoogle } from '@/lib/googleSignIn';
 import { forgetListingUpdates, resetListingUpdates } from '@/lib/listingUpdatesSync';
@@ -11,6 +12,7 @@ import { logOutLocallyFirst } from '@/lib/sessionRules';
 import { encryptedSessionStorage, SUPABASE_SESSION_KEY } from '@/lib/sessionStorage';
 import { SESSION_STORAGE_KEY, supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { useChatStore } from '@/stores/chatStore';
 import { useCommentDraftStore } from '@/stores/commentDraftStore';
 import { closeCommentsSheet } from '@/stores/commentsSheetStore';
 
@@ -123,6 +125,9 @@ export function clearMemberCaches() {
   // New-listings banners: every account's counts and in-memory markers go (stored markers stay, per account).
   queryClient.removeQueries({ queryKey: ['listing-updates'] });
   resetListingUpdates();
+  // Chat: every list, message page and the switch (all under 'chat'), plus drafts and unsent messages.
+  queryClient.removeQueries({ queryKey: [CHAT_KEY_ROOT] });
+  useChatStore.getState().clearAll();
 }
 
 const REVOKE_TIMEOUT_MS = 5000;
@@ -206,6 +211,9 @@ export async function forgetDeletedAccount(userId: string): Promise<void> {
   void signOutOfGoogle();
   // Every cache keyed by this user (profile, settings, My Posts, blocks, their feed copy…).
   queryClient.removeQueries({ predicate: (query) => query.queryKey.includes(userId) });
+  // Chat caches (keyed by this id, removed above) and the in-memory drafts and unsent messages.
+  queryClient.removeQueries({ queryKey: [CHAT_KEY_ROOT] });
+  useChatStore.getState().clearAll();
   // Drafts, the avatar card flags (pending and seen) and the new-listings markers are stored per user id.
   forgetListingUpdates(userId);
   const keys = await AsyncStorage.getAllKeys();

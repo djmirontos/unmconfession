@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 
 import { invalidateAuthoredLists } from '@/lib/authoredLists';
 import { DELETED_USER_LABEL } from '@/lib/authorLabel';
+import { CHAT_KEY_ROOT } from '@/lib/chat';
 import type { RepliesData, ThreadData } from '@/lib/commentCache';
 import { updateListedListings } from '@/lib/listings';
 import { logError, logInfo } from '@/lib/log';
@@ -77,6 +78,8 @@ export function afterBlock(queryClient: QueryClient, userId: string, authorId: s
   void queryClient.invalidateQueries({ queryKey: ['reactors'] });
   void queryClient.invalidateQueries({ queryKey: ['badges'] });
   void queryClient.invalidateQueries({ queryKey: ['top-badges'] });
+  // Chats with them disappear from the lists (the server hides blocked pairs).
+  void queryClient.invalidateQueries({ queryKey: [CHAT_KEY_ROOT] });
 }
 
 /** After an unblock: their content comes back with the refetch. */
@@ -87,4 +90,6 @@ export function afterUnblock(queryClient: QueryClient): void {
   void queryClient.invalidateQueries({ queryKey: ['reactors'] });
   void queryClient.invalidateQueries({ queryKey: ['badges'] });
   void queryClient.invalidateQueries({ queryKey: ['top-badges'] });
+  // A chat with them can show again.
+  void queryClient.invalidateQueries({ queryKey: [CHAT_KEY_ROOT] });
 }

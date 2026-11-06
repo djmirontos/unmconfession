@@ -11,6 +11,7 @@ import { EmptyState, ErrorState, ListFooter, RefreshErrorBanner } from '@/compon
 import { FEED_BG, FEED_ITEM_STYLE, FEED_UNDER_HEADER_STYLE, FeedCards } from '@/components/feed/feedCards';
 import { PostCard } from '@/components/feed/PostCard';
 import { BadgeRow } from '@/components/badges/BadgeRow';
+import { MessageButton } from '@/components/chat/MessageButton';
 import { BackHeader } from '@/components/layout/BackHeader';
 import { ReportSheet } from '@/components/moderation/ReportSheet';
 import { Avatar } from '@/components/profile/Avatar';
@@ -22,6 +23,7 @@ import { Button } from '@/components/ui/Button';
 import { ChipGroup } from '@/components/ui/ChipGroup';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useBlockUser } from '@/hooks/useBlockUser';
+import { useChatEnabled } from '@/hooks/useChatEnabled';
 import { usePostListActions } from '@/hooks/usePostListActions';
 import { useProfileDetails } from '@/hooks/useProfileDetails';
 import { type Profile, useMembership } from '@/hooks/useProfile';
@@ -232,7 +234,7 @@ const TABS = [
  * Posts | Listings under the avatar. The tab lives only while the screen is open. Listings load
  * the first time their tab opens; then both lists stay mounted, keeping their scroll position.
  */
-function ProfileTabs({ user }: { user: Profile }) {
+function ProfileTabs({ user, action }: { user: Profile; action?: ReactElement | null }) {
   const [tab, setTab] = useState<Tab>('posts');
   const [listingsOpened, setListingsOpened] = useState(false);
   const choose = (value: Tab) => {
@@ -243,6 +245,7 @@ function ProfileTabs({ user }: { user: Profile }) {
     <View className="pb-3">
       <ProfileHead userId={user.id} nickname={user.nickname} avatarKey={user.avatar_key} />
       <BadgeRow userId={user.id} />
+      {action ? <View className="items-center pb-3">{action}</View> : null}
       <DetailsCard userId={user.id} />
       <View className="items-center">
         <ChipGroup options={TABS} value={tab} onChange={choose} accessibilityLabel="Show" />
@@ -276,6 +279,8 @@ export default function UserProfileScreen() {
   const { status } = useMembership();
   const isGuest = status === 'guest';
   const isSelf = id !== null && id === viewerId;
+  // Message: only while chat is on for this viewer, never on your own profile, members only.
+  const canMessage = useChatEnabled().enabled && status === 'member' && !isSelf;
   const lookUp = isGuest || isSelf ? null : id;
   const profile = useUserProfile(lookUp);
   const blocked = useBlockedByMe(lookUp);
@@ -362,7 +367,7 @@ export default function UserProfileScreen() {
   } else {
     body = (
       <CurrentProfileContext.Provider value={user.id}>
-        <ProfileTabs user={user} />
+        <ProfileTabs user={user} action={canMessage ? <MessageButton member={user} /> : null} />
       </CurrentProfileContext.Provider>
     );
   }

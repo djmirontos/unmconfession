@@ -21,12 +21,13 @@ async function fetchIsStaff(): Promise<boolean> {
 /**
  * Whether the signed-in member is an active moderator or admin (is_staff()). Fails closed: guests,
  * loading and any error read as "not staff". Hiding staff UI is cosmetic; every mod_* RPC checks again.
+ * `ask` false skips the call (the chat gate asks only while chat is in staff mode).
  */
-export function useStaff(): { isStaff: boolean; isLoading: boolean } {
+export function useStaff(ask = true): { isStaff: boolean; isLoading: boolean } {
   const userId = useAuthStore((s) => s.session?.user.id ?? null);
   const restored = useAuthStore((s) => s.restored);
   const { status } = useMembership();
-  const enabled = status === 'member' && !!userId;
+  const enabled = ask && status === 'member' && !!userId;
   const query = useQuery({
     queryKey: staffKey(userId ?? ''),
     queryFn: enabled ? fetchIsStaff : skipToken,

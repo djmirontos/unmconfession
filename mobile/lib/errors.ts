@@ -1,5 +1,6 @@
 import { isAuthError, isAuthRetryableFetchError } from '@supabase/supabase-js';
 
+import { CHAT_ERROR_CODES, type ChatErrorAction, type ChatErrorContext, chatErrorText } from '@/lib/chat';
 import { DETAILS_ERROR_CODES, getDetailsErrorMessage } from '@/lib/profileDetails';
 
 const JOINED_WITH_GOOGLE = 'Joined with Google? Use Continue with Google.';
@@ -142,6 +143,7 @@ const KNOWN_CODES = new Set([
   ...Object.keys(PUSH_MESSAGES),
   ...Object.keys(MODERATION_MESSAGES),
   ...Object.keys(UPVOTE_MESSAGES),
+  ...CHAT_ERROR_CODES,
 ]);
 const DB_CODE = new RegExp(`\\b(${[...KNOWN_CODES].join('|')})\\b`);
 
@@ -176,6 +178,22 @@ export function getErrorMessage(error: unknown): string {
   if (code && MESSAGES[code]) return MESSAGES[code];
   if (isNetworkError(error)) return NETWORK;
   return FALLBACK;
+}
+
+/**
+ * Chat (send_chat_request, send_chat_message, …): the texts live in lib/chat.ts (chatErrorText);
+ * account and network wording comes from here. Never reveals that someone blocked the member.
+ */
+export function getChatError(error: unknown, context: ChatErrorContext): { code: string | null; message: string; action: ChatErrorAction } {
+  const code = isNetworkError(error) ? 'network' : getErrorCode(error);
+  const { message, action } = chatErrorText(code, context, {
+    banned: MESSAGES.banned ?? FALLBACK,
+    suspended: MESSAGES.suspended ?? FALLBACK,
+    nickname_required: MESSAGES.nickname_required ?? FALLBACK,
+    not_authenticated: MESSAGES.not_authenticated ?? FALLBACK,
+    network: NETWORK,
+  });
+  return { code, message, action };
 }
 
 /** Profile details (set_my_profile_details): the texts live in lib/profileDetails.ts; account and network wording comes from here. */

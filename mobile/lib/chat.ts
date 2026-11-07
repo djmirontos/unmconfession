@@ -35,6 +35,7 @@ export const chatKeys = {
   unread: (userId: string) => [CHAT_KEY_ROOT, userId, 'unread'] as const,
   settings: (userId: string) => [CHAT_KEY_ROOT, userId, 'settings'] as const,
   messages: (userId: string, conversationId: string) => [CHAT_KEY_ROOT, userId, 'messages', conversationId] as const,
+  reactions: (userId: string, conversationId: string) => [CHAT_KEY_ROOT, userId, 'reactions', conversationId] as const,
 };
 
 // ---------------------------------------------------------------- limits and timers
@@ -90,6 +91,7 @@ export const CHAT_ERROR_CODES = [
   'rate_limited',
   'invalid_reply',
   'invalid_input',
+  'invalid_reaction',
   'banned',
   'suspended',
   'nickname_required',
@@ -97,7 +99,7 @@ export const CHAT_ERROR_CODES = [
 ] as const;
 
 /** Where the error happened: the same code reads differently (a gone request vs a gone member). */
-export type ChatErrorContext = 'request' | 'respond' | 'message' | 'chat';
+export type ChatErrorContext = 'request' | 'respond' | 'message' | 'chat' | 'react';
 
 /** 'requests': offer to open the Requests screen. 'disabled': chat was switched off, hide it. */
 export type ChatErrorAction = 'requests' | 'disabled' | null;
@@ -129,6 +131,7 @@ const NOT_FOUND: Record<ChatErrorContext, string> = {
   message: CANNOT_MESSAGE,
   respond: 'This request is no longer available.',
   chat: "This chat isn't available.",
+  react: 'This message is no longer available.',
 };
 
 const TOO_LONG: Record<ChatErrorContext, string> = {
@@ -136,6 +139,7 @@ const TOO_LONG: Record<ChatErrorContext, string> = {
   message: 'Messages can be up to 2,000 characters.',
   respond: FALLBACK,
   chat: FALLBACK,
+  react: FALLBACK,
 };
 
 /** Account states keep the app's usual wording (passed in from lib/errors.ts). */
@@ -153,6 +157,7 @@ export function chatErrorText(
   if (code === 'chat_disabled') return { message: CHAT_TEXT.chat_disabled ?? FALLBACK, action: 'disabled' };
   if (code === 'request_incoming') return { message: CHAT_TEXT.request_incoming ?? FALLBACK, action: 'requests' };
   if (code === 'not_found') return { message: NOT_FOUND[context], action: null };
+  if (context === 'react' && code === 'rate_limited') return { message: 'Slow down a little.', action: null };
   if (code === 'body_too_long') return { message: TOO_LONG[context], action: null };
   if (code === 'banned' || code === 'suspended' || code === 'nickname_required' || code === 'not_authenticated' || code === 'network') {
     return { message: account[code], action: null };

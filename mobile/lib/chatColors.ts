@@ -62,5 +62,14 @@ export function chatColorPairs(c: ThemeColors): ColorPair[] {
     graphic('Message button icon', c.onAccent, c.accent),
     // The new chat page.
     graphic('new chat icon', c.chatAccent, c.chatBg),
+    // Reactions: badges under a bubble, the long-press bar and its actions.
+    text('reaction badge count', c.text, c.surface2),
+    text('my reaction badge count', c.text, c.chatAccentDim),
+    graphic('my reaction badge outline', c.chatAccent, c.chatBg),
+    graphic('reaction bar: my reaction outline', c.chatAccent, c.surface1),
+    text('message action label', c.text, c.surface1),
+    text('message action label (delete)', c.danger, c.surface1),
+    graphic('message action icon', c.text, c.surface1),
+    graphic('message action icon (delete)', c.danger, c.surface1),
   ];
 }

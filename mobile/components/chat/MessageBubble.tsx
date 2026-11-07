@@ -7,6 +7,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 
 import { useTheme } from '@/hooks/useTheme';
 import { type ChatRow, replyPreview } from '@/lib/chat';
+import { type MessageReactions, REACTION_LABEL, type ReactionKey, reactionBadges } from '@/lib/chatReactions';
 
 export type MessageRow = Extract<ChatRow, { kind: 'message' }>;
 
@@ -21,16 +22,47 @@ type Props = {
   myId: string;
   otherNickname: string;
   onReply: (row: MessageRow) => void;
-  onMenu: (row: MessageRow) => void;
+  /** Long press: the reaction bar and actions, near the finger (pageY; null = no position known). */
+  onMenu: (row: MessageRow, pageY: number | null) => void;
   onFailedPress: (row: MessageRow) => void;
+  /** This message's reactions only (the same object while unchanged, so the bubble skips re-rendering). */
+  reactions?: MessageReactions;
+  /** A tap on a badge: mine again removes it, another one replaces mine. Omitted: no reaction UI. */
+  onReact?: (row: MessageRow, key: ReactionKey) => void;
 };
+
+/** Small reaction badges under a bubble, inside its width; mine is outlined in the chat blue. */
+const ReactionBadges = memo(function ReactionBadges({ row, reactions, onReact }: { row: MessageRow; reactions: MessageReactions; onReact: (row: MessageRow, key: ReactionKey) => void }) {
+  const badges = reactionBadges(reactions);
+  if (badges.length === 0) return null;
+  return (
+    <View className={`mt-0.5 max-w-[80%] flex-row flex-wrap gap-1 ${row.mine ? 'justify-end' : 'justify-start'}`}>
+      {badges.map((b) => (
+        <Pressable
+          key={b.key}
+          onPress={() => onReact(row, b.key)}
+          hitSlop={6}
+          accessibilityRole="button"
+          accessibilityLabel={`${REACTION_LABEL[b.key]}, ${b.count}${b.mine ? ', yours. Tap to remove' : '. Tap to react the same'}`}
+          accessibilityState={{ selected: b.mine }}
+          className={`min-h-8 flex-row items-center gap-0.5 rounded-full border px-2 ${b.mine ? 'border-chat-accent bg-chat-accent-dim' : 'border-hairline bg-surface2'}`}
+        >
+          <Text allowFontScaling={false} className="text-sm">
+            {b.glyph}
+          </Text>
+          {b.count > 1 ? <Text className="text-xs font-bold text-text">{b.count}</Text> : null}
+        </Pressable>
+      ))}
+    </View>
+  );
+});
 
 /**
  * One message: mine on the right in the chat blue, theirs on the left in neutral grey. Swipe right to reply
  * (gesture-handler + Reanimated; a vertical move first lets the list scroll), long press for the
  * menu. A deleted message is a stub; an unsent one shows "Sending…" or "Not sent".
  */
-export const MessageBubble = memo(function MessageBubble({ row, myId, otherNickname, onReply, onMenu, onFailedPress }: Props) {
+export const MessageBubble = memo(function MessageBubble({ row, myId, otherNickname, onReply, onMenu, onFailedPress, reactions, onReact }: Props) {
   const { colors } = useTheme();
   const reduceMotion = useReducedMotion();
   const x = useSharedValue(0);
@@ -67,7 +99,7 @@ export const MessageBubble = memo(function MessageBubble({ row, myId, otherNickn
 
   const onAction = (e: AccessibilityActionEvent) => {
     if (e.nativeEvent.actionName === 'reply') reply();
-    else if (e.nativeEvent.actionName === 'longpress') onMenu(row);
+    else if (e.nativeEvent.actionName === 'longpress') onMenu(row, null);
     else if (e.nativeEvent.actionName === 'activate' && row.status === 'failed') onFailedPress(row);
   };
 
@@ -86,7 +118,7 @@ export const MessageBubble = memo(function MessageBubble({ row, myId, otherNickn
         <Animated.View style={bubbleStyle} className={row.mine ? 'items-end' : 'items-start'}>
           <Pressable
             onPress={row.status === 'failed' ? () => onFailedPress(row) : undefined}
-            onLongPress={row.status === 'sent' ? () => onMenu(row) : undefined}
+            onLongPress={row.status === 'sent' && !row.deleted ? (e) => onMenu(row, e.nativeEvent.pageY) : undefined}
             delayLongPress={350}
             accessible
             accessibilityLabel={a11y}
@@ -98,7 +130,7 @@ export const MessageBubble = memo(function MessageBubble({ row, myId, otherNickn
                       { name: 'reply', label: 'Reply' },
                       { name: 'longpress', label: 'More options' },
                     ]
-                  : row.status === 'sent'
+                  : row.status === 'sent' && !row.deleted
                     ? [{ name: 'longpress', label: 'More options' }]
                     : []
             }
@@ -119,6 +151,7 @@ export const MessageBubble = memo(function MessageBubble({ row, myId, otherNickn
               <Text className={`text-base ${textColor}`}>{row.body}</Text>
             )}
           </Pressable>
+          {reactions && onReact && !row.deleted ? <ReactionBadges row={row} reactions={reactions} onReact={onReact} /> : null}
           {row.status === 'failed' ? (
             <Text className="mt-0.5 px-1 text-xs font-bold text-danger">{row.error ? `Not sent. ${row.error}` : 'Not sent.'} Tap to retry or remove.</Text>
           ) : row.lastInGroup || row.status === 'sending' ? (

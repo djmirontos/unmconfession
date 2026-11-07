@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { type ChatMessage, type ChatRequest, type Conversation, type Cursor, MESSAGE_PAGE_SIZE } from '@/lib/chat';
+import { chunkIds, type ReactionKey, type ReactionRow } from '@/lib/chatReactions';
 import { getErrorCode } from '@/lib/errors';
 import { logError } from '@/lib/log';
 import { queryClient } from '@/lib/queryClient';
@@ -190,6 +191,30 @@ export async function setChatMuted(conversationId: string, muted: boolean): Prom
 export async function deleteChatForMe(conversationId: string): Promise<void> {
   const { error } = await supabase.rpc('delete_chat_for_me', { p_conversation: conversationId });
   if (error) onChatError('deleteChat', error);
+}
+
+const reactionRow = z.object({ message_id: z.string(), reaction: z.string(), reaction_count: z.number(), mine: z.boolean() });
+
+/** Reactions on these messages of one chat: one call per 100 ids (chunks run together). */
+export async function fetchMessageReactions(conversationId: string, messageIds: readonly string[]): Promise<ReactionRow[]> {
+  const chunks = chunkIds(messageIds);
+  const pages = await Promise.all(
+    chunks.map(async (ids) => {
+      const { data, error } = await supabase.rpc('get_message_reactions', { p_conversation: conversationId, p_message_ids: ids });
+      if (error) onChatError('reactions', error);
+      return z.array(reactionRow).parse(data ?? []);
+    }),
+  );
+  return pages.flat();
+}
+
+/** Sets, replaces or (null) removes my reaction on one message. Silent: no notification. */
+export async function reactToChatMessage(messageId: string, reaction: ReactionKey | null): Promise<void> {
+  const { error } = await supabase.rpc('react_to_chat_message', {
+    p_message: messageId,
+    ...(reaction ? { p_reaction: reaction } : {}),
+  });
+  if (error) onChatError('react', error);
 }
 
 export async function sendChatHeartbeat(): Promise<void> {

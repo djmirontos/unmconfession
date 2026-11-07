@@ -304,6 +304,42 @@ export type Database = {
           },
         ]
       }
+      chat_message_reactions: {
+        Row: {
+          message_id: string
+          reaction: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          message_id: string
+          reaction: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          message_id?: string
+          reaction?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_message_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_messages: {
         Row: {
           attachments: Json
@@ -2671,6 +2707,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      get_message_reactions: {
+        Args: { p_conversation: string; p_message_ids: string[] }
+        Returns: {
+          message_id: string
+          mine: boolean
+          reaction: string
+          reaction_count: number
+        }[]
+      }
       get_messages: {
         Args: {
           p_before_at?: string
@@ -3186,6 +3231,10 @@ export type Database = {
       purge_member_strikes: { Args: never; Returns: undefined }
       purge_old_chats: { Args: never; Returns: undefined }
       purge_staff_alerts: { Args: never; Returns: undefined }
+      react_to_chat_message: {
+        Args: { p_message: string; p_reaction?: string }
+        Returns: undefined
+      }
       refresh_trending: { Args: never; Returns: undefined }
       register_push_token: {
         Args: { p_platform: string; p_token: string }

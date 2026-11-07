@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatComposer } from '@/components/chat/ChatComposer';
 import { ChatHeader, type ChatHeaderMember } from '@/components/chat/ChatHeader';
+import { MessageActionsOverlay } from '@/components/chat/MessageActionsOverlay';
 import { DayLine, MessageBubble, type MessageRow } from '@/components/chat/MessageBubble';
 import { EmptyState, ErrorState } from '@/components/feed/ListStates';
 import { ActionSheet, type SheetAction } from '@/components/ui/ActionSheet';
@@ -16,6 +17,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useAppActive } from '@/hooks/useAppActive';
 import { useBlockUser } from '@/hooks/useBlockUser';
 import { useChatMessages } from '@/hooks/useChatMessages';
+import { useChatReactions } from '@/hooks/useChatReactions';
 import { invalidateChatLists, useConversations } from '@/hooks/useChats';
 import { useChatScreenGuard } from '@/hooks/useChatScreenGuard';
 import { useTheme } from '@/hooks/useTheme';
@@ -36,6 +38,7 @@ import {
   replyPreview,
 } from '@/lib/chat';
 import { deleteChatForMe, setChatMuted } from '@/lib/chatApi';
+import { type ReactionKey, reactableIds } from '@/lib/chatReactions';
 import { getChatError } from '@/lib/errors';
 import { isValidUserId as isUuid } from '@/lib/profileView';
 import { useAuthStore } from '@/stores/authStore';
@@ -135,12 +138,23 @@ export default function ChatScreen() {
   const cancelReply = useCallback(() => setReplyTo(null), []);
 
   // Long press: Reply, Copy, Delete (mine only). A failed message: Retry or Remove.
-  const [menuFor, setMenuFor] = useState<MessageRow | null>(null);
+  // Long press: the row and where the finger was (the overlay mounts only while this is set).
+  const [menuFor, setMenuForState] = useState<{ row: MessageRow; y: number | null } | null>(null);
+  const openMessageMenu = useCallback((row: MessageRow, y: number | null) => setMenuForState({ row, y }), []);
+  const closeMenu = useCallback(() => setMenuForState(null), []);
   const [failedFor, setFailedFor] = useState<MessageRow | null>(null);
   const [chatMenu, setChatMenu] = useState(false);
 
   const { remove, retry, discard } = chat;
   const server = chat.server;
+
+  // Reactions: one get_message_reactions call for the loaded ids (when they change) and one per
+  // message poll while live; each bubble gets only its own entry.
+  const loadedIds = useMemo(() => (accepted ? reactableIds(server) : []), [accepted, server]);
+  const { reactions, toggle } = useChatReactions(accepted ? conversationId : '', loadedIds, accepted ? pollMs : false);
+  const reactTo = useCallback((row: MessageRow, key: ReactionKey) => {
+    if (row.id) toggle(row.id, key);
+  }, [toggle]);
   const confirmDelete = useCallback(
     (row: MessageRow) => {
       const message = server.find((m) => m.id === row.id);
@@ -159,7 +173,7 @@ export default function ChatScreen() {
 
   const messageActions = useMemo<SheetAction[]>(() => {
     if (!menuFor) return [];
-    const row = menuFor;
+    const row = menuFor.row;
     const body = row.body;
     const live = row.id !== null && !row.deleted;
     const reply: SheetAction = { label: 'Reply', icon: 'arrow-undo-outline', onPress: () => startReply(row) };
@@ -270,9 +284,18 @@ export default function ChatScreen() {
       item.kind === 'day' ? (
         <DayLine label={item.label} />
       ) : (
-        <MessageBubble row={item} myId={myId} otherNickname={nickname} onReply={startReply} onMenu={setMenuFor} onFailedPress={setFailedFor} />
+        <MessageBubble
+          row={item}
+          myId={myId}
+          otherNickname={nickname}
+          onReply={startReply}
+          onMenu={openMessageMenu}
+          onFailedPress={setFailedFor}
+          reactions={item.id ? reactions?.[item.id] : undefined}
+          onReact={reactTo}
+        />
       ),
-    [myId, nickname, startReply],
+    [myId, nickname, startReply, openMessageMenu, reactions, reactTo],
   );
 
   const { query, loadOlder } = chat;
@@ -354,7 +377,16 @@ export default function ChatScreen() {
           />
         ) : null}
       </KeyboardAvoidingView>
-      <ActionSheet visible={menuFor !== null} actions={messageActions} onClose={() => setMenuFor(null)} />
+      {menuFor ? (
+        <MessageActionsOverlay
+          anchorY={menuFor.y}
+          showReactions={menuFor.row.id !== null && !menuFor.row.deleted}
+          mine={menuFor.row.id ? (reactions?.[menuFor.row.id]?.mine ?? null) : null}
+          actions={messageActions}
+          onReact={(key) => reactTo(menuFor.row, key)}
+          onClose={closeMenu}
+        />
+      ) : null}
       <ActionSheet visible={failedFor !== null} title="Not sent" actions={failedActions} onClose={() => setFailedFor(null)} />
       <ActionSheet visible={chatMenu} actions={chatActions} onClose={() => setChatMenu(false)} />
     </View>

@@ -82,7 +82,8 @@ test('no amber accent, alpha overlays or faded rows left in the chat screens (th
     if (path === 'components/chat/MessageButton.tsx' || path === 'app/chat/requests.tsx') continue;
     assert.doesNotMatch(text, /\b(bg|text|border)-accent\b|\b(bg|text|border)-accent-dim\b|text-on-accent|border-on-accent/, path);
     assert.doesNotMatch(text, /colors\.accent\b|colors\.onAccent\b/, path);
-    assert.doesNotMatch(text, /bg-black\/\d+|opacity-60/, path);
+    // A dimmed modal backdrop (inset-0) is fine; text never sits on a see-through colour.
+    for (const line of text.split('\n')) if (!/inset-0/.test(line)) assert.doesNotMatch(line, /bg-black\/\d+|opacity-60/, path);
   }
 });
 

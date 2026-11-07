@@ -14,10 +14,14 @@ import { useAuthStore } from '@/stores/authStore';
 export const userProfileKey = (id: string) => ['user-profile', id] as const;
 export const blockedByMeKey = (viewerId: string, id: string) => ['blocked-by-me', viewerId, id] as const;
 
-/** Another member's public row; null when there is none. `id` null skips the query. */
-export function useUserProfile(id: string | null) {
+/**
+ * Another member's public row; null when there is none. `id` null skips the query.
+ * `cachedFirst`: use what is cached however old (a chat page opened from their profile asks nothing).
+ */
+export function useUserProfile(id: string | null, cachedFirst = false) {
   return useQuery({
     queryKey: userProfileKey(id ?? ''),
+    ...(cachedFirst ? { staleTime: Infinity } : {}),
     queryFn: id
       ? async (): Promise<Profile | null> => {
           const { data, error } = await supabase.from('profiles').select('id, nickname, avatar_key').eq('id', id).maybeSingle();

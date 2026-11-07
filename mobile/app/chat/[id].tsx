@@ -2,16 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Clipboard, KeyboardAvoidingView, type ListRenderItemInfo, Platform, Pressable, Text, type TextInput, View } from 'react-native';
+import { Alert, Clipboard, KeyboardAvoidingView, type ListRenderItemInfo, Platform, Pressable, Text, View } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatComposer } from '@/components/chat/ChatComposer';
-import { ChatAvatar } from '@/components/chat/ConversationRow';
+import { ChatHeader, type ChatHeaderMember } from '@/components/chat/ChatHeader';
 import { DayLine, MessageBubble, type MessageRow } from '@/components/chat/MessageBubble';
 import { EmptyState, ErrorState } from '@/components/feed/ListStates';
-import { MoreButton } from '@/components/myposts/MoreButton';
-import { ProfileLink } from '@/components/profile/ProfileLink';
 import { ActionSheet, type SheetAction } from '@/components/ui/ActionSheet';
 import { Button } from '@/components/ui/Button';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -21,7 +19,22 @@ import { useChatMessages } from '@/hooks/useChatMessages';
 import { invalidateChatLists, useConversations } from '@/hooks/useChats';
 import { useChatScreenGuard } from '@/hooks/useChatScreenGuard';
 import { useTheme } from '@/hooks/useTheme';
-import { buildChatRows, type ChatRow, chatKeys, type Conversation, pollInterval, type ReplyRef, replyPreview } from '@/lib/chat';
+import {
+  buildChatRows,
+  type ChatRow,
+  chatKeys,
+  chatPageState,
+  type Conversation,
+  leaveQuietly,
+  MESSAGE_COUNTER_FROM,
+  MESSAGE_MAX,
+  PENDING_COMPOSER_REASON,
+  pendingBanner,
+  pendingRows,
+  pollInterval,
+  type ReplyRef,
+  replyPreview,
+} from '@/lib/chat';
 import { deleteChatForMe, setChatMuted } from '@/lib/chatApi';
 import { getChatError } from '@/lib/errors';
 import { isValidUserId as isUuid } from '@/lib/profileView';
@@ -30,39 +43,15 @@ import { useChatStore } from '@/stores/chatStore';
 import { useToastStore } from '@/stores/toastStore';
 
 const keyExtractor = (row: ChatRow) => row.key;
+const NOOP = () => undefined;
 
-function Header({ conversation, onMenu }: { conversation: Conversation | null; onMenu: () => void }) {
-  const router = useRouter();
+/** The request I sent, waiting for an answer: what was sent, read-only. */
+function WaitingBanner({ nickname }: { nickname: string }) {
   const { colors } = useTheme();
-  const goBack = () => (router.canGoBack() ? router.back() : router.replace('/(tabs)/chats'));
-  const online = conversation?.isOnline === true;
   return (
-    <View className="h-14 flex-row items-center gap-2 border-b border-hairline px-2">
-      <Pressable
-        onPress={goBack}
-        hitSlop={8}
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-        className="h-11 w-11 items-center justify-center rounded-full active:bg-surface2"
-      >
-        <Ionicons name="chevron-back" size={24} color={colors.text} />
-      </Pressable>
-      {conversation ? (
-        <ProfileLink userId={conversation.otherId} nickname={conversation.otherNickname} height={40} className="min-w-0 flex-1 flex-row items-center gap-2">
-          <ChatAvatar userId={conversation.otherId} nickname={conversation.otherNickname} avatarKey={conversation.otherAvatarKey} online={online} size={36} />
-          <View className="min-w-0 flex-1">
-            <Text accessibilityRole="header" numberOfLines={1} className="text-base font-bold text-text">
-              {conversation.otherNickname}
-            </Text>
-            {online ? <Text className="text-xs font-semibold text-success">Online</Text> : null}
-          </View>
-        </ProfileLink>
-      ) : (
-        <View className="flex-1">
-          <Skeleton width={140} height={16} />
-        </View>
-      )}
-      {conversation ? <MoreButton onPress={onMenu} accessibilityLabel="Chat options" /> : null}
+    <View className="mx-3 mt-3 flex-row items-start gap-2 rounded-2xl bg-surface2 px-4 py-3" accessibilityRole="summary">
+      <Ionicons name="time-outline" size={18} color={colors.chatAccent} />
+      <Text className="flex-1 text-sm text-text">{pendingBanner(nickname)}</Text>
     </View>
   );
 }
@@ -79,7 +68,11 @@ function MessagesSkeleton() {
   );
 }
 
-/** A 1:1 chat: newest at the bottom, swipe right to reply, long press for options. */
+/**
+ * A 1:1 chat: newest at the bottom, swipe right to reply, long press for options. A request I sent
+ * that is still waiting shows read-only (the request as my bubble, a banner, a disabled composer)
+ * and turns into the normal chat when they accept, without leaving the page.
+ */
 export default function ChatScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -95,43 +88,51 @@ export default function ChatScreen() {
   const appActive = useAppActive();
   const pollMs = pollInterval('messages', { focused: isFocused, appActive, enabled: ready });
 
-  const conversations = useConversations();
-  const conversation = conversations.data?.find((c) => c.id === conversationId) ?? null;
-  const missing = ready && (routeId === '' || (conversations.data !== undefined && !conversations.isFetching && conversation === null));
-  const chat = useChatMessages(conversation ? conversationId : '', pollMs !== false && conversation !== null, pollMs);
+  // Two views of the same cached list (one request): the second polls (the list's usual 30 s) only
+  // while my request is waiting here, so an accept turns the page into the chat without leaving it.
+  const conversation = useConversations(false).data?.find((c) => c.id === conversationId) ?? null;
+  const conversations = useConversations(conversation?.status === 'pending_sent' && pollMs !== false);
+  const state = ready ? chatPageState({ routeValid: routeId !== '', listLoaded: conversations.data !== undefined, listFetching: conversations.isFetching, conversation }) : 'loading';
+  const accepted = state === 'accepted';
+  // get_messages only for an accepted chat; a waiting request shows what the list already has.
+  const chat = useChatMessages(accepted ? conversationId : '', pollMs !== false && accepted, pollMs);
   const nickname = conversation?.otherNickname ?? '';
 
-  // Composer: starts from this chat's draft (memory only) and saves every change back.
-  const [saved] = useState(() => useChatStore.getState().drafts[routeId]);
-  const [text, setText] = useState(saved?.text ?? '');
-  const [replyTo, setReplyTo] = useState<ReplyRef | null>(saved?.replyTo ?? null);
+  // A chat that was on screen and then left the list (declined, blocked, deleted): back to the list.
+  const seen = useRef(false);
   useEffect(() => {
-    if (routeId) useChatStore.getState().setDraft(routeId, { text, replyTo });
-  }, [routeId, text, replyTo]);
-  const inputRef = useRef<TextInput>(null);
+    if (conversation) seen.current = true;
+    if (leaveQuietly(seen.current, state)) router.replace('/(tabs)/chats');
+  }, [conversation, state, router]);
+
+  // The reply target lives here (it rarely changes); the text lives in the composer only.
+  const [replyTo, setReplyTo] = useState<ReplyRef | null>(() => useChatStore.getState().drafts[routeId]?.replyTo ?? null);
+  useEffect(() => {
+    if (routeId) useChatStore.getState().patchDraft(routeId, { replyTo });
+  }, [routeId, replyTo]);
+  const [focusSignal, setFocusSignal] = useState(0);
+  const [restore, setRestore] = useState<{ text: string; n: number } | null>(null);
 
   const [now] = useState(() => Date.now());
   const rows = useMemo(() => buildChatRows(chat.server, chat.outgoing, myId, now), [chat.server, chat.outgoing, myId, now]);
+  const waitingRows = useMemo(() => (conversation && state === 'pending' ? pendingRows(conversation, myId, now) : []), [conversation, state, myId, now]);
 
-  // Reply (swipe or menu) focuses the composer; the effect keeps the ref out of render.
-  const [focusRequest, setFocusRequest] = useState(0);
-  useEffect(() => {
-    if (focusRequest === 0) return;
-    const timer = setTimeout(() => inputRef.current?.focus(), 50);
-    return () => clearTimeout(timer);
-  }, [focusRequest]);
   const startReply = useCallback((row: MessageRow) => {
     if (!row.id) return;
     setReplyTo({ id: row.id, body: row.deleted ? null : row.body, senderId: row.senderId });
-    setFocusRequest((n) => n + 1);
+    setFocusSignal((n) => n + 1);
   }, []);
 
-  const send = () => {
-    if (!conversation) return;
-    chat.send(text, replyTo);
-    setText('');
-    setReplyTo(null);
-  };
+  const chatSend = chat.send;
+  const onSend = useCallback(
+    (text: string) => {
+      chatSend(text, replyTo);
+      setReplyTo(null);
+      return true;
+    },
+    [chatSend, replyTo],
+  );
+  const cancelReply = useCallback(() => setReplyTo(null), []);
 
   // Long press: Reply, Copy, Delete (mine only). A failed message: Retry or Remove.
   const [menuFor, setMenuFor] = useState<MessageRow | null>(null);
@@ -188,11 +189,11 @@ export default function ChatScreen() {
         // The text is never lost: it goes back into an empty composer.
         onPress: () => {
           const body = discard(localId);
-          if (body && text.trim() === '') setText(body);
+          if (body) setRestore((r) => ({ text: body, n: (r?.n ?? 0) + 1 }));
         },
       },
     ];
-  }, [failedFor, retry, discard, text]);
+  }, [failedFor, retry, discard]);
 
   const leave = useCallback(() => {
     queryClient.removeQueries({ queryKey: chatKeys.messages(myId, conversationId) });
@@ -253,6 +254,17 @@ export default function ChatScreen() {
     ];
   }, [conversation, queryClient, myId, showToast, leave, block]);
 
+  // The waiting request: the same bubble, no reply, no menu (it has no message id yet).
+  const renderWaiting = useCallback(
+    ({ item }: ListRenderItemInfo<ChatRow>) =>
+      item.kind === 'day' ? (
+        <DayLine label={item.label} />
+      ) : (
+        <MessageBubble row={item} myId={myId} otherNickname={nickname} onReply={NOOP} onMenu={NOOP} onFailedPress={NOOP} />
+      ),
+    [myId, nickname],
+  );
+
   const renderItem = useCallback(
     ({ item }: ListRenderItemInfo<ChatRow>) =>
       item.kind === 'day' ? (
@@ -265,7 +277,7 @@ export default function ChatScreen() {
 
   const { query, loadOlder } = chat;
   let body;
-  if (missing) {
+  if (state === 'missing') {
     body = (
       <View className="gap-4 p-4">
         <EmptyState icon="chatbubbles-outline" title="This chat isn't available" />
@@ -274,6 +286,13 @@ export default function ChatScreen() {
     );
   } else if (!conversation && conversations.isError) {
     body = <ErrorState message={getChatError(conversations.error, 'chat').message} onRetry={() => void conversations.refetch()} />;
+  } else if (conversation && state === 'pending') {
+    body = (
+      <View className="flex-1">
+        <WaitingBanner nickname={nickname} />
+        <FlatList data={waitingRows} renderItem={renderWaiting} keyExtractor={keyExtractor} inverted contentContainerStyle={{ paddingVertical: 8 }} />
+      </View>
+    );
   } else if (!conversation || (!query.data && !query.isError)) {
     body = <MessagesSkeleton />;
   } else if (!query.data) {
@@ -303,21 +322,35 @@ export default function ChatScreen() {
     );
   }
 
-  const replying = replyTo ? replyPreview({ replyToId: replyTo.id, replyBody: replyTo.body, replySenderId: replyTo.senderId }, myId, nickname) : null;
+  const replying = useMemo(
+    () => (replyTo ? replyPreview({ replyToId: replyTo.id, replyBody: replyTo.body, replySenderId: replyTo.senderId }, myId, nickname) : null),
+    [replyTo, myId, nickname],
+  );
+  const member = useMemo<ChatHeaderMember | null>(
+    () =>
+      conversation
+        ? { id: conversation.otherId, nickname: conversation.otherNickname, avatarKey: conversation.otherAvatarKey, online: conversation.isOnline === true }
+        : null,
+    [conversation],
+  );
+  const openMenu = useCallback(() => setChatMenu(true), []);
 
   return (
-    <View className="flex-1 bg-bg" style={{ paddingTop: insets.top }}>
-      <Header conversation={conversation} onMenu={() => setChatMenu(true)} />
+    <View className="flex-1 bg-chat-bg" style={{ paddingTop: insets.top }}>
+      <ChatHeader member={member} onMenu={accepted ? openMenu : undefined} />
       <KeyboardAvoidingView className="flex-1" behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View className="flex-1">{body}</View>
-        {conversation ? (
+        {conversation && (state === 'pending' || state === 'accepted') ? (
           <ChatComposer
-            inputRef={inputRef}
-            value={text}
-            onChangeText={setText}
-            onSend={send}
+            draftKey={routeId}
+            onSend={onSend}
             replying={replying}
-            onCancelReply={() => setReplyTo(null)}
+            onCancelReply={cancelReply}
+            max={MESSAGE_MAX}
+            counterFrom={MESSAGE_COUNTER_FROM + 1}
+            disabledReason={state === 'pending' ? PENDING_COMPOSER_REASON : null}
+            focusSignal={focusSignal}
+            restore={restore}
           />
         ) : null}
       </KeyboardAvoidingView>

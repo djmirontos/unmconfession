@@ -2,23 +2,38 @@ import { Ionicons } from '@expo/vector-icons';
 import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { CountBadge } from '@/components/notifications/NotificationBell';
 import { Avatar } from '@/components/profile/Avatar';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { useTheme } from '@/hooks/useTheme';
+import { formatBadge } from '@/hooks/useUnreadNotifications';
 import { type Conversation, conversationPreview } from '@/lib/chat';
 import { formatRelative } from '@/lib/time';
 
 const AVATAR = 48;
 
 /** The avatar with a small green dot, only when the server says they are online right now. */
-export function ChatAvatar({ userId, nickname, avatarKey, online, size = AVATAR }: { userId: string; nickname: string; avatarKey: string | null; online: boolean; size?: number }) {
+export function ChatAvatar({
+  userId,
+  nickname,
+  avatarKey,
+  online,
+  size = AVATAR,
+  ring = 'border-bg',
+}: {
+  userId: string;
+  nickname: string;
+  avatarKey: string | null;
+  online: boolean;
+  size?: number;
+  /** The dot's ring matches the background it sits on. */
+  ring?: 'border-bg' | 'border-chat-bg';
+}) {
   return (
     <View>
       <Avatar avatarKey={avatarKey} userId={userId} nickname={nickname} size={size} />
       {online ? (
         <View
-          className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 border-bg bg-success"
+          className={`absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full border-2 bg-success ${ring}`}
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
         />
@@ -29,7 +44,7 @@ export function ChatAvatar({ userId, nickname, avatarKey, online, size = AVATAR 
 
 type Props = { conversation: Conversation; myId: string; now: number | undefined; onOpen: (id: string) => void };
 
-/** One chat in the list. A request still waiting is shown muted and does not open. */
+/** One chat in the list. A request still waiting says so (in italics) and opens read-only. */
 export const ConversationRow = memo(function ConversationRow({ conversation: c, myId, now, onOpen }: Props) {
   const { colors } = useTheme();
   const pending = c.status === 'pending_sent';
@@ -58,7 +73,7 @@ export const ConversationRow = memo(function ConversationRow({ conversation: c, 
           </Text>
           {c.muted ? <Ionicons name="notifications-off-outline" size={14} color={colors.textDim} /> : null}
           <View className="flex-1" />
-          <Text className={`text-xs ${unread ? 'font-bold text-accent' : 'text-text-dim'}`}>{time}</Text>
+          <Text className={`text-xs ${unread ? 'font-bold text-chat-accent-text' : 'text-text-dim'}`}>{time}</Text>
         </View>
         <View className="flex-row items-center gap-2">
           <Text
@@ -67,25 +82,23 @@ export const ConversationRow = memo(function ConversationRow({ conversation: c, 
           >
             {preview}
           </Text>
-          {unread ? <CountBadge count={c.unread} /> : null}
+          {unread ? (
+            <View className="h-5 min-w-5 items-center justify-center rounded-full bg-chat-own px-1.5">
+              <Text className="text-[11px] font-bold text-on-chat-own">{formatBadge(c.unread)}</Text>
+            </View>
+          ) : null}
         </View>
       </View>
     </>
   );
 
-  if (pending) {
-    return (
-      <View accessible accessibilityLabel={label} className="min-h-[72px] flex-row items-center gap-3 px-4 py-2 opacity-60">
-        {content}
-      </View>
-    );
-  }
+  // A request still waiting opens too: its page shows it read-only until they accept.
   return (
     <Pressable
       onPress={() => onOpen(c.id)}
       accessibilityRole="button"
       accessibilityLabel={label}
-      accessibilityHint="Opens the chat"
+      accessibilityHint={pending ? 'Opens the request' : 'Opens the chat'}
       className="min-h-[72px] flex-row items-center gap-3 px-4 py-2 active:bg-surface2"
     >
       {content}
@@ -103,8 +116,8 @@ export function RequestsRow({ count, onPress }: { count: number; onPress: () => 
       accessibilityLabel={`Chat requests, ${count} waiting`}
       className="min-h-14 flex-row items-center gap-3 border-b border-hairline px-4 py-2 active:bg-surface2"
     >
-      <View className="h-12 w-12 items-center justify-center rounded-full bg-accent-dim">
-        <Ionicons name="mail-unread-outline" size={22} color={colors.accent} />
+      <View className="h-12 w-12 items-center justify-center rounded-full bg-chat-accent-dim">
+        <Ionicons name="mail-unread-outline" size={22} color={colors.chatAccent} />
       </View>
       <Text className="flex-1 text-base font-bold text-text">Requests ({count})</Text>
       <Ionicons name="chevron-forward" size={18} color={colors.textDim} />

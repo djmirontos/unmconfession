@@ -219,13 +219,13 @@ export function chatBadge(counts: { unreadChats: number; pendingRequests: number
 
 // ---------------------------------------------------------------- "Message" on a profile
 
-export type StartChat = { kind: 'open'; conversationId: string } | { kind: 'pending' } | { kind: 'incoming' } | { kind: 'new' };
+export type StartChat = { kind: 'open'; conversationId: string } | { kind: 'pending'; conversationId: string } | { kind: 'incoming' } | { kind: 'new' };
 
-/** An existing conversation wins over a new request: open it, say it's pending, or go to Requests. */
+/** An existing conversation wins over a new request: open it (accepted or my pending request) or go to Requests. */
 export function existingChatAction(conversations: readonly Conversation[], requests: readonly ChatRequest[], otherId: string): StartChat {
   const mine = conversations.find((c) => c.otherId === otherId);
   if (mine?.status === 'accepted') return { kind: 'open', conversationId: mine.id };
-  if (mine?.status === 'pending_sent') return { kind: 'pending' };
+  if (mine?.status === 'pending_sent') return { kind: 'pending', conversationId: mine.id };
   if (requests.some((r) => r.fromId === otherId)) return { kind: 'incoming' };
   return { kind: 'new' };
 }
@@ -432,4 +432,85 @@ export const newestServerId = (server: readonly ChatMessage[]): string | null =>
  */
 export function afterRequestFailure(code: string | null, alreadyReopened: boolean): 'reopen' | 'show' {
   return code === 'already_chatting' && !alreadyReopened ? 'reopen' : 'show';
+}
+
+// ---------------------------------------------------------------- starting a chat on the chat page
+
+/** Where "Message" on a profile goes: always a chat page (or Requests for their request to me). */
+export type StartRoute =
+  | { kind: 'chat'; conversationId: string }
+  | { kind: 'requests' }
+  | { kind: 'new'; memberId: string };
+
+export function startRoute(next: StartChat, memberId: string): StartRoute {
+  if (next.kind === 'open' || next.kind === 'pending') return { kind: 'chat', conversationId: next.conversationId };
+  if (next.kind === 'incoming') return { kind: 'requests' };
+  return { kind: 'new', memberId };
+}
+
+/** The open chat page: waiting for the list, a request I sent (read-only), a normal chat, or gone. */
+export type ChatPageState = 'loading' | 'pending' | 'accepted' | 'missing';
+
+export function chatPageState(input: { routeValid: boolean; listLoaded: boolean; listFetching: boolean; conversation: Conversation | null }): ChatPageState {
+  if (!input.routeValid) return 'missing';
+  if (input.conversation) return input.conversation.status === 'pending_sent' ? 'pending' : 'accepted';
+  if (!input.listLoaded || input.listFetching) return 'loading';
+  return 'missing';
+}
+
+/**
+ * A chat that was on screen and then left the list (declined, blocked, deleted): go back to the
+ * list quietly. A link to a chat never seen shows "not available" instead.
+ */
+export const leaveQuietly = (seenBefore: boolean, state: ChatPageState): boolean => seenBefore && state === 'missing';
+
+export const pendingBanner = (nickname: string) => `Waiting for ${nickname} to accept. You can send more messages once they accept.`;
+export const PENDING_COMPOSER_REASON = 'You can send more messages once they accept.';
+export const newChatHint = (nickname: string) => `Send a short message to ask ${nickname} to chat. They need to accept first.`;
+
+/** After the first message is sent: the same page becomes /chat/<id> (replace, not push). */
+export const firstMessageRoute = (conversationId: string) => ({ pathname: '/chat/[id]' as const, params: { id: conversationId } });
+
+/** The list row a just-sent request shows as, until the next list refresh brings the stored one. */
+export function pendingConversation(input: {
+  conversationId: string;
+  other: { id: string; nickname: string; avatarKey: string | null };
+  body: string;
+  myId: string;
+  sentAt: string;
+}): Conversation {
+  return {
+    id: input.conversationId,
+    status: 'pending_sent',
+    otherId: input.other.id,
+    otherNickname: input.other.nickname,
+    otherAvatarKey: input.other.avatarKey,
+    lastBody: input.body.trim(),
+    lastAt: input.sentAt,
+    lastSender: input.myId,
+    unread: 0,
+    muted: false,
+    isOnline: null,
+  };
+}
+
+/** Puts a row in the list (replacing one with the same id), newest first. */
+export const withConversation = (list: readonly Conversation[] | undefined, row: Conversation): Conversation[] =>
+  sortConversations([row, ...(list ?? []).filter((c) => c.id !== row.id)]);
+
+/** The request text shown as my one bubble on the pending page (it has no message id yet). */
+export function pendingRows(c: Conversation, myId: string, now: number): ChatRow[] {
+  if (c.lastBody === null || c.lastAt === null) return [];
+  const message: ChatMessage = {
+    id: `request:${c.id}`,
+    senderId: myId,
+    body: c.lastBody,
+    replyToId: null,
+    replyBody: null,
+    replySenderId: null,
+    createdAt: c.lastAt,
+    deleted: false,
+  };
+  // No server id: no reply, no delete; it only shows what was sent.
+  return buildChatRows([message], [], myId, now).map((r) => (r.kind === 'message' ? { ...r, id: null } : r));
 }

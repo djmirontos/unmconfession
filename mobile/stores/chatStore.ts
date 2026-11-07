@@ -13,6 +13,8 @@ type ChatLocalState = {
   /** Messages being sent or that failed, per conversation id. */
   outbox: Readonly<Record<string, readonly Outgoing[]>>;
   setDraft: (conversationId: string, draft: ChatDraft) => void;
+  /** Changes one part (the composer saves the text, the screen the reply target). */
+  patchDraft: (conversationId: string, change: Partial<ChatDraft>) => void;
   dispatch: (conversationId: string, action: OutboxAction) => void;
   /** Logout and account deletion: nothing of this account's chats stays on the phone. */
   clearAll: () => void;
@@ -27,6 +29,11 @@ export const useChatStore = create<ChatLocalState>((set) => ({
       if (!(conversationId in s.drafts)) return s;
       const { [conversationId]: _removed, ...rest } = s.drafts;
       return { drafts: rest };
+    }),
+  patchDraft: (conversationId, change) =>
+    useChatStore.getState().setDraft(conversationId, {
+      ...(useChatStore.getState().drafts[conversationId] ?? { text: '', replyTo: null }),
+      ...change,
     }),
   dispatch: (conversationId, action) =>
     set((s) => {

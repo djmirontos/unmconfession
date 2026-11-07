@@ -1,7 +1,7 @@
 // Run with: npm run test:chat  (Node 22.6+ strips the TypeScript types of the import)
 // 1:1 chat, stage 2 (app side, text only): pure rules and source scans.
 import assert from 'node:assert/strict';
-import { readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { test } from 'node:test';
@@ -186,7 +186,7 @@ test('tab badge = unread chats + pending requests, hidden at 0', () => {
 test('Message on a profile: open, pending, incoming, or new', () => {
   const req = { id: 'r', fromId: 'x', fromNickname: 'x', fromAvatarKey: null, body: 'hey', requestedAt: '2026-11-05T10:00:00Z' };
   assert.deepEqual(C.existingChatAction([conv({ otherId: 'o' })], [], 'o'), { kind: 'open', conversationId: 'c1' });
-  assert.deepEqual(C.existingChatAction([conv({ otherId: 'o', status: 'pending_sent' })], [], 'o'), { kind: 'pending' });
+  assert.deepEqual(C.existingChatAction([conv({ otherId: 'o', status: 'pending_sent' })], [], 'o'), { kind: 'pending', conversationId: 'c1' });
   assert.deepEqual(C.existingChatAction([], [req], 'x'), { kind: 'incoming' });
   assert.deepEqual(C.existingChatAction([conv({ otherId: 'o' })], [req], 'z'), { kind: 'new' });
 });
@@ -259,7 +259,9 @@ test('outbox: sending -> failed -> retry -> removed when sent; remove; unknown i
 
 test('a failed message keeps its text; Remove hands it back to an empty composer', () => {
   const screen = read('../app/chat/[id].tsx');
-  assert.match(screen, /const body = discard\(localId\);\s*if \(body && text\.trim\(\) === ''\) setText\(body\);/);
+  assert.match(screen, /const body = discard\(localId\);\s*if \(body\) setRestore\(\(r\) => \(\{ text: body, n: \(r\?\.n \?\? 0\) \+ 1 \}\)\);/);
+  // The composer puts it back only into an empty box.
+  assert.match(read('../components/chat/ChatComposer.tsx'), /if \(restore && restore\.n !== restoredN\) \{\s*setRestoredN\(restore\.n\);\s*if \(text\.trim\(\) === ''\) \{/);
   const hook = read('../hooks/useChatMessages.ts');
   assert.match(hook, /dispatch\(conversationId, \{ type: 'failed', localId, error: getChatError\(error, 'message'\)\.message \}\)/);
 });
@@ -382,8 +384,8 @@ test('no message or request text reaches a log, the console, storage or a route 
     const direct = [...text.matchAll(/\blogError\(/g)].length;
     if (path === 'lib/chatApi.ts') assert.equal(direct, 1, 'logError only inside logChatError');
     else assert.equal(direct, 0, path);
-    // Route params: ids only.
-    for (const m of text.matchAll(/params: \{([^}]*)\}/g)) assert.match(m[1].trim(), /^id(: [\w.]+)?$/, `${path}: ${m[0]}`);
+    // Route params: ids only (a chat id, or the member id of a new chat).
+    for (const m of text.matchAll(/params: \{([^}]*)\}/g)) assert.match(m[1].trim(), /^(id(: [\w.]+)?|with: [\w.]+)$/, `${path}: ${m[0]}`);
     assert.doesNotMatch(text, /useMutation/, `${path}: the mutation cache would log the raw error`);
   }
   const api = read('../lib/chatApi.ts');
@@ -435,18 +437,19 @@ test('reopen errors reuse the request flow texts', () => {
   assert.equal(C.chatErrorText('chat_disabled', 'request', ACCOUNT).action, 'disabled');
 });
 
-test('the sheet reopens at most once per Send, keeps the typed text as a draft, sends nothing', () => {
-  const sheet = read('../components/chat/ChatRequestSheet.tsx');
-  assert.match(sheet, /if \(afterRequestFailure\(failure\.code, false\) === 'reopen'\) \{\s*await reopenAndOpen\(target\.id\);\s*return;\s*\}/);
-  assert.equal(sheet.split('reopenMyChat(').length - 1, 1, 'one call site');
-  const fn = sheet.slice(sheet.indexOf('const reopenAndOpen'), sheet.indexOf('const send = async'));
-  assert.match(fn, /useChatStore\.getState\(\)\.setDraft\(conversationId, \{ text: typed, replyTo: null \}\)/);
-  assert.match(fn, /router\.push\(\{ pathname: '\/chat\/\[id\]', params: \{ id: conversationId \} \}\)/);
-  assert.match(fn, /invalidateChatLists\(queryClient\)/);
-  assert.doesNotMatch(fn, /sendChatMessage|sendChatRequest|reopenAndOpen\(/, 'no message, no request, no recursion');
-  // The Send button stays busy (no double taps) until the reopen finishes.
-  const send = sheet.slice(sheet.indexOf('const send = async'));
-  assert.ok(send.indexOf('await reopenAndOpen') < send.indexOf('setBusy(false)'));
+test('the first message reopens at most once, keeps the typed text as a draft, sends nothing more', () => {
+  const hook = read('../hooks/useFirstMessage.ts');
+  assert.equal(hook.split('reopenMyChat(').length - 1, 1, 'one call site');
+  assert.match(hook, /if \(afterRequestFailure\(code, false\) === 'reopen'\) \{/);
+  const fn = hook.slice(hook.indexOf("=== 'reopen') {"), hook.indexOf("if (code === 'request_pending')"));
+  assert.match(fn, /useChatStore\.getState\(\)\.setDraft\(conversationId, \{ text, replyTo: null \}\)/);
+  assert.match(fn, /openChat\(conversationId\)/);
+  assert.doesNotMatch(fn, /sendChatMessage|sendChatRequest|reopenMyChat\(target\.id\)[\s\S]*reopenMyChat\(/, 'no message, no request, no second reopen');
+  // The composer keeps Send busy (no double taps) until onSend finishes.
+  const composer = read('../components/chat/ChatComposer.tsx');
+  assert.match(composer, /setSending\(true\);\s*try \{\s*const taken = await onSend\(text\.trim\(\)\);\s*if \(taken\) change\(''\);\s*\} finally \{\s*setSending\(false\);/);
+  // The old sheet is gone.
+  assert.equal(existsSync(new URL('../components/chat/ChatRequestSheet.tsx', import.meta.url)), false);
 });
 
 test('reopen_my_chat is wrapped once and logs only the error code', () => {
@@ -460,4 +463,91 @@ test('the delete-chat confirmation is honest about what happens', () => {
   const screen = read('../app/chat/[id].tsx');
   assert.match(screen, /It's removed from your chat list and your copy of the messages is cleared\. They aren't told\. You can message them again later from their profile\./);
   assert.doesNotMatch(screen, /This removes the chat for you only\./);
+});
+
+// ---------------------------------------------------------------- the first message on the chat page
+
+test('Message always goes to a chat page: existing, my waiting request, Requests, or new', () => {
+  const req = { id: 'r', fromId: 'x', fromNickname: 'x', fromAvatarKey: null, body: 'hey', requestedAt: '2026-11-05T10:00:00Z' };
+  const route = (convs, reqs, other) => C.startRoute(C.existingChatAction(convs, reqs, other), other);
+  assert.deepEqual(route([conv({ otherId: 'o' })], [], 'o'), { kind: 'chat', conversationId: 'c1' });
+  assert.deepEqual(route([conv({ otherId: 'o', status: 'pending_sent' })], [], 'o'), { kind: 'chat', conversationId: 'c1' });
+  assert.deepEqual(route([], [req], 'x'), { kind: 'requests' });
+  assert.deepEqual(route([], [], 'z'), { kind: 'new', memberId: 'z' });
+});
+
+test('page state: loading, pending, accepted, missing', () => {
+  const s = (over) => C.chatPageState({ routeValid: true, listLoaded: true, listFetching: false, conversation: null, ...over });
+  assert.equal(s({ routeValid: false }), 'missing');
+  assert.equal(s({ listLoaded: false }), 'loading');
+  assert.equal(s({ listFetching: true }), 'loading', 'a refetch may still bring it');
+  assert.equal(s({}), 'missing');
+  assert.equal(s({ conversation: conv({ status: 'pending_sent' }) }), 'pending');
+  assert.equal(s({ conversation: conv({}) }), 'accepted');
+  assert.equal(s({ conversation: conv({}), listFetching: true }), 'accepted', 'cached data shows at once');
+});
+
+test('a chat that disappears after being shown goes back to the list quietly; a never-seen link does not', () => {
+  assert.equal(C.leaveQuietly(true, 'missing'), true);
+  assert.equal(C.leaveQuietly(false, 'missing'), false);
+  assert.equal(C.leaveQuietly(true, 'loading'), false);
+  assert.equal(C.leaveQuietly(true, 'accepted'), false);
+});
+
+test('texts: the waiting banner, the read-only composer, the new chat hint', () => {
+  assert.equal(C.pendingBanner('kai'), 'Waiting for kai to accept. You can send more messages once they accept.');
+  assert.equal(C.PENDING_COMPOSER_REASON, 'You can send more messages once they accept.');
+  assert.equal(C.newChatHint('kai'), 'Send a short message to ask kai to chat. They need to accept first.');
+});
+
+test('after the first send: the route is replaced by /chat/<id> and the list shows it as waiting', () => {
+  assert.deepEqual(C.firstMessageRoute('c9'), { pathname: '/chat/[id]', params: { id: 'c9' } });
+  const row = C.pendingConversation({ conversationId: 'c9', other: { id: 'o', nickname: 'kai', avatarKey: null }, body: ' hi there ', myId: 'me', sentAt: '2026-11-07T10:00:00Z' });
+  assert.deepEqual(row, {
+    id: 'c9', status: 'pending_sent', otherId: 'o', otherNickname: 'kai', otherAvatarKey: null, lastBody: 'hi there',
+    lastAt: '2026-11-07T10:00:00Z', lastSender: 'me', unread: 0, muted: false, isOnline: null,
+  });
+  assert.equal(C.conversationPreview(row, 'me'), 'Request sent');
+  const list = C.withConversation([conv({ id: 'c1', lastAt: '2026-11-06T10:00:00Z' }), conv({ id: 'c9', lastAt: '2020-01-01T00:00:00Z' })], row);
+  assert.deepEqual(list.map((c) => c.id), ['c9', 'c1'], 'replaced, not duplicated, newest first');
+  assert.deepEqual(C.withConversation(undefined, row).map((c) => c.id), ['c9']);
+  // The page reads it with chatPageState: pending, no get_messages.
+  assert.equal(C.chatPageState({ routeValid: true, listLoaded: true, listFetching: false, conversation: row }), 'pending');
+});
+
+test('the waiting request shows as my one bubble, without an id (no reply, no delete)', () => {
+  const row = C.pendingConversation({ conversationId: 'c9', other: { id: 'o', nickname: 'kai', avatarKey: null }, body: 'hi', myId: 'me', sentAt: '2026-11-07T10:00:00Z' });
+  const rows = C.pendingRows(row, 'me', Date.parse('2026-11-07T12:00:00Z'));
+  const messages = rows.filter((r) => r.kind === 'message');
+  assert.equal(messages.length, 1);
+  assert.deepEqual([messages[0].body, messages[0].mine, messages[0].id], ['hi', true, null]);
+  assert.equal(rows.filter((r) => r.kind === 'day').length, 1);
+  assert.deepEqual(C.pendingRows({ ...row, lastBody: null }, 'me', 0), []);
+});
+
+test('the chat page asks nothing extra: no get_messages until accepted; the new page reads the cache only', () => {
+  const page = read('../app/chat/[id].tsx');
+  assert.match(page, /const chat = useChatMessages\(accepted \? conversationId : '', pollMs !== false && accepted, pollMs\);/);
+  assert.match(page, /useConversations\(conversation\?\.status === 'pending_sent' && pollMs !== false\)/);
+  const fresh = read('../app/chat/new.tsx');
+  assert.match(fresh, /useUserProfile\(ready && otherId !== myId \? otherId : null, true\)/);
+  assert.match(fresh, /queryClient\.getQueryData<Conversation\[\]>\(chatKeys\.conversations\(myId\)\)/);
+  assert.doesNotMatch(fresh, /useConversations|fetchQuery|useChatMessages/);
+  assert.match(read('../hooks/useUserProfile.ts'), /\.\.\.\(cachedFirst \? \{ staleTime: Infinity \} : \{\}\)/);
+  assert.match(read('../hooks/useFirstMessage.ts'), /router\.replace\(firstMessageRoute\(conversationId\)\)/);
+});
+
+test('typing never re-renders the screen: the text lives in the composer only', () => {
+  const page = read('../app/chat/[id].tsx');
+  assert.doesNotMatch(page, /useState\(saved\?\.text|setText\(/);
+  assert.doesNotMatch(read('../app/chat/new.tsx'), /useState<string>|setText\(/);
+  const composer = read('../components/chat/ChatComposer.tsx');
+  assert.match(composer, /const \[text, setText\] = useState\(/);
+  assert.match(composer, /export const ChatComposer = memo\(ChatComposerImpl\);/);
+  assert.match(read('../components/chat/MessageBubble.tsx'), /export const MessageBubble = memo\(/);
+  assert.match(page, /const keyExtractor = \(row: ChatRow\) => row\.key;/);
+  // Handlers passed to the list and the composer are stable (useCallback), not inline.
+  assert.match(page, /const onSend = useCallback\(/);
+  assert.match(page, /const cancelReply = useCallback\(/);
+  assert.match(page, /const renderItem = useCallback\(/);
 });

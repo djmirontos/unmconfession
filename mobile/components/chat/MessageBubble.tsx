@@ -26,7 +26,7 @@ type Props = {
 };
 
 /**
- * One message: mine on the right in the accent colour, theirs on the left. Swipe right to reply
+ * One message: mine on the right in the chat blue, theirs on the left in neutral grey. Swipe right to reply
  * (gesture-handler + Reanimated; a vertical move first lets the list scroll), long press for the
  * menu. A deleted message is a stub; an unsent one shows "Sending…" or "Not sent".
  */
@@ -74,8 +74,8 @@ export const MessageBubble = memo(function MessageBubble({ row, myId, otherNickn
   const corners = row.mine
     ? `${row.firstInGroup ? '' : 'rounded-tr-md'} ${row.lastInGroup ? '' : 'rounded-br-md'}`
     : `${row.firstInGroup ? '' : 'rounded-tl-md'} ${row.lastInGroup ? '' : 'rounded-bl-md'}`;
-  const fill = row.deleted ? 'border border-hairline bg-transparent' : row.mine ? 'bg-accent' : 'border border-hairline bg-surface2';
-  const textColor = row.mine && !row.deleted ? 'text-on-accent' : 'text-text';
+  const fill = row.deleted ? 'border border-hairline bg-transparent' : row.mine ? 'bg-chat-own' : 'bg-chat-other';
+  const textColor = row.mine && !row.deleted ? 'text-on-chat-own' : 'text-text';
 
   return (
     <View className={`px-3 ${row.firstInGroup ? 'pt-2' : 'pt-0.5'}`}>
@@ -106,9 +106,9 @@ export const MessageBubble = memo(function MessageBubble({ row, myId, otherNickn
             className={`min-h-11 max-w-[80%] justify-center rounded-2xl px-3 py-2 ${fill} ${corners} ${row.status === 'sending' ? 'opacity-70' : ''}`}
           >
             {quote ? (
-              <View className={`mb-1.5 rounded-lg border-l-2 px-2 py-1 ${row.mine ? 'border-on-accent bg-black/10' : 'border-accent bg-surface1'}`}>
+              <View className={`mb-1.5 rounded-lg border-l-2 px-2 py-1 ${row.mine ? 'border-on-chat-own' : 'border-chat-accent'}`}>
                 {quote.label ? <Text className={`text-xs font-bold ${textColor}`}>{quote.label}</Text> : null}
-                <Text numberOfLines={2} className={`text-sm ${quote.deleted ? 'italic' : ''} ${row.mine ? 'text-on-accent' : 'text-text-dim'}`}>
+                <Text numberOfLines={2} className={`text-sm ${quote.deleted ? 'italic' : ''} ${textColor}`}>
                   {quote.text}
                 </Text>
               </View>

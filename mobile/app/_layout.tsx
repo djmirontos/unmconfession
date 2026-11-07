@@ -132,6 +132,7 @@ function AppStack({ needsNickname }: { needsNickname: boolean }) {
         <Stack.Screen name="change-nickname" />
         <Stack.Screen name="about-you" />
         <Stack.Screen name="notification-preferences" />
+        <Stack.Screen name="chat/new" />
         <Stack.Screen name="chat/[id]" />
         <Stack.Screen name="chat/requests" />
         <Stack.Screen name="chat-privacy" />

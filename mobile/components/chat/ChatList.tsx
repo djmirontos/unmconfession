@@ -85,8 +85,8 @@ export function ChatList() {
         <RefreshControl
           refreshing={pulling}
           onRefresh={() => void refresh()}
-          tintColor={colors.accent}
-          colors={[colors.accent]}
+          tintColor={colors.chatAccent}
+          colors={[colors.chatAccent]}
           progressBackgroundColor={colors.surface1}
         />
       }

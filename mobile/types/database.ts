@@ -1003,6 +1003,54 @@ export type Database = {
           },
         ]
       }
+      member_strikes: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          id: string
+          kind: string
+          reason: string | null
+          target_id: string | null
+          target_type: string | null
+          user_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          reason?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          reason?: string | null
+          target_id?: string | null
+          target_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_strikes_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "member_strikes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       moderation_actions: {
         Row: {
           action: string
@@ -1992,6 +2040,7 @@ export type Database = {
       _profile_text_flagged: { Args: { p: string }; Returns: string }
       _re_escape: { Args: { p: string }; Returns: string }
       _validate_nickname: { Args: { p: string }; Returns: undefined }
+      _warning_reason_ok: { Args: { p_reason: string }; Returns: boolean }
       admin_delete_account: {
         Args: { p_reason: string; p_user: string }
         Returns: undefined
@@ -2668,6 +2717,16 @@ export type Database = {
           notify_replies: boolean
         }[]
       }
+      get_my_warning: {
+        Args: { p_notification: string }
+        Returns: {
+          created_at: string
+          kind: string
+          note: string
+          reason: string
+          until_at: string
+        }[]
+      }
       get_notifications: {
         Args: { p_before_key?: string; p_before_ts?: string; p_limit?: number }
         Returns: {
@@ -3001,6 +3060,18 @@ export type Database = {
           title: string
         }[]
       }
+      mod_get_strikes: {
+        Args: { p_user: string }
+        Returns: {
+          keyword_hits_30: number
+          keyword_hits_90: number
+          last_strike_at: string
+          mutes_30: number
+          mutes_90: number
+          warnings_30: number
+          warnings_90: number
+        }[]
+      }
       mod_list_content: {
         Args: {
           p_after_id?: string
@@ -3024,6 +3095,15 @@ export type Database = {
           target_type: Database["public"]["Enums"]["content_type"]
           title: string
         }[]
+      }
+      mod_mute_user: {
+        Args: {
+          p_hours: number
+          p_note?: string
+          p_reason: string
+          p_user: string
+        }
+        Returns: undefined
       }
       mod_open_report_count: { Args: never; Returns: number }
       mod_recent_signups: {
@@ -3097,8 +3177,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      mod_warn_user: {
+        Args: { p_note?: string; p_reason: string; p_user: string }
+        Returns: undefined
+      }
       process_push_responses: { Args: never; Returns: undefined }
       purge_expired: { Args: never; Returns: Json }
+      purge_member_strikes: { Args: never; Returns: undefined }
       purge_old_chats: { Args: never; Returns: undefined }
       purge_staff_alerts: { Args: never; Returns: undefined }
       refresh_trending: { Args: never; Returns: undefined }

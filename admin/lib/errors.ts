@@ -44,6 +44,11 @@ const MESSAGES: Record<string, string> = {
   // Profile details (mod_clear_profile_details); clearDetailsErrorCode gives forbidden its own text.
   details_forbidden: "Only an admin can clear a moderator's or admin's profile details.",
   no_details: 'This member has no profile details to clear.',
+  // Warnings and mutes (mod_warn_user, mod_mute_user)
+  invalid_reason: 'Pick a reason from the list.',
+  invalid_duration: 'Pick a mute length between 1 hour and 30 days.',
+  note_too_long: 'The note is too long (300 characters at most).',
+  already_restricted: 'This member is already suspended or banned. Restore the account first, then mute.',
   // Keywords
   invalid_regex: 'This regular expression is not valid.',
   keyword_exists: 'That term already exists for this match type.',

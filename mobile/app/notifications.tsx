@@ -20,6 +20,7 @@ import { useUnreadNotifications } from '@/hooks/useUnreadNotifications';
 import { getErrorMessage } from '@/lib/errors';
 import { openNotificationDestination } from '@/lib/notificationNav';
 import type { NotificationGroup } from '@/lib/notifications';
+import { openWarningSheet } from '@/stores/warningSheetStore';
 import { notificationDestination } from '@/lib/notificationTarget';
 import { useToastStore } from '@/stores/toastStore';
 
@@ -57,7 +58,9 @@ export default function NotificationsScreen() {
   const open = useCallback(
     (g: NotificationGroup) => {
       markRead([g]);
-      if (!g.target_exists) return showToast(UNAVAILABLE);
+      // A notice from the moderators has no target: its own sheet (the group key is the notification id).
+      if (g.type === 'warning') return openWarningSheet(g.group_key);
+      if (!g.target_exists || !g.target_id) return showToast(UNAVAILABLE);
       // Same destination rules as a tapped push (lib/notificationTarget.ts).
       const dest = notificationDestination({
         type: g.type,

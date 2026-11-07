@@ -7,6 +7,7 @@ import { getGoogleIdToken, signOutOfGoogle } from '@/lib/googleSignIn';
 import { forgetListingUpdates, resetListingUpdates } from '@/lib/listingUpdatesSync';
 import { logError } from '@/lib/log';
 import { unregisterThisDevice } from '@/lib/pushRegistration';
+import { noteSuspendedUntil } from '@/lib/warnings';
 import { queryClient } from '@/lib/queryClient';
 import { logOutLocallyFirst } from '@/lib/sessionRules';
 import { encryptedSessionStorage, SUPABASE_SESSION_KEY } from '@/lib/sessionStorage';
@@ -15,6 +16,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useChatStore } from '@/stores/chatStore';
 import { useCommentDraftStore } from '@/stores/commentDraftStore';
 import { closeCommentsSheet } from '@/stores/commentsSheetStore';
+import { closeWarningSheet } from '@/stores/warningSheetStore';
 
 /** Logs the real Auth error (dev only, redacted) and returns it for rethrowing. */
 function authFail(scope: string, error: unknown): unknown {
@@ -116,7 +118,7 @@ async function signOutLocally() {
 
 /** Caches that belong to the signed-in person; also cleared on every SIGNED_OUT. */
 export function clearMemberCaches() {
-  for (const key of ['profile', 'notifications', 'notifications-unread', 'trending', 'polls', 'listings', 'my-settings', 'profile-details', 'reactors', 'badges', 'top-badges', 'item-return', 'item-return-candidates', 'item-sale', 'item-sale-candidates', 'push-settings', 'staff', 'mod-open-reports', 'mod-stats', 'mod-recent-signups', 'mod-reports', 'mod-report', 'mod-held', 'mod-held-item', 'mod-dashboard', 'mod-app-versions', 'get-started-count', 'hold-reason']) {
+  for (const key of ['profile', 'notifications', 'notifications-unread', 'trending', 'polls', 'listings', 'my-settings', 'profile-details', 'reactors', 'badges', 'top-badges', 'item-return', 'item-return-candidates', 'item-sale', 'item-sale-candidates', 'push-settings', 'staff', 'mod-open-reports', 'mod-stats', 'mod-recent-signups', 'mod-reports', 'mod-report', 'mod-held', 'mod-held-item', 'mod-dashboard', 'mod-app-versions', 'get-started-count', 'hold-reason', 'warning-notice', 'my-restriction']) {
     queryClient.removeQueries({ queryKey: [key] });
   }
   // Unsent comments are the person's too, and the comments sheet closes with the account.
@@ -125,6 +127,9 @@ export function clearMemberCaches() {
   // New-listings banners: every account's counts and in-memory markers go (stored markers stay, per account).
   queryClient.removeQueries({ queryKey: ['listing-updates'] });
   resetListingUpdates();
+  // Notices: the open sheet closes and the known suspension end goes with the account.
+  closeWarningSheet();
+  noteSuspendedUntil(null);
   // Chat: every list, message page and the switch (all under 'chat'), plus drafts and unsent messages.
   queryClient.removeQueries({ queryKey: [CHAT_KEY_ROOT] });
   useChatStore.getState().clearAll();

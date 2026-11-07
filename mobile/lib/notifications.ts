@@ -6,6 +6,7 @@ import { logError } from '@/lib/log';
 import { postKindWord } from '@/lib/postKindWord';
 import { REACTION_TYPES, type ReactionType } from '@/lib/reactions';
 import { supabase } from '@/lib/supabase';
+import { isWarningKind, type MyWarning, WARNING_ROW_TITLE } from '@/lib/warnings';
 import { Constants } from '@/types/database';
 
 export const NOTIFICATIONS_PAGE_SIZE = 20;
@@ -26,30 +27,36 @@ const NOTIFICATION_TYPES = [
   'return_confirmed',
   'sale_request',
   'sale_confirmed',
+  // A notice from the moderators (warning or mute): no target, no actor (lib/warnings.ts).
+  'warning',
 ] as const;
 
 // RPC table columns are typed non-null by the generator; the real nulls are narrowed here.
-const rowSchema = z.object({
-  group_key: z.string(),
-  type: z.enum(NOTIFICATION_TYPES),
-  target_type: z.enum(Constants.public.Enums.content_type),
-  target_id: z.string(),
-  latest_at: z.string(),
-  event_count: z.number(),
-  actor_count: z.number(),
-  unread_count: z.number(),
-  actor_id: z.string().nullable(),
-  actor_nickname: z.string().nullable(),
-  actor_avatar_key: z.string().nullable(),
-  reaction_type: z.enum(REACTION_TYPES as [ReactionType, ...ReactionType[]]).nullable().catch(null),
-  reason: z.string().nullable(),
-  target_exists: z.boolean(),
-  target_status: z.string().nullable(),
-  target_kind: z.string().nullable(),
-  target_preview: z.string().nullable(),
-  parent_post_id: z.string().nullable(),
-  parent_listing_id: z.string().nullable(),
-});
+// Each row is checked on its own and a row that does not fit is dropped, so an unknown or newer type
+// never breaks the list. Only a 'warning' may come without a target.
+const rowSchema = z
+  .object({
+    group_key: z.string(),
+    type: z.enum(NOTIFICATION_TYPES),
+    target_type: z.enum(Constants.public.Enums.content_type).nullable(),
+    target_id: z.string().nullable(),
+    latest_at: z.string(),
+    event_count: z.number(),
+    actor_count: z.number(),
+    unread_count: z.number(),
+    actor_id: z.string().nullable(),
+    actor_nickname: z.string().nullable(),
+    actor_avatar_key: z.string().nullable(),
+    reaction_type: z.enum(REACTION_TYPES as [ReactionType, ...ReactionType[]]).nullable().catch(null),
+    reason: z.string().nullable(),
+    target_exists: z.boolean(),
+    target_status: z.string().nullable(),
+    target_kind: z.string().nullable(),
+    target_preview: z.string().nullable(),
+    parent_post_id: z.string().nullable(),
+    parent_listing_id: z.string().nullable(),
+  })
+  .refine((r) => r.type === 'warning' || (r.target_type !== null && r.target_id !== null));
 
 export type NotificationGroup = z.infer<typeof rowSchema>;
 export type NotificationCursor = { ts: string; key: string };
@@ -153,6 +160,8 @@ export function describeNotification(n: NotificationGroup): string {
       return `${actor} says you bought their item. Tap to confirm.`;
     case 'sale_confirmed':
       return `${actor} confirmed your sale.`;
+    case 'warning':
+      return WARNING_ROW_TITLE;
   }
 }
 
@@ -212,4 +221,19 @@ export function invalidateNotifications(queryClient: QueryClient): void {
   }
   void queryClient.invalidateQueries({ queryKey: ['notifications'] });
   void queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
+}
+
+/**
+ * The full text of one of my notices (get_my_warning): kind, reason, optional note, mute end.
+ * null when it no longer exists (deleted, or not mine). Never logged with its text.
+ */
+export async function fetchMyWarning(notificationId: string): Promise<MyWarning | null> {
+  const { data, error } = await supabase.rpc('get_my_warning', { p_notification: notificationId });
+  if (error) {
+    logError('rpc.get_my_warning', { code: error.code ?? 'unknown' });
+    throw error;
+  }
+  const row = data[0];
+  if (!row || !isWarningKind(row.kind)) return null;
+  return { kind: row.kind, reason: row.reason ?? null, note: row.note ?? null, untilAt: row.until_at ?? null, createdAt: row.created_at };
 }

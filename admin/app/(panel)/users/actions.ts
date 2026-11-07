@@ -22,6 +22,7 @@ import {
   userIdSchema,
 } from '@/lib/moderation/schemas';
 import { isFuture } from '@/lib/moderation/suspension';
+import { muteSchema, warningInputError, warnSchema } from '@/lib/moderation/warnings';
 import { type ActionResult, fail, ok } from '@/lib/result';
 import { createClient } from '@/lib/supabase/server';
 import type { Database } from '@/types/database';
@@ -86,6 +87,39 @@ export async function restoreUser(input: unknown): Promise<ActionResult> {
   const parsed = restoreUserSchema.safeParse(input);
   if (!parsed.success) return fail('invalid_input');
   return setStatus(parsed.data.user, 'active', parsed.data.reason || undefined);
+}
+
+/** A warning: a reason from the list and an optional note the member sees (never the sender). */
+export async function warnUser(input: unknown): Promise<ActionResult> {
+  await requireStaff();
+  const parsed = warnSchema.safeParse(input);
+  if (!parsed.success) return fail(warningInputError(parsed.error.issues));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('mod_warn_user', {
+    p_user: parsed.data.user,
+    p_reason: parsed.data.reason,
+    ...(parsed.data.note ? { p_note: parsed.data.note } : {}),
+  });
+  if (error) return fail(codeFromError(error));
+  refreshPanel();
+  return ok(undefined);
+}
+
+/** A mute: the timed suspension (read-only) for 1 to 720 hours, with a member notice. */
+export async function muteUser(input: unknown): Promise<ActionResult> {
+  await requireStaff();
+  const parsed = muteSchema.safeParse(input);
+  if (!parsed.success) return fail(warningInputError(parsed.error.issues));
+  const supabase = await createClient();
+  const { error } = await supabase.rpc('mod_mute_user', {
+    p_user: parsed.data.user,
+    p_hours: parsed.data.hours,
+    p_reason: parsed.data.reason,
+    ...(parsed.data.note ? { p_note: parsed.data.note } : {}),
+  });
+  if (error) return fail(codeFromError(error));
+  refreshPanel();
+  return ok(undefined);
 }
 
 /** Resets a custom picture to the default preset. Open reports stay open (resolve them separately). */

@@ -1,6 +1,6 @@
 'use client';
 
-import { Ban, Eye, EyeOff, PencilLine, RotateCcw, ShieldCheck, Timer, Trash2 } from 'lucide-react';
+import { Ban, Eye, EyeOff, MessageSquareWarning, PencilLine, RotateCcw, ShieldCheck, Timer, Trash2, VolumeX } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useId, useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
@@ -9,11 +9,13 @@ import {
   banUser,
   deleteAccount,
   type Identity,
+  muteUser,
   renameUser,
   restoreUser,
   revealIdentity,
   setUserRole,
   suspendUser,
+  warnUser,
 } from '@/app/(panel)/users/actions';
 import { ConfirmDialog } from '@/components/moderation/dialogs';
 import { ACTION_GRID, TAP_BELOW_MD } from '@/components/moderation/mobile-dialog';
@@ -26,14 +28,17 @@ import type { UserActions as Available } from '@/lib/moderation/availability';
 import { ROLE_HELP } from '@/lib/moderation/labels';
 import { DELETE_REASON_MAX, NICKNAME_PATTERN, ROLES, STATUS_REASON_MAX, STATUS_REASON_MIN } from '@/lib/moderation/schemas';
 import { isFuture, manilaLocalToUtc, presetUntil, SUSPENSION_PRESETS, type PresetValue } from '@/lib/moderation/suspension';
+import { type DisciplineActions, MUTE_PRESETS, type MuteHours, WARNING_NOTE_MAX, WARNING_REASONS, type WarningReason } from '@/lib/moderation/warnings';
 import type { ActionResult } from '@/lib/result';
 
 type Role = (typeof ROLES)[number];
-type DialogName = 'suspend' | 'ban' | 'restore' | 'role' | 'rename' | 'delete' | null;
+type DialogName = 'suspend' | 'ban' | 'restore' | 'role' | 'rename' | 'delete' | 'warn' | 'mute' | null;
 
 type Props = {
   user: { id: string; nickname: string | null; role: Role; status: string };
   available: Available;
+  /** Warn and mute (lib/moderation/warnings.ts). */
+  discipline: DisciplineActions;
 };
 
 function ReasonField({
@@ -63,7 +68,27 @@ function ReasonField({
   );
 }
 
-export function UserActions({ user, available }: Props) {
+/** The fixed warning reason list as radio buttons. */
+function WarningReasonPicker({ value, onChange }: { value: WarningReason | ''; onChange: (v: WarningReason) => void }) {
+  return (
+    <fieldset className="space-y-2">
+      <legend className="mb-2 text-sm font-medium">Reason</legend>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {WARNING_REASONS.map((r) => (
+          <label
+            key={r.value}
+            className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring ${TAP_BELOW_MD}`}
+          >
+            <input type="radio" name="warning-reason" checked={value === r.value} onChange={() => onChange(r.value)} className="accent-[var(--primary)]" />
+            {r.label}
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+export function UserActions({ user, available, discipline }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const busy = useRef(false);
@@ -77,6 +102,8 @@ export function UserActions({ user, available }: Props) {
   const [role, setRole] = useState<Role>(user.role);
   const [nickname, setNickname] = useState(user.nickname ?? '');
   const [confirmText, setConfirmText] = useState('');
+  const [warnReason, setWarnReason] = useState<WarningReason | ''>('');
+  const [muteHours, setMuteHours] = useState<MuteHours>(24);
 
   const open = (name: Exclude<DialogName, null>) => {
     setReason('');
@@ -85,6 +112,8 @@ export function UserActions({ user, available }: Props) {
     setRole(user.role);
     setNickname(user.nickname ?? '');
     setConfirmText('');
+    setWarnReason('');
+    setMuteHours(24);
     setDialog(name);
   };
   const onOpenChange = (name: Exclude<DialogName, null>) => (o: boolean) => (o ? open(name) : setDialog(null));
@@ -115,7 +144,7 @@ export function UserActions({ user, available }: Props) {
   const untilValid = until !== null && isFuture(until);
   const reasonOk = reason.trim().length >= STATUS_REASON_MIN;
   const name = user.nickname ?? 'this user';
-  const anyAction = Object.values(available).some(Boolean);
+  const anyAction = Object.values(available).some(Boolean) || discipline.warn || discipline.mute || discipline.muteBlocked;
 
   if (!anyAction) {
     return <p className="text-sm text-muted-foreground">No actions are available for this account.</p>;
@@ -139,7 +168,27 @@ export function UserActions({ user, available }: Props) {
             <RotateCcw aria-hidden="true" /> Restore account…
           </Button>
         ) : null}
+        {discipline.warn ? (
+          <Button variant="outline" onClick={() => open('warn')} disabled={pending}>
+            <MessageSquareWarning aria-hidden="true" /> Send warning…
+          </Button>
+        ) : null}
+        {discipline.mute || discipline.muteBlocked ? (
+          <Button
+            variant="outline"
+            onClick={() => open('mute')}
+            disabled={pending || !discipline.mute}
+            aria-describedby={discipline.muteBlocked ? 'mute-blocked' : undefined}
+          >
+            <VolumeX aria-hidden="true" /> Mute…
+          </Button>
+        ) : null}
       </div>
+      {discipline.muteBlocked ? (
+        <p id="mute-blocked" className="text-xs text-muted-foreground">
+          Mute is not available while the account is suspended or banned. Use &ldquo;Restore account&rdquo; first.
+        </p>
+      ) : null}
 
       {available.changeRole || available.rename || available.revealIdentity || available.deleteAccount ? (
         <div className="space-y-3 rounded-lg border border-dashed p-4">
@@ -273,6 +322,61 @@ export function UserActions({ user, available }: Props) {
         onConfirm={() => run(() => restoreUser({ user: user.id, reason: reason || undefined }), done('Account restored.'))}
       >
         <ReasonField value={reason} onChange={setReason} label="Note for the log (optional)" max={STATUS_REASON_MAX} />
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={dialog === 'warn'}
+        onOpenChange={onOpenChange('warn')}
+        pending={pending}
+        title={`Send a warning to ${name}`}
+        description={<p>The member sees the reason and your note, never your name.</p>}
+        confirmLabel="Send warning"
+        pendingLabel="Sending…"
+        canConfirm={warnReason !== ''}
+        onConfirm={() =>
+          warnReason && run(() => warnUser({ user: user.id, reason: warnReason, note: reason.trim() || undefined }), done('Warning sent.'))
+        }
+      >
+        <WarningReasonPicker value={warnReason} onChange={setWarnReason} />
+        <ReasonField value={reason} onChange={setReason} label="Note for the member (optional)" max={WARNING_NOTE_MAX} />
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={dialog === 'mute'}
+        onOpenChange={onOpenChange('mute')}
+        pending={pending}
+        title={`Mute ${name}`}
+        description={
+          <>
+            <p>The member can still read but cannot post, comment, react or chat until it ends.</p>
+            <p>The member sees the reason and your note, never your name.</p>
+          </>
+        }
+        confirmLabel="Mute"
+        pendingLabel="Muting…"
+        destructive
+        canConfirm={warnReason !== '' && discipline.mute}
+        onConfirm={() =>
+          warnReason &&
+          run(() => muteUser({ user: user.id, hours: muteHours, reason: warnReason, note: reason.trim() || undefined }), done('Member muted.'))
+        }
+      >
+        <fieldset className="space-y-2">
+          <legend className="mb-2 text-sm font-medium">For</legend>
+          <div className="flex flex-wrap gap-2">
+            {MUTE_PRESETS.map((p) => (
+              <label
+                key={p.hours}
+                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring ${TAP_BELOW_MD}`}
+              >
+                <input type="radio" name="mute-hours" checked={muteHours === p.hours} onChange={() => setMuteHours(p.hours)} className="accent-[var(--primary)]" />
+                {p.label}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <WarningReasonPicker value={warnReason} onChange={setWarnReason} />
+        <ReasonField value={reason} onChange={setReason} label="Note for the member (optional)" max={WARNING_NOTE_MAX} />
       </ConfirmDialog>
 
       <ConfirmDialog

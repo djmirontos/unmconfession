@@ -11,6 +11,7 @@ import { isDeletedAuthor } from '@/lib/authorLabel';
 import { knownReason } from '@/lib/moderationReasons';
 import { describeNotification, type NotificationGroup } from '@/lib/notifications';
 import { REACTIONS } from '@/lib/reactions';
+import { warningReasonLabel } from '@/lib/warnings';
 import { formatRelative } from '@/lib/time';
 
 const AVATAR = 44;
@@ -64,6 +65,14 @@ function Leading({ group }: { group: NotificationGroup }) {
       </View>
     );
   }
+  // A notice from the moderators: a neutral shield, never the staff member.
+  if (group.type === 'warning') {
+    return (
+      <View style={{ width: AVATAR, height: AVATAR, borderRadius: AVATAR / 2 }} className="items-center justify-center bg-surface2">
+        <Ionicons name="shield-outline" size={22} color={colors.text} />
+      </View>
+    );
+  }
   // Moderation notices: the app's shield instead of a person.
   const approved = group.type === 'content_approved';
   return (
@@ -89,7 +98,12 @@ type Props = {
 function NotificationRowImpl({ group, onPress, onLongPress }: Props) {
   const unread = group.unread_count > 0;
   const sentence = describeNotification(group);
-  const reason = group.type === 'content_rejected' || group.type === 'content_removed' ? knownReason(group.reason) : null;
+  const reason =
+    group.type === 'warning'
+      ? warningReasonLabel(group.reason)
+      : group.type === 'content_rejected' || group.type === 'content_removed'
+        ? knownReason(group.reason)
+        : null;
   const time = formatRelative(group.latest_at);
   const reactionLabel =
     (group.type === 'reaction' || group.type === 'comment_reaction') && group.reaction_type

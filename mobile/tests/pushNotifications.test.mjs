@@ -77,13 +77,15 @@ const expected = {
   content_removed: { kind: 'post-status', source: 'post', id: TID },
   staff_report: { kind: 'moderation-queue', queue: 'reports' },
   staff_held: { kind: 'moderation-queue', queue: 'held' },
+  // A notice from the moderators has no target: its sheet, by notification id.
+  warning: { kind: 'warning', notificationId: NID },
 };
 const targetFor = { return_request: 'listing', return_confirmed: 'listing', sale_request: 'listing', sale_confirmed: 'listing', reply: 'comment', comment_reaction: 'comment' };
 
 test('pushDestination covers every push type', () => {
   assert.deepEqual(Object.keys(expected).sort(), [...PUSH_TYPES].sort());
   for (const type of PUSH_TYPES) {
-    const data = parsePushData(valid({ type, targetType: targetFor[type] ?? 'post' }));
+    const data = parsePushData(valid(type === 'warning' ? { type, targetType: null, targetId: null } : { type, targetType: targetFor[type] ?? 'post' }));
     assert.deepEqual(pushDestination(data), expected[type], type);
   }
 });

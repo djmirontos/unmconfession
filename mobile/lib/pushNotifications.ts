@@ -16,6 +16,8 @@ export const PUSH_TYPES = [
   'content_approved',
   'content_rejected',
   'content_removed',
+  // A notice from the moderators (no target): opens the notice sheet.
+  'warning',
   // Staff alerts: push only (never in the Notifications list or the bell count).
   'staff_report',
   'staff_held',
@@ -58,6 +60,7 @@ export function parsePushData(raw: unknown): PushData | null {
   if (targetId !== null && !isUuid(targetId)) return null;
   if (targetType !== null && targetId === null) return null;
   if (isStaffPushType(data.type) && targetType === null) return null;
+  if (data.type === 'warning' && targetType !== null) return null;
   return { nid: data.nid.toLowerCase(), type: data.type, targetType, targetId: targetId?.toLowerCase() ?? null };
 }
 
@@ -111,7 +114,10 @@ export function toPushSettings(row: unknown): PushSettings {
 /** A staff alert opens its moderation queue (the screen's staff guard sends anyone else Home). */
 export type ModerationQueueDestination = { kind: 'moderation-queue'; queue: 'reports' | 'held' };
 
-export type PushDestination = NotificationDestination | { kind: 'notifications' } | ModerationQueueDestination;
+/** A notice from the moderators: the sheet for that notification. */
+export type WarningDestination = { kind: 'warning'; notificationId: string };
+
+export type PushDestination = NotificationDestination | { kind: 'notifications' } | ModerationQueueDestination | WarningDestination;
 
 /** The route of a moderation queue. */
 export const moderationQueuePath = (queue: ModerationQueueDestination['queue']) =>
@@ -125,6 +131,7 @@ export const moderationQueuePath = (queue: ModerationQueueDestination['queue']) 
 export function pushDestination(data: PushData): PushDestination {
   if (data.type === 'staff_report') return { kind: 'moderation-queue', queue: 'reports' };
   if (data.type === 'staff_held') return { kind: 'moderation-queue', queue: 'held' };
+  if (data.type === 'warning') return { kind: 'warning', notificationId: data.nid };
   if (!data.targetId) return { kind: 'notifications' };
   const dest = notificationDestination({
     type: data.type,

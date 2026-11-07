@@ -12,6 +12,7 @@ import { RoleBadge } from '@/components/panel/role-badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { RemoveAvatarButton } from '@/components/users/profile-tools';
+import { StrikesCard, StrikesSkeleton } from '@/components/users/strikes-card';
 import { UserActions } from '@/components/users/user-actions';
 import { UserContent, UserContentFilters, UserContentSkeleton } from '@/components/users/user-content';
 import { requireStaff } from '@/lib/auth';
@@ -20,6 +21,7 @@ import { userActions } from '@/lib/moderation/availability';
 import { fetchHistory, fetchUser, type HistoryQuery } from '@/lib/moderation/data';
 import { contentFiltersSchema, userIdSchema } from '@/lib/moderation/schemas';
 import { suspensionLabel } from '@/lib/moderation/suspension';
+import { disciplineActions } from '@/lib/moderation/warnings';
 import { requestNow } from '@/lib/request-time';
 
 export const metadata: Metadata = { title: 'User' };
@@ -49,11 +51,10 @@ export default async function UserPage({ params, searchParams }: PageProps<'/use
   if (!user) notFound();
 
   const now = requestNow();
-  const available = userActions(
-    { id: staff.userId, isAdmin: staff.isAdmin },
-    { id: user.id, role: user.role, status: user.status, suspendedUntil: user.suspendedUntil, deleted: user.deleted },
-    now,
-  );
+  const viewer = { id: staff.userId, isAdmin: staff.isAdmin };
+  const target = { id: user.id, role: user.role, status: user.status, suspendedUntil: user.suspendedUntil, deleted: user.deleted };
+  const available = userActions(viewer, target, now);
+  const discipline = disciplineActions(viewer, target, now);
   const suspension = suspensionLabel(user.status, user.suspendedUntil, now);
   const removableAvatar = canRemoveAvatar(staff, user);
 
@@ -97,6 +98,12 @@ export default async function UserPage({ params, searchParams }: PageProps<'/use
             </CardContent>
           </Card>
 
+          {user.deleted ? null : (
+            <Suspense fallback={<StrikesSkeleton />}>
+              <StrikesCard user={user.id} />
+            </Suspense>
+          )}
+
           <Card>
             <CardHeader>
               <CardTitle>
@@ -111,6 +118,7 @@ export default async function UserPage({ params, searchParams }: PageProps<'/use
                   <UserActions
                     user={{ id: user.id, nickname: user.nickname, role: user.role, status: user.status }}
                     available={available}
+                    discipline={discipline}
                   />
                   {removableAvatar ? <RemoveAvatarButton user={{ id: user.id, nickname: user.nickname }} /> : null}
                 </div>

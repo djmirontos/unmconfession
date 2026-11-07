@@ -61,7 +61,7 @@ test('the query key holds the user id, type and id', () => {
   assert.equal(H.HOLD_REASON_STALE_MS, 5 * 60 * 1000);
   // Never persisted; cleared on sign-out (and by user id on account deletion).
   assert.doesNotMatch(read('../lib/queryClient.ts'), /'hold-reason'/);
-  assert.match(read('../lib/auth.ts'), /'get-started-count', 'hold-reason'\]/);
+  assert.match(read('../lib/auth.ts'), /'get-started-count', 'hold-reason'[,\]]/);
 });
 
 // ---------------------------------------------------------------- source scans

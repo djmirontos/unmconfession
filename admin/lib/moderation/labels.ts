@@ -16,6 +16,7 @@ const ACTION_LABEL: Record<string, string> = {
   restore_user: 'Account restored',
   remove_avatar: 'Removed profile picture',
   clear_details: 'Cleared profile details',
+  warn: 'Warned',
 };
 
 export function moderationActionLabel(action: string): string {

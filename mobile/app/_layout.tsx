@@ -8,6 +8,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { SignInSheet } from '@/components/auth/SignInSheet';
 import { CommentsSheet } from '@/components/comments/CommentsSheet';
+import { WarningSheet } from '@/components/notifications/WarningSheet';
 import { ReactorsSheet } from '@/components/reactions/ReactorsSheet';
 import { ForceUpdateGate } from '@/components/layout/ForceUpdateGate';
 import { SoftUpdatePrompt } from '@/components/layout/SoftUpdatePrompt';
@@ -20,6 +21,7 @@ import { PushExplainerSheet } from '@/components/push/PushExplainerSheet';
 import { useAppRequirementsSync } from '@/hooks/useAppRequirements';
 import { useAuthBootstrap } from '@/hooks/useAuthBootstrap';
 import { useChatSession } from '@/hooks/useChatSession';
+import { useMyRestriction } from '@/hooks/useMyRestriction';
 import { useNotificationsRealtime } from '@/hooks/useNotificationsRealtime';
 import { type MembershipStatus, useMembership } from '@/hooks/useProfile';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
@@ -44,6 +46,7 @@ export default function RootLayout() {
           <ReactorsSheet />
           <SignInSheet />
           <PushExplainerSheet />
+          <WarningSheet />
           <ImageViewer />
           <ShareCardHost />
           {/* A plain overlay (not a Modal): the toast and the reaction picker come after it so they draw above it. */}
@@ -93,6 +96,8 @@ function RootNavigator() {
   useReportAppVersion();
   // Chat (only while on for this member): the switch on foreground and the "I'm active" ping.
   useChatSession();
+  // After a "suspended" error: reads this member's own end time once, so the message can say until when.
+  useMyRestriction();
   const needsNickname = status === 'needs-nickname';
   const covered = useStartupCover(status);
 

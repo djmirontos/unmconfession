@@ -8,6 +8,7 @@ import { avatarUrl } from '@/lib/moderation/avatar';
 import { type ContentFilters, contentListArgs } from '@/lib/moderation/content-args';
 import { afterArgs, keysetPage, type Page } from '@/lib/moderation/keyset';
 import { moderationActionLabel, reportReasonLabel } from '@/lib/moderation/labels';
+import { logReasonLabel, type Strikes } from '@/lib/moderation/warnings';
 import { auditActionLabel, auditArgs, auditDetail, LOG_PAGE, type LogFilters, logActionArgs, targetHref, targetTypeLabel, userHref } from '@/lib/moderation/log';
 import type { KeysetCursor } from '@/lib/moderation/schemas';
 import { imageCount } from '@/lib/review/content';
@@ -300,7 +301,7 @@ export async function fetchHistory(query: HistoryQuery, cursor?: KeysetCursor): 
       action: moderationActionLabel(r.action),
       targetType: r.target_type,
       targetId: r.target_id,
-      reason: r.reason_code,
+      reason: logReasonLabel(r.action, r.reason_code),
       note: r.note,
       originalBody: r.original_body,
     }),
@@ -344,7 +345,7 @@ export async function fetchLog(filters: LogFilters, cursor?: KeysetCursor): Prom
       action: moderationActionLabel(r.action),
       targetLabel: targetTypeLabel(r.target_type),
       targetHref: targetHref(r.target_type, r.target_id),
-      reason: r.reason_code,
+      reason: logReasonLabel(r.action, r.reason_code),
       note: r.note,
       originalBody: r.original_body,
     }),
@@ -409,4 +410,21 @@ export async function fetchStaffOptions(): Promise<{ id: string; nickname: strin
   return [...admins.rows, ...mods.rows]
     .flatMap((u) => (u.nickname ? [{ id: u.id, nickname: u.nickname }] : []))
     .sort((a, b) => a.nickname.localeCompare(b.nickname));
+}
+
+/** Filter hits, warnings and mutes for one member (mod_get_strikes, staff only). Information for staff only. */
+export async function fetchStrikes(user: string): Promise<Strikes> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc('mod_get_strikes', { p_user: user });
+  if (error) fail(error);
+  const r = data?.[0];
+  return {
+    keywordHits30: r?.keyword_hits_30 ?? 0,
+    keywordHits90: r?.keyword_hits_90 ?? 0,
+    warnings30: r?.warnings_30 ?? 0,
+    warnings90: r?.warnings_90 ?? 0,
+    mutes30: r?.mutes_30 ?? 0,
+    mutes90: r?.mutes_90 ?? 0,
+    lastStrikeAt: r?.last_strike_at ?? null,
+  };
 }

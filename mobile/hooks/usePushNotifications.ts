@@ -10,6 +10,7 @@ import { markNotificationsRead } from '@/lib/notifications';
 import { askForPush } from '@/lib/pushAsk';
 import { isStaffPushType, moderationQueuePath, parsePushData, pushDestination, pushGroupKey } from '@/lib/pushNotifications';
 import { useAuthStore } from '@/stores/authStore';
+import { openWarningSheet } from '@/stores/warningSheetStore';
 
 // Taps already handled (a cold-start tap is reported by both the last response and the listener).
 const handled = new Set<string>();
@@ -60,6 +61,7 @@ export function usePushNotifications() {
       const dest = pushDestination(data);
       // A moderation queue checks is_staff() itself (useStaffGuard) and sends anyone else Home.
       if (dest.kind === 'moderation-queue') router.push(moderationQueuePath(dest.queue));
+      else if (dest.kind === 'warning') openWarningSheet(dest.notificationId);
       else if (dest.kind === 'notifications') router.push('/notifications');
       else openNotificationDestination(router, dest);
     };

@@ -2,6 +2,7 @@ import { isAuthError, isAuthRetryableFetchError } from '@supabase/supabase-js';
 
 import { CHAT_ERROR_CODES, type ChatErrorAction, type ChatErrorContext, chatErrorText } from '@/lib/chat';
 import { DETAILS_ERROR_CODES, getDetailsErrorMessage } from '@/lib/profileDetails';
+import { knownSuspendedUntil, notifySuspendedSeen, suspendedMessage } from '@/lib/warnings';
 
 const JOINED_WITH_GOOGLE = 'Joined with Google? Use Continue with Google.';
 
@@ -172,9 +173,19 @@ export function getNicknameSuggestionError(error: unknown): string {
   return isNetworkError(error) || failedRequest ? NETWORK : FALLBACK;
 }
 
+/**
+ * The suspended text (a mute is a timed suspension). With the end time when the app knows it
+ * (the mute notice or the member's own account row, lib/warnings.ts); asks for it otherwise.
+ */
+function suspendedText(): string {
+  notifySuspendedSeen();
+  return suspendedMessage(MESSAGES.suspended ?? FALLBACK, knownSuspendedUntil(), Date.now());
+}
+
 /** The one place DB and Auth errors become user-facing text. */
 export function getErrorMessage(error: unknown): string {
   const code = getErrorCode(error);
+  if (code === 'suspended') return suspendedText();
   if (code && MESSAGES[code]) return MESSAGES[code];
   if (isNetworkError(error)) return NETWORK;
   return FALLBACK;
@@ -188,7 +199,7 @@ export function getChatError(error: unknown, context: ChatErrorContext): { code:
   const code = isNetworkError(error) ? 'network' : getErrorCode(error);
   const { message, action } = chatErrorText(code, context, {
     banned: MESSAGES.banned ?? FALLBACK,
-    suspended: MESSAGES.suspended ?? FALLBACK,
+    suspended: code === 'suspended' ? suspendedText() : (MESSAGES.suspended ?? FALLBACK),
     nickname_required: MESSAGES.nickname_required ?? FALLBACK,
     not_authenticated: MESSAGES.not_authenticated ?? FALLBACK,
     network: NETWORK,
@@ -201,7 +212,7 @@ export function getProfileDetailsErrorMessage(error: unknown): string {
   const code = isNetworkError(error) ? 'network' : getErrorCode(error);
   return getDetailsErrorMessage(code, {
     banned: MESSAGES.banned,
-    suspended: MESSAGES.suspended,
+    suspended: code === 'suspended' ? suspendedText() : MESSAGES.suspended,
     nickname_required: MESSAGES.nickname_required,
     network: NETWORK,
   });
@@ -213,6 +224,7 @@ const AVATAR_SPECIFIC = new Set(['banned', 'suspended', 'nickname_required', 'im
 
 export function getAvatarErrorMessage(error: unknown): string {
   const code = getErrorCode(error);
+  if (code === 'suspended') return suspendedText();
   if (code && AVATAR_SPECIFIC.has(code)) return MESSAGES[code] ?? AVATAR_FAILED;
   if (isNetworkError(error)) return NETWORK;
   return AVATAR_FAILED;

@@ -3191,6 +3191,7 @@ export type Database = {
         Args: { p_platform: string; p_token: string }
         Returns: undefined
       }
+      reopen_my_chat: { Args: { p_with: string }; Returns: string }
       report_app_version: {
         Args: { p_platform: string; p_version: string }
         Returns: undefined

@@ -11,9 +11,10 @@ import { TextField } from '@/components/ui/TextField';
 import { useBottomInset } from '@/hooks/useBottomInset';
 import { invalidateChatLists } from '@/hooks/useChats';
 import type { ChatTarget } from '@/hooks/useStartChat';
-import { checkBody, REQUEST_MAX } from '@/lib/chat';
-import { sendChatRequest } from '@/lib/chatApi';
+import { afterRequestFailure, checkBody, REQUEST_MAX } from '@/lib/chat';
+import { reopenMyChat, sendChatRequest } from '@/lib/chatApi';
 import { getChatError } from '@/lib/errors';
+import { useChatStore } from '@/stores/chatStore';
 import { useToastStore } from '@/stores/toastStore';
 
 // Android: the keyboard must clear the helper line, an error and Send under the box (see TextField).
@@ -46,6 +47,31 @@ export function ChatRequestSheet({ target, onClose }: { target: ChatTarget | nul
   const length = text.trim().length;
   const canSend = checkBody(text, REQUEST_MAX) === 'ok' && !busy;
 
+  /**
+   * reopen_my_chat, then the chat opens. What was typed is kept as that chat's draft (in memory),
+   * so nothing is lost and nothing is sent until the member taps Send there. Called at most once
+   * per Send; a failure shows the request flow's text for that code.
+   */
+  const reopenAndOpen = async (otherId: string) => {
+    try {
+      const conversationId = await reopenMyChat(otherId);
+      const typed = text.trim();
+      if (typed) useChatStore.getState().setDraft(conversationId, { text: typed, replyTo: null });
+      invalidateChatLists(queryClient);
+      finish();
+      router.push({ pathname: '/chat/[id]', params: { id: conversationId } });
+    } catch (e) {
+      const failure = getChatError(e, 'request');
+      invalidateChatLists(queryClient);
+      if (failure.action === 'disabled') {
+        finish();
+        showToast(failure.message);
+        return;
+      }
+      setError(failure.message);
+    }
+  };
+
   const send = async () => {
     if (!target || !canSend) return;
     setBusy(true);
@@ -63,9 +89,14 @@ export function ChatRequestSheet({ target, onClose }: { target: ChatTarget | nul
         showToast(failure.message);
         return;
       }
+      // A chat I deleted for myself: bring it back once and open it (no message, no notice to them).
+      if (afterRequestFailure(failure.code, false) === 'reopen') {
+        await reopenAndOpen(target.id);
+        return;
+      }
       setError(failure.message);
       setOpenRequests(failure.action === 'requests');
-      if (failure.code === 'request_pending' || failure.code === 'already_chatting') invalidateChatLists(queryClient);
+      if (failure.code === 'request_pending') invalidateChatLists(queryClient);
     } finally {
       setBusy(false);
     }

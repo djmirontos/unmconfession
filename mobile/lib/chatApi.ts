@@ -146,6 +146,16 @@ export async function sendChatRequest(to: string, body: string): Promise<string>
   return z.string().parse(data);
 }
 
+/**
+ * Brings back an accepted chat I deleted for myself (my deleted history stays deleted). Never
+ * creates a chat and never notifies the other member. Returns the conversation id.
+ */
+export async function reopenMyChat(otherId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('reopen_my_chat', { p_with: otherId });
+  if (error) onChatError('reopen', error);
+  return z.string().parse(data);
+}
+
 export async function respondChatRequest(conversationId: string, accept: boolean): Promise<void> {
   const { error } = await supabase.rpc('respond_chat_request', { p_conversation: conversationId, p_accept: accept });
   if (error) onChatError('respond', error);

@@ -320,7 +320,7 @@ test('rows: unsent messages sit below the newest server message, with their stat
 const ALLOWED_RPCS = [
   'send_chat_request', 'respond_chat_request', 'send_chat_message', 'delete_my_chat_message', 'mark_chat_read', 'set_chat_muted',
   'delete_chat_for_me', 'get_conversations', 'get_chat_requests', 'get_messages', 'get_chat_unread_count', 'get_chat_settings',
-  'set_chat_settings', 'chat_heartbeat',
+  'set_chat_settings', 'chat_heartbeat', 'reopen_my_chat',
 ];
 
 test('no code touches the chat tables; chat RPCs are called only from lib/chatApi.ts, all from the contract', () => {
@@ -389,7 +389,7 @@ test('no message or request text reaches a log, the console, storage or a route 
   const api = read('../lib/chatApi.ts');
   assert.match(api, /logError\(`chat\.\$\{scope\}`, \{ code: getErrorCode\(error\) \?\? 'unknown' \}\);/);
   // Every failure in the API goes through onChatError (logs the code, then rethrows).
-  assert.equal([...api.matchAll(/if \(error\) onChatError\(/g)].length, 14);
+  assert.equal([...api.matchAll(/if \(error\) onChatError\(/g)].length, 15);
   assert.match(read('../stores/chatStore.ts'), /In memory only, never on disk/);
   assert.doesNotMatch(read('../stores/chatStore.ts'), /persist/);
 });
@@ -415,4 +415,49 @@ test('no new dependency; package.json changes only add test scripts', () => {
   assert.deepEqual(now.devDependencies, head.devDependencies);
   for (const [k, v] of Object.entries(head.scripts)) assert.equal(now.scripts[k], v, k);
   for (const k of Object.keys(now.scripts)) if (!(k in head.scripts)) assert.match(k, /^test:/, k);
+});
+
+// ---------------------------------------------------------------- stage 2b: reopen a chat I deleted
+
+test('already_chatting reopens once; every other code is shown as is', () => {
+  assert.equal(C.afterRequestFailure('already_chatting', false), 'reopen');
+  assert.equal(C.afterRequestFailure('already_chatting', true), 'show', 'never a second time');
+  for (const code of ['request_pending', 'request_incoming', 'request_cooldown', 'not_found', 'not_accepting_messages', null]) {
+    assert.equal(C.afterRequestFailure(code, false), 'show', String(code));
+  }
+});
+
+test('reopen errors reuse the request flow texts', () => {
+  const t = (code) => C.chatErrorText(code, 'request', ACCOUNT).message;
+  assert.equal(t('not_accepting_messages'), "This member isn't accepting messages.");
+  assert.equal(t('not_found'), "This member can't be messaged right now.");
+  assert.equal(t('suspended'), ACCOUNT.suspended);
+  assert.equal(C.chatErrorText('chat_disabled', 'request', ACCOUNT).action, 'disabled');
+});
+
+test('the sheet reopens at most once per Send, keeps the typed text as a draft, sends nothing', () => {
+  const sheet = read('../components/chat/ChatRequestSheet.tsx');
+  assert.match(sheet, /if \(afterRequestFailure\(failure\.code, false\) === 'reopen'\) \{\s*await reopenAndOpen\(target\.id\);\s*return;\s*\}/);
+  assert.equal(sheet.split('reopenMyChat(').length - 1, 1, 'one call site');
+  const fn = sheet.slice(sheet.indexOf('const reopenAndOpen'), sheet.indexOf('const send = async'));
+  assert.match(fn, /useChatStore\.getState\(\)\.setDraft\(conversationId, \{ text: typed, replyTo: null \}\)/);
+  assert.match(fn, /router\.push\(\{ pathname: '\/chat\/\[id\]', params: \{ id: conversationId \} \}\)/);
+  assert.match(fn, /invalidateChatLists\(queryClient\)/);
+  assert.doesNotMatch(fn, /sendChatMessage|sendChatRequest|reopenAndOpen\(/, 'no message, no request, no recursion');
+  // The Send button stays busy (no double taps) until the reopen finishes.
+  const send = sheet.slice(sheet.indexOf('const send = async'));
+  assert.ok(send.indexOf('await reopenAndOpen') < send.indexOf('setBusy(false)'));
+});
+
+test('reopen_my_chat is wrapped once and logs only the error code', () => {
+  const api = read('../lib/chatApi.ts');
+  const fn = api.slice(api.indexOf('export async function reopenMyChat'));
+  assert.match(fn, /supabase\.rpc\('reopen_my_chat', \{ p_with: otherId \}\)/);
+  assert.match(fn, /if \(error\) onChatError\('reopen', error\);/);
+});
+
+test('the delete-chat confirmation is honest about what happens', () => {
+  const screen = read('../app/chat/[id].tsx');
+  assert.match(screen, /It's removed from your chat list and your copy of the messages is cleared\. They aren't told\. You can message them again later from their profile\./);
+  assert.doesNotMatch(screen, /This removes the chat for you only\./);
 });

@@ -225,20 +225,24 @@ export default function ChatScreen() {
         icon: 'trash-outline',
         destructive: true,
         onPress: () =>
-          Alert.alert('Delete this chat?', 'This removes the chat for you only.', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Delete',
-              style: 'destructive',
-              onPress: () =>
-                void deleteChatForMe(c.id)
-                  .then(() => {
-                    showToast('Chat deleted');
-                    leave();
-                  })
-                  .catch((error: unknown) => showToast(getChatError(error, 'chat').message)),
-            },
-          ]),
+          Alert.alert(
+            'Delete this chat?',
+            "It's removed from your chat list and your copy of the messages is cleared. They aren't told. You can message them again later from their profile.",
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () =>
+                  void deleteChatForMe(c.id)
+                    .then(() => {
+                      showToast('Chat deleted');
+                      leave();
+                    })
+                    .catch((error: unknown) => showToast(getChatError(error, 'chat').message)),
+              },
+            ],
+          ),
       },
       {
         label: 'Block',

@@ -423,3 +423,13 @@ export function buildChatRows(server: readonly ChatMessage[], outgoing: readonly
 
 /** The newest message that came from the server (marks the chat read when it changes). */
 export const newestServerId = (server: readonly ChatMessage[]): string | null => server[0]?.id ?? null;
+
+// ---------------------------------------------------------------- reopening a chat I deleted (stage 2b)
+
+/**
+ * After a request fails: already_chatting means the chat exists but this member deleted it for
+ * themselves (it is hidden from their list), so reopen it, once. Anything else is shown as is.
+ */
+export function afterRequestFailure(code: string | null, alreadyReopened: boolean): 'reopen' | 'show' {
+  return code === 'already_chatting' && !alreadyReopened ? 'reopen' : 'show';
+}

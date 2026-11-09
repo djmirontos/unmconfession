@@ -90,6 +90,9 @@ const AUDIT_LABELS: Record<string, string> = {
   set_role: 'Changed role',
   delete_account: 'Deleted account',
   view_content_author: 'Viewed a content author',
+  view_chat_report: 'Opened a chat report',
+  escalate_chat_report: 'Escalated a chat report to admins',
+  release_chat_hold: 'Released a chat report hold',
 };
 
 export function auditActionLabel(action: string): string {

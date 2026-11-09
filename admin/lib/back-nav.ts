@@ -11,7 +11,7 @@ export function isMainDestination(pathname: string): boolean {
 }
 
 /** Lists whose detail pages fall back to the list itself. */
-const LIST_PARENTS = ['review', 'reports', 'content', 'users'];
+const LIST_PARENTS = ['review', 'reports', 'chat-reports', 'content', 'users'];
 
 /** Where the arrow goes when there is no in-panel page to go back to (opened directly). */
 export function backFallback(pathname: string): string {

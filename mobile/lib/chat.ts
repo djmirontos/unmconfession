@@ -92,6 +92,9 @@ export const CHAT_ERROR_CODES = [
   'invalid_reply',
   'invalid_input',
   'invalid_reaction',
+  'already_reported',
+  'note_too_long',
+  'invalid_reason',
   'banned',
   'suspended',
   'nickname_required',
@@ -99,7 +102,7 @@ export const CHAT_ERROR_CODES = [
 ] as const;
 
 /** Where the error happened: the same code reads differently (a gone request vs a gone member). */
-export type ChatErrorContext = 'request' | 'respond' | 'message' | 'chat' | 'react';
+export type ChatErrorContext = 'request' | 'respond' | 'message' | 'chat' | 'react' | 'report' | 'close';
 
 /** 'requests': offer to open the Requests screen. 'disabled': chat was switched off, hide it. */
 export type ChatErrorAction = 'requests' | 'disabled' | null;
@@ -132,6 +135,8 @@ const NOT_FOUND: Record<ChatErrorContext, string> = {
   respond: 'This request is no longer available.',
   chat: "This chat isn't available.",
   react: 'This message is no longer available.',
+  report: "This chat isn't available.",
+  close: 'This chat is no longer available.',
 };
 
 const TOO_LONG: Record<ChatErrorContext, string> = {
@@ -140,6 +145,19 @@ const TOO_LONG: Record<ChatErrorContext, string> = {
   respond: FALLBACK,
   chat: FALLBACK,
   react: FALLBACK,
+  report: FALLBACK,
+  close: FALLBACK,
+};
+
+export const NOT_ACCEPTING_IN_CHAT = "This member isn't accepting messages in this chat.";
+export const CLOSE_FAILED = "Couldn't close the chat. Try again.";
+
+// Reporting a chat (report_chat). A muted or suspended member can still report.
+export const REPORT_FAILED = "Couldn't send the report. Try again.";
+const REPORT_TEXT: Record<string, string> = {
+  already_reported: "You've already reported this chat. The moderators are reviewing it.",
+  rate_limited: "You've sent a lot of reports today. Please try again tomorrow.",
+  note_too_long: 'The note can be up to 300 characters.',
 };
 
 /** Account states keep the app's usual wording (passed in from lib/errors.ts). */
@@ -158,6 +176,18 @@ export function chatErrorText(
   if (code === 'request_incoming') return { message: CHAT_TEXT.request_incoming ?? FALLBACK, action: 'requests' };
   if (code === 'not_found') return { message: NOT_FOUND[context], action: null };
   if (context === 'react' && code === 'rate_limited') return { message: 'Slow down a little.', action: null };
+  // Sending (or reopening) in a chat the other member closed for themselves.
+  if (context === 'message' && code === 'not_accepting_messages') return { message: NOT_ACCEPTING_IN_CHAT, action: null };
+  // Closing works while muted; every failure but a gone chat reads the same.
+  if (context === 'close') return { message: CLOSE_FAILED, action: null };
+  if (context === 'report') {
+    const text = code ? REPORT_TEXT[code] : undefined;
+    if (text) return { message: text, action: null };
+    // Account states, chat_disabled and not_found keep their usual wording below; the rest is generic.
+    if (code !== 'banned' && code !== 'suspended' && code !== 'not_authenticated' && code !== 'network' && code !== 'chat_disabled' && code !== 'not_found') {
+      return { message: REPORT_FAILED, action: null };
+    }
+  }
   if (code === 'body_too_long') return { message: TOO_LONG[context], action: null };
   if (code === 'banned' || code === 'suspended' || code === 'nickname_required' || code === 'not_authenticated' || code === 'network') {
     return { message: account[code], action: null };

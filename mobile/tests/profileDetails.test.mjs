@@ -91,7 +91,7 @@ test('getProfileDetailsErrorMessage reads the code from a real rpc error', () =>
 
 test('getProfileDetailsErrorMessage keeps the account and connection wording', () => {
   assert.equal(getProfileDetailsErrorMessage(rpcError('banned')), 'This account has been banned.');
-  assert.equal(getProfileDetailsErrorMessage(rpcError('suspended')), 'This account is suspended for now. Try again later.');
+  assert.equal(getProfileDetailsErrorMessage(rpcError('suspended')), "You're muted for now. You can still read, but you can't post, comment or react.");
   assert.equal(getProfileDetailsErrorMessage(rpcError('nickname_required')), 'Choose a nickname before you take part.');
   assert.equal(getProfileDetailsErrorMessage(new TypeError('Network request failed')), 'No connection. Check your internet and try again.');
 });

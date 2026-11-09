@@ -40,6 +40,7 @@
     "test:chat": "node --no-warnings --test tests/chat.test.mjs",
     "test:chatcolors": "node --no-warnings --test tests/chatColors.test.mjs",
     "test:chatreactions": "node --no-warnings --test tests/chatReactions.test.mjs",
+    "test:chatreports": "node --no-warnings --test tests/chatReports.test.mjs",
     "test:holdreason": "node --no-warnings --test tests/holdReason.test.mjs",
     "test:warnings": "node --no-warnings --test tests/warnings.test.mjs",
     "branding": "node scripts/make-branding.mjs"

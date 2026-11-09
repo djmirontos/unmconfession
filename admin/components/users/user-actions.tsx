@@ -2,7 +2,7 @@
 
 import { Ban, Eye, EyeOff, MessageSquareWarning, PencilLine, RotateCcw, ShieldCheck, Timer, Trash2, VolumeX } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useId, useRef, useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { toast } from 'sonner';
 
 import {
@@ -18,17 +18,17 @@ import {
   warnUser,
 } from '@/app/(panel)/users/actions';
 import { ConfirmDialog } from '@/components/moderation/dialogs';
+import { MuteDialog, ReasonField, WarnDialog } from '@/components/users/discipline-dialogs';
 import { ACTION_GRID, TAP_BELOW_MD } from '@/components/moderation/mobile-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import type { UserActions as Available } from '@/lib/moderation/availability';
 import { ROLE_HELP } from '@/lib/moderation/labels';
 import { DELETE_REASON_MAX, NICKNAME_PATTERN, ROLES, STATUS_REASON_MAX, STATUS_REASON_MIN } from '@/lib/moderation/schemas';
 import { isFuture, manilaLocalToUtc, presetUntil, SUSPENSION_PRESETS, type PresetValue } from '@/lib/moderation/suspension';
-import { type DisciplineActions, MUTE_PRESETS, type MuteHours, WARNING_NOTE_MAX, WARNING_REASONS, type WarningReason } from '@/lib/moderation/warnings';
+import type { DisciplineActions } from '@/lib/moderation/warnings';
 import type { ActionResult } from '@/lib/result';
 
 type Role = (typeof ROLES)[number];
@@ -40,53 +40,6 @@ type Props = {
   /** Warn and mute (lib/moderation/warnings.ts). */
   discipline: DisciplineActions;
 };
-
-function ReasonField({
-  value,
-  onChange,
-  label,
-  min = 0,
-  max,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  label: string;
-  min?: number;
-  max: number;
-}) {
-  const id = useId();
-  const length = value.trim().length;
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={id}>{label}</Label>
-      <Textarea id={id} value={value} maxLength={max} rows={3} onChange={(e) => onChange(e.target.value)} />
-      <p className="text-right text-xs text-muted-foreground" aria-live="polite">
-        {min > 0 && length < min ? `At least ${min} characters · ` : ''}
-        {value.length}/{max}
-      </p>
-    </div>
-  );
-}
-
-/** The fixed warning reason list as radio buttons. */
-function WarningReasonPicker({ value, onChange }: { value: WarningReason | ''; onChange: (v: WarningReason) => void }) {
-  return (
-    <fieldset className="space-y-2">
-      <legend className="mb-2 text-sm font-medium">Reason</legend>
-      <div className="grid gap-2 sm:grid-cols-2">
-        {WARNING_REASONS.map((r) => (
-          <label
-            key={r.value}
-            className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring ${TAP_BELOW_MD}`}
-          >
-            <input type="radio" name="warning-reason" checked={value === r.value} onChange={() => onChange(r.value)} className="accent-[var(--primary)]" />
-            {r.label}
-          </label>
-        ))}
-      </div>
-    </fieldset>
-  );
-}
 
 export function UserActions({ user, available, discipline }: Props) {
   const router = useRouter();
@@ -102,8 +55,6 @@ export function UserActions({ user, available, discipline }: Props) {
   const [role, setRole] = useState<Role>(user.role);
   const [nickname, setNickname] = useState(user.nickname ?? '');
   const [confirmText, setConfirmText] = useState('');
-  const [warnReason, setWarnReason] = useState<WarningReason | ''>('');
-  const [muteHours, setMuteHours] = useState<MuteHours>(24);
 
   const open = (name: Exclude<DialogName, null>) => {
     setReason('');
@@ -112,8 +63,6 @@ export function UserActions({ user, available, discipline }: Props) {
     setRole(user.role);
     setNickname(user.nickname ?? '');
     setConfirmText('');
-    setWarnReason('');
-    setMuteHours(24);
     setDialog(name);
   };
   const onOpenChange = (name: Exclude<DialogName, null>) => (o: boolean) => (o ? open(name) : setDialog(null));
@@ -324,60 +273,22 @@ export function UserActions({ user, available, discipline }: Props) {
         <ReasonField value={reason} onChange={setReason} label="Note for the log (optional)" max={STATUS_REASON_MAX} />
       </ConfirmDialog>
 
-      <ConfirmDialog
+      <WarnDialog
         open={dialog === 'warn'}
         onOpenChange={onOpenChange('warn')}
         pending={pending}
-        title={`Send a warning to ${name}`}
-        description={<p>The member sees the reason and your note, never your name.</p>}
-        confirmLabel="Send warning"
-        pendingLabel="Sending…"
-        canConfirm={warnReason !== ''}
-        onConfirm={() =>
-          warnReason && run(() => warnUser({ user: user.id, reason: warnReason, note: reason.trim() || undefined }), done('Warning sent.'))
-        }
-      >
-        <WarningReasonPicker value={warnReason} onChange={setWarnReason} />
-        <ReasonField value={reason} onChange={setReason} label="Note for the member (optional)" max={WARNING_NOTE_MAX} />
-      </ConfirmDialog>
+        name={name}
+        onSend={(input) => run(() => warnUser({ user: user.id, ...input }), done('Warning sent.'))}
+      />
 
-      <ConfirmDialog
+      <MuteDialog
         open={dialog === 'mute'}
         onOpenChange={onOpenChange('mute')}
         pending={pending}
-        title={`Mute ${name}`}
-        description={
-          <>
-            <p>The member can still read but cannot post, comment, react or chat until it ends.</p>
-            <p>The member sees the reason and your note, never your name.</p>
-          </>
-        }
-        confirmLabel="Mute"
-        pendingLabel="Muting…"
-        destructive
-        canConfirm={warnReason !== '' && discipline.mute}
-        onConfirm={() =>
-          warnReason &&
-          run(() => muteUser({ user: user.id, hours: muteHours, reason: warnReason, note: reason.trim() || undefined }), done('Member muted.'))
-        }
-      >
-        <fieldset className="space-y-2">
-          <legend className="mb-2 text-sm font-medium">For</legend>
-          <div className="flex flex-wrap gap-2">
-            {MUTE_PRESETS.map((p) => (
-              <label
-                key={p.hours}
-                className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm has-checked:border-primary has-checked:bg-secondary has-focus-visible:outline-2 has-focus-visible:outline-ring ${TAP_BELOW_MD}`}
-              >
-                <input type="radio" name="mute-hours" checked={muteHours === p.hours} onChange={() => setMuteHours(p.hours)} className="accent-[var(--primary)]" />
-                {p.label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-        <WarningReasonPicker value={warnReason} onChange={setWarnReason} />
-        <ReasonField value={reason} onChange={setReason} label="Note for the member (optional)" max={WARNING_NOTE_MAX} />
-      </ConfirmDialog>
+        name={name}
+        canMute={discipline.mute}
+        onSend={(input) => run(() => muteUser({ user: user.id, ...input }), done('Member muted.'))}
+      />
 
       <ConfirmDialog
         open={dialog === 'role'}

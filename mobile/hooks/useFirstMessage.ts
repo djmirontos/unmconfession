@@ -42,8 +42,8 @@ export function useFirstMessage(target: FirstMessageTarget | null) {
   );
 
   const failed = useCallback(
-    (e: unknown): false => {
-      const failure = getChatError(e, 'request');
+    (e: unknown, context: 'request' | 'message' = 'request'): false => {
+      const failure = getChatError(e, context);
       if (failure.action === 'disabled') {
         // The chat switch was turned off: the guard sends the page Home.
         showToast(failure.message);
@@ -79,7 +79,8 @@ export function useFirstMessage(target: FirstMessageTarget | null) {
             return true;
           } catch (reopenError) {
             invalidateChatLists(queryClient);
-            return failed(reopenError);
+            // The chat exists: "not accepting" here means they closed it for themselves.
+            return failed(reopenError, 'message');
           }
         }
         if (code === 'request_pending') {

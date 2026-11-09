@@ -118,7 +118,7 @@ async function signOutLocally() {
 
 /** Caches that belong to the signed-in person; also cleared on every SIGNED_OUT. */
 export function clearMemberCaches() {
-  for (const key of ['profile', 'notifications', 'notifications-unread', 'trending', 'polls', 'listings', 'my-settings', 'profile-details', 'reactors', 'badges', 'top-badges', 'item-return', 'item-return-candidates', 'item-sale', 'item-sale-candidates', 'push-settings', 'staff', 'mod-open-reports', 'mod-stats', 'mod-recent-signups', 'mod-reports', 'mod-report', 'mod-held', 'mod-held-item', 'mod-dashboard', 'mod-app-versions', 'get-started-count', 'hold-reason', 'warning-notice', 'my-restriction']) {
+  for (const key of ['profile', 'notifications', 'notifications-unread', 'trending', 'polls', 'listings', 'my-settings', 'profile-details', 'reactors', 'badges', 'top-badges', 'item-return', 'item-return-candidates', 'item-sale', 'item-sale-candidates', 'push-settings', 'staff', 'mod-open-reports', 'mod-stats', 'mod-recent-signups', 'mod-reports', 'mod-report', 'mod-held', 'mod-held-item', 'mod-dashboard', 'mod-app-versions', 'mod-chat-reports-open', 'get-started-count', 'hold-reason', 'warning-notice', 'my-restriction']) {
     queryClient.removeQueries({ queryKey: [key] });
   }
   // Unsent comments are the person's too, and the comments sheet closes with the account.

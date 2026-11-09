@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react';
 import { RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ChatReportSheet } from '@/components/chat/ChatReportSheet';
 import { ConversationSkeleton } from '@/components/chat/ConversationRow';
 import { EmptyState, ErrorState, RefreshErrorBanner } from '@/components/feed/ListStates';
 import { BackHeader } from '@/components/layout/BackHeader';
@@ -18,6 +19,7 @@ import { useMinuteClock } from '@/hooks/useMinuteClock';
 import { useRefetchWhenStale } from '@/hooks/useRefetchWhenStale';
 import { useTheme } from '@/hooks/useTheme';
 import { type ChatRequest, chatKeys } from '@/lib/chat';
+import type { ChatReportTarget } from '@/lib/chatReports';
 import { fetchConversations, respondChatRequest } from '@/lib/chatApi';
 import { getChatError } from '@/lib/errors';
 import { formatRelative } from '@/lib/time';
@@ -33,9 +35,10 @@ type CardProps = {
   onAccept: (r: ChatRequest) => void;
   onDecline: (r: ChatRequest) => void;
   onBlock: (r: ChatRequest) => void;
+  onReport: (r: ChatRequest) => void;
 };
 
-function RequestCard({ request: r, now, busy, onAccept, onDecline, onBlock }: CardProps) {
+function RequestCard({ request: r, now, busy, onAccept, onDecline, onBlock, onReport }: CardProps) {
   return (
     <View className="mx-4 mt-3 gap-3 rounded-2xl border border-hairline bg-surface1 p-4">
       <View className="flex-row items-center gap-3">
@@ -56,7 +59,14 @@ function RequestCard({ request: r, now, busy, onAccept, onDecline, onBlock }: Ca
           <Button label="Decline" variant="secondary" onPress={() => onDecline(r)} disabled={busy} />
         </View>
       </View>
-      <Button label={`Block ${r.fromNickname}`} variant="ghost" icon="ban-outline" onPress={() => onBlock(r)} disabled={busy} />
+      <View className="flex-row gap-2">
+        <View className="flex-1">
+          <Button label="Block" variant="ghost" icon="ban-outline" onPress={() => onBlock(r)} disabled={busy} />
+        </View>
+        <View className="flex-1">
+          <Button label="Report" variant="ghost" icon="flag-outline" onPress={() => onReport(r)} disabled={busy} />
+        </View>
+      </View>
     </View>
   );
 }
@@ -75,6 +85,12 @@ export default function ChatRequestsScreen() {
   useRefetchWhenStale(requests, ready);
   const now = useMinuteClock(ready);
   const [busyId, setBusyId] = useState<string | null>(null);
+  // The report sheet mounts only while this is set; a request is reported as a whole (no message id).
+  const [reportFor, setReportFor] = useState<ChatReportTarget | null>(null);
+  const onReport = useCallback(
+    (r: ChatRequest) => setReportFor({ conversationId: r.id, messageId: null, other: { id: r.fromId, nickname: r.fromNickname }, source: 'request' }),
+    [],
+  );
   const [pulling, setPulling] = useState(false);
 
   const respond = useCallback(
@@ -113,9 +129,10 @@ export default function ChatRequestsScreen() {
         onAccept={(r) => void respond(r, true)}
         onDecline={(r) => void respond(r, false)}
         onBlock={onBlock}
+        onReport={onReport}
       />
     ),
-    [now, busyId, respond, onBlock],
+    [now, busyId, respond, onBlock, onReport],
   );
 
   const refresh = async () => {
@@ -168,6 +185,7 @@ export default function ChatRequestsScreen() {
     <View className="flex-1 bg-bg" style={{ paddingTop: insets.top }}>
       <BackHeader title="Chat requests" />
       {body}
+      {reportFor ? <ChatReportSheet target={reportFor} onClose={() => setReportFor(null)} onBlocked={() => invalidateChatLists(queryClient)} /> : null}
     </View>
   );
 }

@@ -49,6 +49,10 @@ const MESSAGES: Record<string, string> = {
   invalid_duration: 'Pick a mute length between 1 hour and 30 days.',
   note_too_long: 'The note is too long (300 characters at most).',
   already_restricted: 'This member is already suspended or banned. Restore the account first, then mute.',
+  // Chat reports (mod_*_chat_report)
+  already_resolved: 'This report was already resolved.',
+  invalid_outcome: 'Pick an outcome from the list.',
+  invalid_status: 'That list is not available.',
   // Keywords
   invalid_regex: 'This regular expression is not valid.',
   keyword_exists: 'That term already exists for this match type.',

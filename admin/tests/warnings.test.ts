@@ -117,17 +117,22 @@ describe('errors, log and strikes', () => {
 
 describe('server actions and page', () => {
   const s = src('app/(panel)/users/actions.ts');
-  for (const [name, rpc] of [
-    ['warnUser', 'mod_warn_user'],
-    ['muteUser', 'mod_mute_user'],
+  // The validation and the RPC live in lib/moderation/discipline.ts, shared with the chat report page.
+  const helper = src('lib/moderation/discipline.ts');
+  for (const [name, fnName, rpc] of [
+    ['warnUser', 'warnMember', 'mod_warn_user'],
+    ['muteUser', 'muteMember', 'mod_mute_user'],
   ] as const) {
-    it(`${name}: staff check first, zod, then ${rpc}, then refreshPanel`, () => {
+    it(`${name}: staff check first, then the shared ${fnName} (zod, ${rpc}), then refreshPanel`, () => {
       const body = s.slice(s.indexOf(`export async function ${name}(`));
       const fn = body.slice(0, body.indexOf('\n}'));
       expect(fn.indexOf('await requireStaff();')).toBeGreaterThan(0);
-      expect(fn.indexOf('await requireStaff();')).toBeLessThan(fn.indexOf('safeParse(input)'));
-      expect(fn.indexOf('safeParse(input)')).toBeLessThan(fn.indexOf(`rpc('${rpc}'`));
-      expect(fn).toMatch(/refreshPanel\(\);/);
+      expect(fn.indexOf('await requireStaff();')).toBeLessThan(fn.indexOf(`await ${fnName}(input)`));
+      expect(fn).toMatch(/if \(result\.ok\) refreshPanel\(\);/);
+      const shared = helper.slice(helper.indexOf(`export async function ${fnName}(`));
+      const h = shared.slice(0, shared.indexOf('\n}'));
+      expect(h.indexOf('safeParse(input)')).toBeGreaterThan(0);
+      expect(h.indexOf('safeParse(input)')).toBeLessThan(h.indexOf(`rpc('${rpc}'`));
     });
   }
   it('the user page shows the strikes card and passes the discipline actions', () => {
@@ -139,7 +144,7 @@ describe('server actions and page', () => {
     expect(card).toMatch(/No strikes/);
   });
   it('the dialogs say the member never sees the sender', () => {
-    const ui = src('components/users/user-actions.tsx');
+    const ui = src('components/users/discipline-dialogs.tsx');
     expect(ui.split('The member sees the reason and your note, never your name.').length - 1).toBe(2);
     expect(ui).toMatch(/The member can still read but cannot post, comment, react or chat until it ends\./);
   });

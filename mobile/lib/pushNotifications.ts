@@ -59,7 +59,8 @@ export function parsePushData(raw: unknown): PushData | null {
   if (targetType !== null && !isTargetTypeFor(data.type, targetType)) return null;
   if (targetId !== null && !isUuid(targetId)) return null;
   if (targetType !== null && targetId === null) return null;
-  if (isStaffPushType(data.type) && targetType === null) return null;
+  // A held item always names it; a report may not (a chat report: reviewed in the web panel only).
+  if (data.type === 'staff_held' && targetType === null) return null;
   if (data.type === 'warning' && targetType !== null) return null;
   return { nid: data.nid.toLowerCase(), type: data.type, targetType, targetId: targetId?.toLowerCase() ?? null };
 }
@@ -111,8 +112,11 @@ export function toPushSettings(row: unknown): PushSettings {
   };
 }
 
-/** A staff alert opens its moderation queue (the screen's staff guard sends anyone else Home). */
-export type ModerationQueueDestination = { kind: 'moderation-queue'; queue: 'reports' | 'held' };
+/**
+ * A staff alert opens its moderation queue, or the hub for a report with no target (a chat report,
+ * which is reviewed in the web panel only). Each screen's staff guard sends anyone else Home.
+ */
+export type ModerationQueueDestination = { kind: 'moderation-queue'; queue: 'reports' | 'held' | 'hub' };
 
 /** A notice from the moderators: the sheet for that notification. */
 export type WarningDestination = { kind: 'warning'; notificationId: string };
@@ -121,7 +125,7 @@ export type PushDestination = NotificationDestination | { kind: 'notifications' 
 
 /** The route of a moderation queue. */
 export const moderationQueuePath = (queue: ModerationQueueDestination['queue']) =>
-  queue === 'reports' ? ('/moderation/reports' as const) : ('/moderation/held' as const);
+  queue === 'reports' ? ('/moderation/reports' as const) : queue === 'held' ? ('/moderation/held' as const) : ('/moderation' as const);
 
 /**
  * Where the tap leads: the same rules as a row in the Notifications list. A push does not know
@@ -129,7 +133,7 @@ export const moderationQueuePath = (queue: ModerationQueueDestination['queue']) 
  * the queue (not the single item: it may already be handled by the time the alert is tapped).
  */
 export function pushDestination(data: PushData): PushDestination {
-  if (data.type === 'staff_report') return { kind: 'moderation-queue', queue: 'reports' };
+  if (data.type === 'staff_report') return { kind: 'moderation-queue', queue: data.targetId ? 'reports' : 'hub' };
   if (data.type === 'staff_held') return { kind: 'moderation-queue', queue: 'held' };
   if (data.type === 'warning') return { kind: 'warning', notificationId: data.nid };
   if (!data.targetId) return { kind: 'notifications' };

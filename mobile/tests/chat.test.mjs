@@ -322,7 +322,7 @@ test('rows: unsent messages sit below the newest server message, with their stat
 const ALLOWED_RPCS = [
   'send_chat_request', 'respond_chat_request', 'send_chat_message', 'delete_my_chat_message', 'mark_chat_read', 'set_chat_muted',
   'delete_chat_for_me', 'get_conversations', 'get_chat_requests', 'get_messages', 'get_chat_unread_count', 'get_chat_settings',
-  'set_chat_settings', 'chat_heartbeat', 'reopen_my_chat', 'get_message_reactions', 'react_to_chat_message',
+  'set_chat_settings', 'chat_heartbeat', 'reopen_my_chat', 'get_message_reactions', 'react_to_chat_message', 'report_chat', 'close_my_chat',
 ];
 
 test('no code touches the chat tables; chat RPCs are called only from lib/chatApi.ts, all from the contract', () => {
@@ -391,7 +391,7 @@ test('no message or request text reaches a log, the console, storage or a route 
   const api = read('../lib/chatApi.ts');
   assert.match(api, /logError\(`chat\.\$\{scope\}`, \{ code: getErrorCode\(error\) \?\? 'unknown' \}\);/);
   // Every failure in the API goes through onChatError (logs the code, then rethrows).
-  assert.equal([...api.matchAll(/if \(error\) onChatError\(/g)].length, 17);
+  assert.equal([...api.matchAll(/if \(error\) onChatError\(/g)].length, 19);
   assert.match(read('../stores/chatStore.ts'), /In memory only, never on disk/);
   assert.doesNotMatch(read('../stores/chatStore.ts'), /persist/);
 });

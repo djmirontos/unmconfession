@@ -102,7 +102,7 @@ test('getSaleErrorMessage maps the sale codes', () => {
 
 test('getSaleErrorMessage reuses the shared wording; returns keep their own texts', () => {
   assert.equal(getSaleErrorMessage(rpcError('rate_limited')), getErrorMessage(rpcError('rate_limited')));
-  assert.equal(getSaleErrorMessage(rpcError('suspended')), 'This account is suspended for now. Try again later.');
+  assert.equal(getSaleErrorMessage(rpcError('suspended')), "You're muted for now. You can still read, but you can't post, comment or react.");
   assert.equal(getSaleErrorMessage(new TypeError('Network request failed')), 'No connection. Check your internet and try again.');
   assert.equal(getSaleErrorMessage(new Error('boom')), 'Something went wrong. Please try again.');
   assert.equal(getReturnErrorMessage(rpcError('not_commenter')), 'That member has not commented on this post.');

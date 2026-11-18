@@ -40,7 +40,7 @@ test('six reasons with clear labels, matching the database list', () => {
 });
 
 test('the texts never promise what happens to the other member', () => {
-  for (const text of [R.REPORT_FOLLOW_UP_TITLE, R.BLOCK_HELP, R.CLOSE_HELP, R.CHILD_SAFETY_LINE, ...R.CHAT_REPORT_REASONS.map((r) => r.label)]) {
+  for (const text of [R.REPORT_FOLLOW_UP_TITLE, R.BLOCK_HELP, R.CLOSE_HELP, R.CLOSE_CHOICE_HELP, R.REASON_HINT, R.CHILD_SAFETY_LINE, ...R.CHAT_REPORT_REASONS.map((r) => r.label)]) {
     assert.doesNotMatch(text, /\b(ban|banned|blocked|removed|suspend|warn|they will|will be told)\b/i, text);
   }
 });
@@ -129,14 +129,27 @@ test('one RPC on Send, ids and reason only (no message text); every error inside
 
 // ---------------------------------------------------------------- after a report: three choices
 
-test('choices: Block and Cancel always; Close this chat only for an accepted chat, never a request', () => {
-  assert.equal(R.REPORT_FOLLOW_UP_TITLE, 'Report sent. What else would you like to do?');
-  assert.deepEqual(R.reportFollowUps('chat').map((f) => f.key), ['block', 'close', 'cancel']);
-  assert.deepEqual(R.reportFollowUps('request').map((f) => f.key), ['block', 'cancel']);
-  const [block, close, cancel] = R.reportFollowUps('chat');
-  assert.deepEqual([block.label, block.help], ['Block this user', "Hides everything from them, including their posts, and they can't message you."]);
-  assert.deepEqual([close.label, close.help], ['Close this chat only', 'Stops messages from them in this chat. You can still see them elsewhere and reopen the chat from their profile.']);
-  assert.deepEqual([cancel.label, cancel.help], ['Cancel', null]);
+test('choices: Keep chat open and Block always; Close this chat only for an accepted chat, never a request', () => {
+  assert.equal(R.REPORT_FOLLOW_UP_TITLE, 'Report sent. The moderators will review it.');
+  assert.deepEqual(R.reportFollowUps('chat', 'Mika').map((f) => f.key), ['cancel', 'close', 'block']);
+  assert.deepEqual(R.reportFollowUps('request', 'Mika').map((f) => f.key), ['cancel', 'block']);
+  const [cancel, close, block] = R.reportFollowUps('chat', 'Mika');
+  assert.deepEqual([cancel.label, cancel.help], ['Keep chat open', null]);
+  assert.deepEqual([close.label, close.help], ['Close this chat', 'You can reopen it later.']);
+  assert.deepEqual([block.label, block.help], ['Block Mika', 'Stops all contact.']);
+  // No usable nickname: a neutral fallback.
+  for (const name of ['', '   ', null, undefined]) assert.equal(R.blockLabel(name), 'Block this person');
+  assert.equal(R.blockLabel('  Mika '), 'Block Mika');
+  // The chat menu's confirm keeps the full explanation.
+  assert.equal(R.CLOSE_HELP, 'Stops messages from them in this chat. You can still see them elsewhere and reopen the chat from their profile.');
+  // Every choice is a button with a label and a 48 dp minimum height; Block is styled as destructive.
+  const sheet = read('../components/chat/ChatReportSheet.tsx');
+  const choices = sheet.slice(sheet.indexOf('reportFollowUps(target.source, target.other.nickname)'), sheet.indexOf('<FormMessage'));
+  assert.match(choices, /accessibilityRole="button"/);
+  assert.match(choices, /accessibilityLabel=\{f\.help \? `\$\{f\.label\}\. \$\{f\.help\}` : f\.label\}/);
+  assert.match(choices, /min-h-12/);
+  assert.match(sheet, /block: 'border-danger'/);
+  assert.match(sheet, /block: 'text-danger'/);
   assert.equal(R.CHAT_CLOSED, 'Chat closed. You can reopen it from their profile.');
   // Sources: the chat screen reports as 'chat', the Requests screen as 'request'.
   assert.match(read('../app/chat/[id].tsx'), /source: 'chat'/);
@@ -182,6 +195,18 @@ test('compact layout while the note is being typed (no keyboard measuring)', () 
   assert.match(sheet, /\{compact \? \(\s*<Pressable\s+onPress=\{expandReasons\}/);
   assert.match(sheet, /show\.remove\(\);\s*hide\.remove\(\);/);
   assert.match(sheet, /\{compact \? null : <Button label="Cancel"/);
+});
+
+test('reason hint: above Send until a reason is chosen, never in the compact layout', () => {
+  assert.equal(R.REASON_HINT, 'Choose a reason to send your report.');
+  assert.equal(R.showReasonHint({ reason: null, compact: false }), true);
+  assert.equal(R.showReasonHint({ reason: 'spam_scam', compact: false }), false);
+  assert.equal(R.showReasonHint({ reason: null, compact: true }), false, 'the folded line already says "Choose a reason"');
+  const sheet = read('../components/chat/ChatReportSheet.tsx');
+  const hint = sheet.indexOf('showReasonHint({ reason, compact })');
+  assert.ok(hint > sheet.indexOf('<FormMessage tone="error" message={error} />') && hint < sheet.indexOf('label="Send"'), 'directly above Send');
+  // Send stays disabled without a reason and carries the same text as its hint.
+  assert.match(sheet, /disabled=\{!reason \|\| tooLong\}\s*accessibilityHint=\{reason \? undefined : REASON_HINT\}/);
 });
 
 // ---------------------------------------------------------------- the hub card

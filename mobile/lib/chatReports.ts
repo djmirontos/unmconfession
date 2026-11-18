@@ -29,21 +29,34 @@ export type ChatReportTarget = {
 
 // ---------------------------------------------------------------- after a report: three choices
 
-export const REPORT_FOLLOW_UP_TITLE = 'Report sent. What else would you like to do?';
-export const BLOCK_HELP = "Hides everything from them, including their posts, and they can't message you.";
+export const REPORT_FOLLOW_UP_TITLE = 'Report sent. The moderators will review it.';
+export const BLOCK_HELP = 'Stops all contact.';
+/** The full explanation, kept for the chat menu's "Close chat" confirm. */
 export const CLOSE_HELP = 'Stops messages from them in this chat. You can still see them elsewhere and reopen the chat from their profile.';
+export const CLOSE_CHOICE_HELP = 'You can reopen it later.';
 export const CHAT_CLOSED = 'Chat closed. You can reopen it from their profile.';
 
 export type FollowUp = { key: 'block' | 'close' | 'cancel'; label: string; help: string | null };
 
-/** Block, Close this chat only (accepted chats only, never a request) and Cancel. */
-export function reportFollowUps(source: ChatReportTarget['source']): FollowUp[] {
+/** "Block <name>", or "Block this person" when there is no usable nickname. */
+export const blockLabel = (nickname: string | null | undefined): string => `Block ${nickname?.trim() || 'this person'}`;
+
+/** Keep chat open (dismiss), Close this chat (accepted chats only, never a request), then Block last. */
+export function reportFollowUps(source: ChatReportTarget['source'], nickname: string | null | undefined): FollowUp[] {
   return [
-    { key: 'block', label: 'Block this user', help: BLOCK_HELP },
-    ...(source === 'chat' ? [{ key: 'close' as const, label: 'Close this chat only', help: CLOSE_HELP }] : []),
-    { key: 'cancel', label: 'Cancel', help: null },
+    { key: 'cancel', label: 'Keep chat open', help: null },
+    ...(source === 'chat' ? [{ key: 'close' as const, label: 'Close this chat', help: CLOSE_CHOICE_HELP }] : []),
+    { key: 'block', label: blockLabel(nickname), help: BLOCK_HELP },
   ];
 }
+
+// ---------------------------------------------------------------- the form
+
+/** Shown above Send (and as its accessibility hint) until a reason is chosen. */
+export const REASON_HINT = 'Choose a reason to send your report.';
+
+/** The hint line: only with no reason, and not in the compact layout (that keeps Send above the keyboard). */
+export const showReasonHint = (s: { reason: string | null; compact: boolean }): boolean => s.reason === null && !s.compact;
 
 /**
  * The sheet's compact layout: while the note is being typed (focused, or the keyboard is up) the

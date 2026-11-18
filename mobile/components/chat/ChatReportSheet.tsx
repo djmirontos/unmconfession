@@ -19,8 +19,10 @@ import {
   CHILD_SAFETY_LINE,
   compactLayout,
   noteTooLong,
+  REASON_HINT,
   REPORT_FOLLOW_UP_TITLE,
   reportFollowUps,
+  showReasonHint,
 } from '@/lib/chatReports';
 import { getChatError } from '@/lib/errors';
 import { useToastStore } from '@/stores/toastStore';
@@ -31,12 +33,16 @@ const SEND_REACH = Platform.OS === 'android' ? 80 : 0;
 const KEYBOARD_SHOW = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
 const KEYBOARD_HIDE = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
+// After sending: Keep chat open is quiet, Block is the destructive one.
+const FOLLOW_UP_BORDER = { cancel: 'border-transparent', close: 'border-hairline', block: 'border-danger' } as const;
+const FOLLOW_UP_LABEL = { cancel: 'text-text-dim', close: 'text-text', block: 'text-danger' } as const;
+
 type Props = {
   target: ChatReportTarget;
   onClose: () => void;
   /** After the member also chose to block them (e.g. leave the chat). */
   onBlocked?: () => void;
-  /** After "Close this chat only" succeeded (leave the chat). */
+  /** After "Close this chat" succeeded (leave the chat). */
   onChatClosed?: () => void;
 };
 
@@ -45,7 +51,7 @@ type Props = {
  * open. One report_chat call on Send (the server copies the evidence). Every error shows inside
  * the sheet, with the reason and note kept. While the note is typed the reasons fold into one
  * line, so the note and Send fit above the keyboard (nothing is measured). After sending, one
- * choice: Block this user, Close this chat only (accepted chats), or Cancel.
+ * choice: Keep chat open, Close this chat (accepted chats), or Block <name>.
  */
 export function ChatReportSheet({ target, onClose, onBlocked, onChatClosed }: Props) {
   const { colors } = useTheme();
@@ -143,7 +149,7 @@ export function ChatReportSheet({ target, onClose, onBlocked, onChatClosed }: Pr
           {REPORT_FOLLOW_UP_TITLE}
         </Text>
         <View className="gap-2">
-          {reportFollowUps(target.source).map((f) => (
+          {reportFollowUps(target.source, target.other.nickname).map((f) => (
             <Pressable
               key={f.key}
               onPress={() => choose(f.key)}
@@ -151,9 +157,9 @@ export function ChatReportSheet({ target, onClose, onBlocked, onChatClosed }: Pr
               accessibilityRole="button"
               accessibilityLabel={f.help ? `${f.label}. ${f.help}` : f.label}
               accessibilityState={{ disabled: busy }}
-              className={`min-h-12 justify-center gap-0.5 rounded-xl border px-4 py-3 active:bg-surface2 ${f.key === 'cancel' ? 'border-transparent' : 'border-hairline'}`}
+              className={`min-h-12 justify-center gap-0.5 rounded-xl border px-4 py-3 active:bg-surface2 ${FOLLOW_UP_BORDER[f.key]}`}
             >
-              <Text className={`text-base font-bold ${f.key === 'cancel' ? 'text-text-dim' : 'text-text'}`}>{f.label}</Text>
+              <Text className={`text-base font-bold ${FOLLOW_UP_LABEL[f.key]}`}>{f.label}</Text>
               {f.help ? <Text className="text-sm text-text-dim">{f.help}</Text> : null}
             </Pressable>
           ))}
@@ -219,13 +225,14 @@ export function ChatReportSheet({ target, onClose, onBlocked, onChatClosed }: Pr
           onBlur={() => setNoteFocused(false)}
         />
         <FormMessage tone="error" message={error} />
+        {showReasonHint({ reason, compact }) ? <Text className="px-2 text-sm text-text-dim">{REASON_HINT}</Text> : null}
         <Button
           label="Send"
           icon="flag-outline"
           onPress={() => void send()}
           loading={busy}
           disabled={!reason || tooLong}
-          accessibilityHint={reason ? undefined : 'Choose a reason first'}
+          accessibilityHint={reason ? undefined : REASON_HINT}
         />
         {compact ? null : <Button label="Cancel" variant="ghost" onPress={close} disabled={busy} />}
       </>

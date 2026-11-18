@@ -3,7 +3,7 @@
 
 export type Access = 'public' | 'signed-in' | 'staff' | 'admin';
 
-export type NavIcon = 'dashboard' | 'review' | 'reports' | 'content' | 'users' | 'keywords' | 'announcements' | 'log' | 'audit';
+export type NavIcon = 'dashboard' | 'review' | 'reports' | 'chatReports' | 'content' | 'users' | 'keywords' | 'announcements' | 'log' | 'audit';
 
 export type NavItem = { href: string; label: string; icon: NavIcon; access: 'staff' | 'admin' };
 
@@ -11,6 +11,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
   { href: '/', label: 'Dashboard', icon: 'dashboard', access: 'staff' },
   { href: '/review', label: 'Review queue', icon: 'review', access: 'staff' },
   { href: '/reports', label: 'Reports', icon: 'reports', access: 'staff' },
+  { href: '/chat-reports', label: 'Chat reports', icon: 'chatReports', access: 'staff' },
   { href: '/content', label: 'Content', icon: 'content', access: 'staff' },
   { href: '/users', label: 'Users', icon: 'users', access: 'staff' },
   { href: '/keywords', label: 'Keywords', icon: 'keywords', access: 'staff' },

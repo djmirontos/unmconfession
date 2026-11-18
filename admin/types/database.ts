@@ -265,6 +265,7 @@ export type Database = {
       chat_members: {
         Row: {
           cleared_before: string | null
+          closed_at: string | null
           conversation_id: string
           hidden: boolean
           last_read_at: string | null
@@ -273,6 +274,7 @@ export type Database = {
         }
         Insert: {
           cleared_before?: string | null
+          closed_at?: string | null
           conversation_id: string
           hidden?: boolean
           last_read_at?: string | null
@@ -281,6 +283,7 @@ export type Database = {
         }
         Update: {
           cleared_before?: string | null
+          closed_at?: string | null
           conversation_id?: string
           hidden?: boolean
           last_read_at?: string | null
@@ -394,6 +397,69 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      chat_reports: {
+        Row: {
+          admin_only: boolean
+          conversation_id: string
+          created_at: string
+          held: boolean
+          id: string
+          message_id: string | null
+          note: string | null
+          outcome: string | null
+          reason: string
+          reported_id: string
+          reported_nickname: string | null
+          reporter_id: string
+          reporter_nickname: string | null
+          resolution_note: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          snapshot: Json
+          status: string
+        }
+        Insert: {
+          admin_only?: boolean
+          conversation_id: string
+          created_at?: string
+          held?: boolean
+          id?: string
+          message_id?: string | null
+          note?: string | null
+          outcome?: string | null
+          reason: string
+          reported_id: string
+          reported_nickname?: string | null
+          reporter_id: string
+          reporter_nickname?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          snapshot?: Json
+          status?: string
+        }
+        Update: {
+          admin_only?: boolean
+          conversation_id?: string
+          created_at?: string
+          held?: boolean
+          id?: string
+          message_id?: string | null
+          note?: string | null
+          outcome?: string | null
+          reason?: string
+          reported_id?: string
+          reported_nickname?: string | null
+          reporter_id?: string
+          reporter_nickname?: string | null
+          resolution_note?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          snapshot?: Json
+          status?: string
+        }
+        Relationships: []
       }
       chat_settings: {
         Row: {
@@ -2014,6 +2080,11 @@ export type Database = {
       _chat_blocked: { Args: { p_a: string; p_b: string }; Returns: boolean }
       _chat_is_staff_user: { Args: { p_user: string }; Returns: boolean }
       _chat_member: { Args: never; Returns: string }
+      _chat_reader: { Args: never; Returns: string }
+      _chat_report_alert: {
+        Args: { p_admins_only: boolean; p_reporter: string }
+        Returns: undefined
+      }
       _check_images: { Args: { p_images: Json; p_uid: string }; Returns: Json }
       _cleanup_path_ok: {
         Args: { p_bucket: string; p_path: string }
@@ -2115,6 +2186,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      admin_release_chat_report_hold: {
+        Args: { p_report: string }
+        Returns: undefined
+      }
       admin_set_nickname: {
         Args: { p_nickname: string; p_user: string }
         Returns: undefined
@@ -2168,6 +2243,7 @@ export type Database = {
           pending: number
         }[]
       }
+      close_my_chat: { Args: { p_conversation: string }; Returns: undefined }
       create_comment: {
         Args: {
           p_body: string
@@ -2997,6 +3073,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      mod_escalate_chat_report: {
+        Args: { p_report: string }
+        Returns: undefined
+      }
       mod_get_actions: {
         Args: {
           p_actor?: string
@@ -3018,6 +3098,47 @@ export type Database = {
           reason_code: string
           target_id: string
           target_type: string
+        }[]
+      }
+      mod_get_chat_report: {
+        Args: { p_report: string }
+        Returns: {
+          admin_only: boolean
+          created_at: string
+          held: boolean
+          id: string
+          message_id: string
+          note: string
+          outcome: string
+          reason: string
+          reported_id: string
+          reported_nickname: string
+          reporter_nickname: string
+          resolution_note: string
+          resolved_at: string
+          snapshot: Json
+          status: string
+        }[]
+      }
+      mod_get_chat_reports: {
+        Args: {
+          p_after_id?: string
+          p_after_ts?: string
+          p_limit?: number
+          p_status?: string
+        }
+        Returns: {
+          admin_only: boolean
+          created_at: string
+          held: boolean
+          id: string
+          note: string
+          outcome: string
+          reason: string
+          reported_nickname: string
+          reporter_nickname: string
+          resolved_at: string
+          status: string
         }[]
       }
       mod_get_content: {
@@ -3150,6 +3271,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      mod_open_chat_report_count: { Args: never; Returns: number }
       mod_open_report_count: { Args: never; Returns: number }
       mod_recent_signups: {
         Args: { p_limit?: number }
@@ -3161,6 +3283,10 @@ export type Database = {
       }
       mod_remove_avatar: {
         Args: { p_reason?: string; p_user: string }
+        Returns: undefined
+      }
+      mod_resolve_chat_report: {
+        Args: { p_note?: string; p_outcome: string; p_report: string }
         Returns: undefined
       }
       mod_resolve_report: {
@@ -3227,6 +3353,7 @@ export type Database = {
         Returns: undefined
       }
       process_push_responses: { Args: never; Returns: undefined }
+      purge_chat_reports: { Args: never; Returns: undefined }
       purge_expired: { Args: never; Returns: Json }
       purge_member_strikes: { Args: never; Returns: undefined }
       purge_old_chats: { Args: never; Returns: undefined }
@@ -3244,6 +3371,15 @@ export type Database = {
       report_app_version: {
         Args: { p_platform: string; p_version: string }
         Returns: undefined
+      }
+      report_chat: {
+        Args: {
+          p_conversation: string
+          p_message: string
+          p_note?: string
+          p_reason: string
+        }
+        Returns: string
       }
       report_content: {
         Args: {

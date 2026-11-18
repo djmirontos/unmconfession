@@ -2,8 +2,8 @@
 // imports (tests/warnings.test.mjs).
 //
 // Rule: a notice never names the staff member. The member sees only the reason and the optional
-// note. A mute is the existing timed suspension (read-only); its end time also feeds the usual
-// "suspended" message (lib/errors.ts), which is otherwise unchanged.
+// note. A mute is the existing timed suspension (read-only), and members see every timed
+// restriction as "muted"; its end time also feeds that message (lib/errors.ts).
 
 export const WARNING_REASON_LABELS: Readonly<Record<string, string>> = {
   harassment: 'Harassment',
@@ -39,10 +39,13 @@ export function muteInForce(untilAt: string | null, now: number): boolean {
   return !Number.isNaN(t) && t > now;
 }
 
+export const MUTED_FOR_NOW = "You're muted for now. You can still read, but you can't post, comment or react.";
+export const mutedUntil = (when: string) => `You're muted until ${when}. You can still read, but you can't post, comment or react.`;
+
 /** The mute line in the notice. */
 export function muteLine(untilAt: string | null, now: number, format: (iso: string) => string = formatLocalDateTime): string {
   if (!untilAt || !muteInForce(untilAt, now)) return 'This restriction has ended.';
-  return `You can read but not post until ${format(untilAt)}.`;
+  return mutedUntil(format(untilAt));
 }
 
 // ---------------------------------------------------------------- the "suspended" message
@@ -56,7 +59,7 @@ export function noteSuspendedUntil(untilAt: string | null): void {
 
 export const knownSuspendedUntil = (): string | null => knownUntil;
 
-/** The usual suspended text; with a known future end time it says until when. */
+/** The muted text (a timed suspension); with a known future end time it says until when. */
 export function suspendedMessage(
   base: string,
   untilAt: string | null,
@@ -64,7 +67,7 @@ export function suspendedMessage(
   format: (iso: string) => string = formatLocalDateTime,
 ): string {
   if (!untilAt || !muteInForce(untilAt, now)) return base;
-  return `This account is suspended until ${format(untilAt)}. You can still read.`;
+  return mutedUntil(format(untilAt));
 }
 
 // A "suspended" error was shown: the app may read the member's own end time (useMyRestriction).

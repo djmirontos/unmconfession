@@ -71,5 +71,17 @@ export function chatColorPairs(c: ThemeColors): ColorPair[] {
     text('message action label (delete)', c.danger, c.surface1),
     graphic('message action icon', c.text, c.surface1),
     graphic('message action icon (delete)', c.danger, c.surface1),
+    // The chat report sheet.
+    text('report reason label', c.text, c.surface1),
+    text('report reason label (selected)', c.text, c.chatAccentDim),
+    graphic('report reason radio (selected)', c.chatAccent, c.chatAccentDim),
+    graphic('report reason radio', c.textDim, c.surface1),
+    text('child safety line', c.textDim, c.surface1),
+    text('report folded reason "Change"', c.chatAccentText, c.surface1),
+    graphic('report folded reason radio', c.chatAccent, c.surface1),
+    text('report error banner', c.danger, c.surface1),
+    // After a report: the three choices.
+    text('report choice label', c.text, c.surface1),
+    text('report choice help and Cancel', c.textDim, c.surface1),
   ];
 }

@@ -582,3 +582,13 @@ export function reviewInvalidations(type: HeldType, id: string, action: ReviewAc
         : [['comments'], ['replies'], ['post'], ['listing']];
   return [...item, ...HELD_CACHE_KEYS];
 }
+
+// ---------------------------------------------------------------- chat reports (hub card)
+
+export const CHAT_REPORTS_LINE = 'Review them in the admin web panel.';
+
+/** The hub card's value: "N open", "No open chat reports", or none (loading or the count failed). */
+export function chatReportCardValue(count: number | undefined): string | null {
+  if (count === undefined) return null;
+  return count > 0 ? `${count} open` : 'No open chat reports';
+}

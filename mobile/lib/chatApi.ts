@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { type ChatMessage, type ChatRequest, type Conversation, type Cursor, MESSAGE_PAGE_SIZE } from '@/lib/chat';
 import { chunkIds, type ReactionKey, type ReactionRow } from '@/lib/chatReactions';
+import type { ChatReportReason } from '@/lib/chatReports';
 import { getErrorCode } from '@/lib/errors';
 import { logError } from '@/lib/log';
 import { queryClient } from '@/lib/queryClient';
@@ -215,6 +216,32 @@ export async function reactToChatMessage(messageId: string, reaction: ReactionKe
     ...(reaction ? { p_reaction: reaction } : {}),
   });
   if (error) onChatError('react', error);
+}
+
+/**
+ * Reports a chat (messageId null) or one of the other member's messages. The server copies the
+ * evidence itself: only ids, the reason and the optional note are sent. Returns the report id.
+ */
+export async function reportChat(conversationId: string, messageId: string | null, reason: ChatReportReason, note: string): Promise<string> {
+  const trimmed = note.trim();
+  const { data, error } = await supabase.rpc('report_chat', {
+    p_conversation: conversationId,
+    // The SQL argument is nullable (null = the whole chat); the generator types it as string.
+    p_message: messageId as string,
+    p_reason: reason,
+    ...(trimmed ? { p_note: trimmed } : {}),
+  });
+  if (error) onChatError('report', error);
+  return z.string().parse(data);
+}
+
+/**
+ * Closes an accepted chat for me only: it leaves my list and the other member can no longer send
+ * to me in it (my history stays). Allowed while muted; undone by reopen_my_chat from their profile.
+ */
+export async function closeMyChat(conversationId: string): Promise<void> {
+  const { error } = await supabase.rpc('close_my_chat', { p_conversation: conversationId });
+  if (error) onChatError('close', error);
 }
 
 export async function sendChatHeartbeat(): Promise<void> {

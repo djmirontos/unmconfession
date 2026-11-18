@@ -10,6 +10,7 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { useAppVersions } from '@/hooks/useAppVersions';
 import { useModerationCounts } from '@/hooks/useModerationCounts';
 import { useModerationStats } from '@/hooks/useModerationStats';
+import { useOpenChatReportCount } from '@/hooks/useOpenChatReportCount';
 import { useOpenReportCount } from '@/hooks/useOpenReportCount';
 import { useRecentSignups } from '@/hooks/useRecentSignups';
 import { useStaffGuard } from '@/hooks/useStaffGuard';
@@ -18,6 +19,8 @@ import { badgeStyle } from '@/lib/badges';
 import { getModerationErrorMessage } from '@/lib/errors';
 import {
   appVersionDetail,
+  CHAT_REPORTS_LINE,
+  chatReportCardValue,
   appVersionLabel,
   formatCount,
   formatSignupTime,
@@ -96,6 +99,8 @@ export default function ModerationScreen() {
   const { colors } = useTheme();
   const isStaff = useStaffGuard();
   const openCount = useOpenReportCount();
+  // A count only: chat reports are reviewed in the admin web panel. A failed call shows no number.
+  const chatReports = useOpenChatReportCount();
   const stats = useModerationStats();
   const signups = useRecentSignups();
   const held = useModerationCounts();
@@ -104,10 +109,10 @@ export default function ModerationScreen() {
 
   const onRefresh = useCallback(() => {
     setPulling(true);
-    void Promise.allSettled([openCount.refetch(), held.refetch(), stats.refetch(), signups.refetch(), versions.refetch()]).finally(() =>
+    void Promise.allSettled([openCount.refetch(), chatReports.refetch(), held.refetch(), stats.refetch(), signups.refetch(), versions.refetch()]).finally(() =>
       setPulling(false),
     );
-  }, [openCount, held, stats, signups, versions]);
+  }, [openCount, chatReports, held, stats, signups, versions]);
 
   if (!isStaff) return <View className="flex-1 bg-bg" />;
 
@@ -242,7 +247,13 @@ export default function ModerationScreen() {
           />
         }
       >
-        <Section title="Reports">{reports}</Section>
+        <Section title="Reports">
+          {reports}
+          <SettingsGroup>
+            <SettingsRow first icon="chatbubbles-outline" label="Chat reports" value={chatReportCardValue(chatReports.data) ?? undefined} />
+          </SettingsGroup>
+          <Text className="px-1 text-xs text-text-dim">{CHAT_REPORTS_LINE}</Text>
+        </Section>
         <Section title="Review">{review}</Section>
         <Section title="Overview">
           {overview}

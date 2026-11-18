@@ -39,7 +39,7 @@ test('titles: Warning / You were muted', () => {
 });
 
 test('mute line: until a future time, or ended', () => {
-  assert.equal(W.muteLine('2026-11-07T10:00:00Z', NOW, fmt), 'You can read but not post until <2026-11-07T10:00:00Z>.');
+  assert.equal(W.muteLine('2026-11-07T10:00:00Z', NOW, fmt), "You're muted until <2026-11-07T10:00:00Z>. You can still read, but you can't post, comment or react.");
   assert.equal(W.muteLine('2026-11-06T09:59:59Z', NOW, fmt), 'This restriction has ended.');
   assert.equal(W.muteLine('2026-11-06T10:00:00Z', NOW, fmt), 'This restriction has ended.', 'exactly now counts as ended');
   assert.equal(W.muteLine(null, NOW, fmt), 'This restriction has ended.');
@@ -48,11 +48,12 @@ test('mute line: until a future time, or ended', () => {
   assert.match(W.formatLocalDateTime('2026-11-07T10:00:00Z'), /\d/);
 });
 
-test('the suspended message says until when only for a known future end', () => {
-  const base = 'This account is suspended for now. Try again later.';
+test('a timed restriction reads "muted": with the end time only for a known future end', () => {
+  const base = W.MUTED_FOR_NOW;
+  assert.equal(base, "You're muted for now. You can still read, but you can't post, comment or react.");
   assert.equal(W.suspendedMessage(base, null, NOW, fmt), base);
   assert.equal(W.suspendedMessage(base, '2026-11-05T00:00:00Z', NOW, fmt), base);
-  assert.equal(W.suspendedMessage(base, '2026-11-08T00:00:00Z', NOW, fmt), 'This account is suspended until <2026-11-08T00:00:00Z>. You can still read.');
+  assert.equal(W.suspendedMessage(base, '2026-11-08T00:00:00Z', NOW, fmt), "You're muted until <2026-11-08T00:00:00Z>. You can still read, but you can't post, comment or react.");
 });
 
 test('errors.ts reuses it for suspended errors and asks for the end time', () => {
@@ -60,12 +61,14 @@ test('errors.ts reuses it for suspended errors and asks for the end time', () =>
   const off = W.onSuspendedSeen(() => (seen += 1));
   const err = { message: 'suspended' };
   W.noteSuspendedUntil(null);
-  assert.equal(getErrorMessage(err), 'This account is suspended for now. Try again later.');
+  assert.equal(getErrorMessage(err), "You're muted for now. You can still read, but you can't post, comment or react.");
   assert.equal(seen, 1);
   const future = new Date(Date.now() + 3_600_000).toISOString();
   W.noteSuspendedUntil(future);
-  assert.match(getErrorMessage(err), /^This account is suspended until .+\. You can still read\.$/);
-  assert.match(getChatError(err, 'message').message, /suspended until/);
+  assert.match(getErrorMessage(err), /^You're muted until .+\. You can still read, but you can't post, comment or react\.$/);
+  assert.match(getChatError(err, 'message').message, /muted until/);
+  // A ban keeps its own wording.
+  assert.equal(getErrorMessage({ message: 'banned' }), 'This account has been banned.');
   // Other errors never ask.
   getErrorMessage({ message: 'banned' });
   assert.equal(seen, 3);

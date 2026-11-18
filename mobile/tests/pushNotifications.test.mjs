@@ -125,8 +125,12 @@ test('staff alerts parse and open their queue, not the item', () => {
 });
 
 test('malformed staff alerts are rejected', () => {
-  assert.equal(parsePushData(valid({ type: 'staff_report', targetType: null, targetId: null })), null, 'a staff alert names its item');
-  assert.equal(parsePushData(valid({ type: 'staff_held', targetType: null, targetId: null })), null);
+  // A chat report has no target (it is reviewed in the web panel): it parses and opens the hub.
+  const chatReport = parsePushData(valid({ type: 'staff_report', targetType: null, targetId: null }));
+  assert.ok(chatReport);
+  assert.deepEqual(pushDestination(chatReport), { kind: 'moderation-queue', queue: 'hub' });
+  assert.equal(moderationQueuePath('hub'), '/moderation');
+  assert.equal(parsePushData(valid({ type: 'staff_held', targetType: null, targetId: null })), null, 'a held alert names its item');
   assert.equal(parsePushData(valid({ type: 'staff_held', targetType: 'profile' })), null, 'nothing holds a profile');
   assert.equal(parsePushData(valid({ type: 'staff_report', targetId: 'nope' })), null);
   assert.equal(parsePushData(valid({ type: 'staff_report', nid: 'nope' })), null);

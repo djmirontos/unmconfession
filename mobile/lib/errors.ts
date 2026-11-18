@@ -2,7 +2,7 @@ import { isAuthError, isAuthRetryableFetchError } from '@supabase/supabase-js';
 
 import { CHAT_ERROR_CODES, type ChatErrorAction, type ChatErrorContext, chatErrorText } from '@/lib/chat';
 import { DETAILS_ERROR_CODES, getDetailsErrorMessage } from '@/lib/profileDetails';
-import { knownSuspendedUntil, notifySuspendedSeen, suspendedMessage } from '@/lib/warnings';
+import { knownSuspendedUntil, MUTED_FOR_NOW, notifySuspendedSeen, suspendedMessage } from '@/lib/warnings';
 
 const JOINED_WITH_GOOGLE = 'Joined with Google? Use Continue with Google.';
 
@@ -24,7 +24,8 @@ const MESSAGES: Record<string, string> = {
   account_restricted: 'Your account is restricted, so it cannot be deleted. Please contact the moderators.',
   last_admin: 'You are the only admin. Make another admin before deleting your account.',
   banned: 'This account has been banned.',
-  suspended: 'This account is suspended for now. Try again later.',
+  // A timed restriction is shown as "muted" (lib/warnings.ts adds the end time when known).
+  suspended: MUTED_FOR_NOW,
   rate_limited: 'You are doing that too often. Please wait a bit and try again.',
   not_authenticated: 'Please sign in first.',
   no_profile: 'Your account is not set up yet. Sign out and sign in again.',
@@ -232,7 +233,7 @@ export function getAvatarErrorMessage(error: unknown): string {
 
 // Reaction failures use their own wording: a missing post reads as unavailable,
 // and rate or permission problems reuse the generic connection text.
-const REACTION_GENERIC = new Set(['rate_limited', 'banned', 'suspended', 'not_authenticated', 'nickname_required', 'no_profile']);
+const REACTION_GENERIC = new Set(['rate_limited', 'banned', 'not_authenticated', 'nickname_required', 'no_profile']);
 
 export function getReactionErrorMessage(error: unknown): string {
   const code = getErrorCode(error);

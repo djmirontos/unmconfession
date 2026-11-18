@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ChatComposer } from '@/components/chat/ChatComposer';
 import { ChatHeader, type ChatHeaderMember } from '@/components/chat/ChatHeader';
+import { ChatReportSheet } from '@/components/chat/ChatReportSheet';
 import { MessageActionsOverlay } from '@/components/chat/MessageActionsOverlay';
 import { DayLine, MessageBubble, type MessageRow } from '@/components/chat/MessageBubble';
 import { EmptyState, ErrorState } from '@/components/feed/ListStates';
@@ -37,8 +38,9 @@ import {
   type ReplyRef,
   replyPreview,
 } from '@/lib/chat';
-import { deleteChatForMe, setChatMuted } from '@/lib/chatApi';
+import { closeMyChat, deleteChatForMe, setChatMuted } from '@/lib/chatApi';
 import { type ReactionKey, reactableIds } from '@/lib/chatReactions';
+import { canReportMessage, CHAT_CLOSED, CLOSE_HELP, type ChatReportTarget } from '@/lib/chatReports';
 import { getChatError } from '@/lib/errors';
 import { isValidUserId as isUuid } from '@/lib/profileView';
 import { useAuthStore } from '@/stores/authStore';
@@ -171,6 +173,10 @@ export default function ChatScreen() {
     [server, remove, showToast],
   );
 
+  // The report sheet mounts only while this is set (one report_chat call on Send, nothing before).
+  const [reportFor, setReportFor] = useState<ChatReportTarget | null>(null);
+  const closeReport = useCallback(() => setReportFor(null), []);
+
   const messageActions = useMemo<SheetAction[]>(() => {
     if (!menuFor) return [];
     const row = menuFor.row;
@@ -188,8 +194,24 @@ export default function ChatScreen() {
         }
       : null;
     const del: SheetAction = { label: 'Delete', icon: 'trash-outline', destructive: true, onPress: () => confirmDelete(row) };
-    return [live ? reply : null, copy, live && row.mine ? del : null].filter((a): a is SheetAction => a !== null);
-  }, [menuFor, startReply, confirmDelete, showToast]);
+    // Their messages only (never mine, a deleted one or the waiting request).
+    const report: SheetAction | null =
+      conversation && row.id && canReportMessage(row)
+        ? {
+            label: 'Report message',
+            icon: 'flag-outline',
+            destructive: true,
+            onPress: () =>
+              setReportFor({
+                conversationId: conversation.id,
+                messageId: row.id,
+                other: { id: conversation.otherId, nickname: conversation.otherNickname },
+                source: 'chat',
+              }),
+          }
+        : null;
+    return [live ? reply : null, copy, live && row.mine ? del : null, report].filter((a): a is SheetAction => a !== null);
+  }, [menuFor, startReply, confirmDelete, showToast, conversation]);
 
   const failedActions = useMemo<SheetAction[]>(() => {
     const localId = failedFor?.localId;
@@ -258,6 +280,32 @@ export default function ChatScreen() {
               },
             ],
           ),
+      },
+      {
+        label: 'Report chat',
+        icon: 'flag-outline',
+        destructive: true,
+        onPress: () => setReportFor({ conversationId: c.id, messageId: null, other: { id: c.otherId, nickname: c.otherNickname }, source: 'chat' }),
+      },
+      {
+        label: 'Close chat',
+        icon: 'close-circle-outline',
+        destructive: true,
+        onPress: () =>
+          Alert.alert('Close this chat?', CLOSE_HELP, [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Close chat',
+              style: 'destructive',
+              onPress: () =>
+                void closeMyChat(c.id)
+                  .then(() => {
+                    showToast(CHAT_CLOSED);
+                    leave();
+                  })
+                  .catch((error: unknown) => showToast(getChatError(error, 'close').message)),
+            },
+          ]),
       },
       {
         label: 'Block',
@@ -377,6 +425,7 @@ export default function ChatScreen() {
           />
         ) : null}
       </KeyboardAvoidingView>
+      {reportFor ? <ChatReportSheet target={reportFor} onClose={closeReport} onBlocked={leave} onChatClosed={leave} /> : null}
       {menuFor ? (
         <MessageActionsOverlay
           anchorY={menuFor.y}
